@@ -9,5 +9,6 @@ type Screen struct {
 	SearchBox,
 	Actions,
 	Confirm,
+	RenameRom,
 	DownloadArt sum.Int[Screen]
 }

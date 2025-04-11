@@ -7,6 +7,7 @@ import (
 	"nextui-game-manager/models"
 	"nextui-game-manager/state"
 	"nextui-game-manager/ui"
+	"nextui-game-manager/utils"
 	"os"
 	"strings"
 )
@@ -37,7 +38,14 @@ func init() {
 		logger.Error("Issue fetching rom directories", zap.Error(err))
 	}
 
+	romDirectoryMap := make(map[string]sharedModels.RomDirectory)
+
+	for _, dir := range romDirectories {
+		romDirectoryMap[dir.DisplayName] = dir
+	}
+
 	appState.RomDirectories = romDirectories
+	appState.RomDirectoryMap = romDirectoryMap
 	appState.CurrentScreen = ui.Screens.MainMenu
 
 	state.UpdateAppState(appState)
@@ -66,19 +74,15 @@ func main() {
 			switch selection.Code {
 			case 0:
 				ui.SetScreen(ui.Screens.Loading)
-				display := strings.TrimSpace(selection.Value)
+				selection := strings.TrimSpace(selection.Value)
 
-				var directory sharedModels.RomDirectory
-				for _, dir := range appState.RomDirectories {
-					if strings.Contains(dir.DisplayName, display) {
-						directory = dir
-					}
-				}
+				directory := appState.RomDirectoryMap[selection]
 
 				state.SetSection(models.Section{
 					Name:           directory.DisplayName,
 					LocalDirectory: directory.Path,
 				})
+
 			case 1, 2:
 				os.Exit(0)
 			}
@@ -95,14 +99,8 @@ func main() {
 		case ui.Screens.GamesList:
 			switch selection.Code {
 			case 0:
-				//for _, item := range appState.CurrentItemsList {
-				//	if strings.Contains(item.Filename, strings.TrimSpace(selection.Value)) {
-				//		state.SetSelectedFile(item.Filename)
-				//		break
-				//	}
-				//}
-
 				state.SetSelectedFile(strings.TrimSpace(selection.Value))
+
 				ui.SetScreen(ui.Screens.Actions)
 			case 2:
 				if appState.SearchFilter != "" {
@@ -136,8 +134,20 @@ func main() {
 		case ui.Screens.Actions:
 			switch selection.Code {
 			case 0:
-				state.SetSelectedAction(strings.TrimSpace(selection.Value))
-				ui.SetScreen(ui.Screens.Confirm)
+				{
+					state.SetSelectedAction(strings.TrimSpace(selection.Value))
+
+					switch appState.SelectedAction {
+					case models.Actions.DownloadArt:
+						ui.SetScreen(ui.Screens.DownloadArt)
+					case models.Actions.ReplaceArt:
+						ui.SetScreen(ui.Screens.DownloadArt)
+					case models.Actions.RenameRom:
+						ui.SetScreen(ui.Screens.RenameRom)
+					default:
+						ui.SetScreen(ui.Screens.Confirm)
+					}
+				}
 			default:
 				ui.SetScreen(ui.Screens.GamesList)
 			}
@@ -146,22 +156,30 @@ func main() {
 			switch selection.Code {
 			case 0:
 				switch appState.SelectedAction {
-				case models.Actions.DownloadArt:
-					ui.SetScreen(ui.Screens.DownloadArt)
 				case models.Actions.DeleteArt:
 					ui.SetScreen(ui.Screens.Actions)
-				case models.Actions.RenameRom:
-					ui.SetScreen(ui.Screens.Actions)
 				case models.Actions.ClearGameTracker:
+					utils.ClearGameTracker()
 					ui.SetScreen(ui.Screens.Actions)
 				case models.Actions.DeleteRom:
+					utils.DeleteRom()
 					ui.SetScreen(ui.Screens.Loading)
 				case models.Actions.Nuke:
+					utils.Nuke()
 					ui.SetScreen(ui.Screens.Loading)
+				default:
+					ui.SetScreen(ui.Screens.Actions)
 				}
 			default:
 				ui.SetScreen(ui.Screens.Actions)
 			}
+
+		case ui.Screens.RenameRom:
+			switch selection.Code {
+			case 0:
+				utils.RenameRom(selection.Value)
+			}
+			ui.SetScreen(ui.Screens.Actions)
 
 		case ui.Screens.DownloadArt:
 			switch selection.Code {

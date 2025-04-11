@@ -3,7 +3,7 @@ module nextui-game-manager
 go 1.24
 
 require (
-	github.com/UncleJunVIP/nextui-pak-shared-functions v0.0.0-20250411035235-2f5ce87e841b
+	github.com/UncleJunVIP/nextui-pak-shared-functions v0.0.0-20250411203647-7c05248e6845
 	go.uber.org/atomic v1.11.0
 	go.uber.org/zap v1.27.0
 	gopkg.in/yaml.v3 v3.0.1

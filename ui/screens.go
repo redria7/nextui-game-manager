@@ -29,6 +29,7 @@ var ScreenFuncs = map[sum.Int[models.Screen]]func() shared.Selection{
 	Screens.SearchBox:   searchBox,
 	Screens.Actions:     actionScreen,
 	Screens.Confirm:     confirmationScreen,
+	Screens.RenameRom:   renameRomScreen,
 	Screens.DownloadArt: downloadArtScreen,
 }
 
@@ -45,7 +46,7 @@ func mainMenuScreen() shared.Selection {
 
 	var romDirectories []string
 	for _, dir := range appState.RomDirectories {
-		romDirectories = append(romDirectories, dir.DisplayName)
+		romDirectories = append(romDirectories, strings.TrimSpace(dir.DisplayName))
 	}
 
 	menu = strings.Join(romDirectories, "\n")
@@ -62,28 +63,10 @@ func loading() shared.Selection {
 
 	logger.Debug("Selected ROM Directory", zap.String("ROM Directory", appState.CurrentSection.LocalDirectory))
 
-	romEntries, err := os.ReadDir(appState.CurrentSection.LocalDirectory)
+	err := utils.RefreshRomsList()
 	if err != nil {
 		return shared.Selection{Code: 1}
 	}
-
-	var roms shared.Items
-
-	for _, entry := range romEntries {
-		if !entry.IsDir() {
-			roms = append(roms, shared.Item{
-				Filename: entry.Name(),
-			})
-		}
-	}
-
-	for _, rom := range roms {
-		logger.Debug("Rom", zap.String("com", rom.Filename))
-	}
-
-	appState.CurrentItemsList = roms
-
-	state.UpdateAppState(appState)
 
 	return shared.Selection{Code: 0}
 }
@@ -100,7 +83,7 @@ func gamesList() shared.Selection {
 	if appState.SearchFilter != "" {
 		title = "[Search: \"" + appState.SearchFilter + "\"]"
 		extraArgs = append(extraArgs, "--cancel-text", "CLEAR SEARCH")
-		itemList = filterList(itemList, appState.SearchFilter)
+		itemList = utils.FilterList(itemList, appState.SearchFilter)
 	}
 
 	if len(itemList) == 0 {
@@ -108,10 +91,17 @@ func gamesList() shared.Selection {
 	}
 
 	var itemEntries []string
+	var displayNameToFilename = make(map[string]string)
+
 	for _, item := range itemList {
 		itemName := strings.TrimSuffix(item.Filename, filepath.Ext(item.Filename))
 		itemEntries = append(itemEntries, itemName)
+		displayNameToFilename[itemName] = item.Filename
 	}
+
+	appState.CurrentItemListWithExtensionMap = displayNameToFilename
+
+	state.UpdateAppState(appState)
 
 	if len(itemEntries) > 500 {
 		itemEntries = itemEntries[:500]
@@ -156,15 +146,32 @@ func searchBox() shared.Selection {
 }
 
 func actionScreen() shared.Selection {
+	logger := common.GetLoggerInstance()
 	appState := state.GetAppState()
 
-	return ui.DisplayMinUiList(strings.Join(models.ActionKeys, "\n"), "text", appState.SelectedFile)
+	existingArtFilename, err := utils.FindExistingArt()
+	if err != nil {
+		logger.Error("failed to find existing arts", zap.Error(err))
+	}
+
+	actions := models.ActionKeys
+
+	if existingArtFilename == "" {
+		actions = utils.InsertIntoSlice(actions, 1, "Download Art")
+
+	} else {
+		actions = utils.InsertIntoSlice(actions, 1, "Replace Art", "Delete Art")
+	}
+
+	return ui.DisplayMinUiList(strings.Join(actions, "\n"), "text", appState.SelectedFile)
 }
 
 func confirmationScreen() shared.Selection {
 	appState := state.GetAppState()
 
-	message := fmt.Sprintf("%s for %s?", appState.SelectedAction, strings.Split(appState.SelectedFile, ".")[0])
+	actionDisplay := models.ActionNames[appState.SelectedAction]
+
+	message := fmt.Sprintf("%s for %s?", actionDisplay, strings.Split(appState.SelectedFile, ".")[0])
 
 	code, err := ui.ShowMessageWithOptions(message, "0",
 		"--confirm-text", "DO IT!",
@@ -180,6 +187,41 @@ func confirmationScreen() shared.Selection {
 	}
 
 	return shared.Selection{Code: code}
+}
+
+func renameRomScreen() shared.Selection {
+	logger := common.GetLoggerInstance()
+
+	args := []string{"--title", "Rename ROM (Exclude Extension)"}
+
+	cmd := exec.Command("minui-keyboard", args...)
+	cmd.Env = os.Environ()
+	cmd.Env = os.Environ()
+
+	var stdoutbuf, stderrbuf bytes.Buffer
+	cmd.Stdout = &stdoutbuf
+	cmd.Stderr = &stderrbuf
+
+	if errors.Is(cmd.Err, exec.ErrDot) {
+		cmd.Err = nil
+	}
+
+	err := cmd.Start()
+	if err != nil {
+		logger.Fatal("failed to start minui-keyboard", zap.Error(err))
+	}
+
+	err = cmd.Wait()
+	if err != nil && cmd.ProcessState.ExitCode() == 1 {
+		logger.Error("Error with keyboard", zap.String("error", stderrbuf.String()))
+		ShowMessage("Unable to open keyboard!", "3")
+		return shared.Selection{Code: 1}
+	}
+
+	outValue := stdoutbuf.String()
+	_ = stderrbuf.String()
+
+	return shared.Selection{Value: strings.TrimSpace(outValue), Code: cmd.ProcessState.ExitCode()}
 }
 
 func downloadArtScreen() shared.Selection {
