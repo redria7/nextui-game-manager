@@ -5,7 +5,7 @@
 </h3>
 
 <h4 style="font-size: 18px;">
-Coming Soon^TM^
+Coming Soon<sup>TM</sup>
 </h4>
 
 <img src=".github/resources/game_tracker_preview.webp" width="auto" alt="Preview">
