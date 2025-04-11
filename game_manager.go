@@ -95,13 +95,14 @@ func main() {
 		case ui.Screens.GamesList:
 			switch selection.Code {
 			case 0:
-				for _, item := range appState.CurrentItemsList {
-					if strings.Contains(item.Filename, strings.TrimSpace(selection.Value)) {
-						state.SetSelectedFile(item.Filename)
-						break
-					}
-				}
+				//for _, item := range appState.CurrentItemsList {
+				//	if strings.Contains(item.Filename, strings.TrimSpace(selection.Value)) {
+				//		state.SetSelectedFile(item.Filename)
+				//		break
+				//	}
+				//}
 
+				state.SetSelectedFile(strings.TrimSpace(selection.Value))
 				ui.SetScreen(ui.Screens.Actions)
 			case 2:
 				if appState.SearchFilter != "" {
@@ -125,7 +126,7 @@ func main() {
 		case ui.Screens.SearchBox:
 			switch selection.Code {
 			case 0:
-				state.SetSearchFilter(selection.Value)
+				state.SetSearchFilter(strings.TrimSpace(selection.Value))
 			case 1, 2, 3:
 				state.SetSearchFilter("")
 			}
@@ -135,7 +136,7 @@ func main() {
 		case ui.Screens.Actions:
 			switch selection.Code {
 			case 0:
-				state.SetSelectedAction(selection.Value)
+				state.SetSelectedAction(strings.TrimSpace(selection.Value))
 				ui.SetScreen(ui.Screens.Confirm)
 			default:
 				ui.SetScreen(ui.Screens.GamesList)
@@ -143,7 +144,23 @@ func main() {
 
 		case ui.Screens.Confirm:
 			switch selection.Code {
-
+			case 0:
+				switch appState.SelectedAction {
+				case models.Actions.DownloadArt:
+					ui.SetScreen(ui.Screens.DownloadArt)
+				case models.Actions.DeleteArt:
+					ui.SetScreen(ui.Screens.Actions)
+				case models.Actions.RenameRom:
+					ui.SetScreen(ui.Screens.Actions)
+				case models.Actions.ClearGameTracker:
+					ui.SetScreen(ui.Screens.Actions)
+				case models.Actions.DeleteRom:
+					ui.SetScreen(ui.Screens.Loading)
+				case models.Actions.Nuke:
+					ui.SetScreen(ui.Screens.Loading)
+				}
+			default:
+				ui.SetScreen(ui.Screens.Actions)
 			}
 
 		case ui.Screens.DownloadArt:
@@ -164,7 +181,7 @@ func main() {
 			case 1:
 				ui.ShowMessage("Could not find art :(", "3")
 			}
-			ui.SetScreen(ui.Screens.GamesList)
+			ui.SetScreen(ui.Screens.Actions)
 		}
 
 	}

@@ -2,18 +2,22 @@ package ui
 
 import (
 	"bytes"
+	"context"
 	"errors"
+	"fmt"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/ui"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
 	"nextui-game-manager/state"
+	"nextui-game-manager/utils"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"qlova.tech/sum"
 	"strings"
+	"time"
 )
 
 var Screens = sum.Int[models.Screen]{}.Sum()
@@ -158,9 +162,59 @@ func actionScreen() shared.Selection {
 }
 
 func confirmationScreen() shared.Selection {
-	return shared.Selection{}
+	appState := state.GetAppState()
+
+	message := fmt.Sprintf("%s for %s?", appState.SelectedAction, strings.Split(appState.SelectedFile, ".")[0])
+
+	code, err := ui.ShowMessageWithOptions(message, "0",
+		"--confirm-text", "DO IT!",
+		"--confirm-show", "true",
+		"--confirm-button", "X",
+		"--cancel-show", "true",
+		"--cancel-text", "CHANGED MY MIND",
+	)
+
+	if err != nil {
+		logger := common.GetLoggerInstance()
+		logger.Info("Oh no", zap.Error(err))
+	}
+
+	return shared.Selection{Code: code}
 }
 
 func downloadArtScreen() shared.Selection {
-	return shared.Selection{}
+	logger := common.GetLoggerInstance()
+
+	ctx := context.Background()
+	ctxWithCancel, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	args := []string{"--message", "Attempting to download art...", "--timeout", "-1"}
+	cmd := exec.CommandContext(ctxWithCancel, "minui-presenter", args...)
+
+	err := cmd.Start()
+	if err != nil && cmd.ProcessState.ExitCode() != -1 {
+		logger.Fatal("Error with starting miniui-presenter download message", zap.Error(err))
+	}
+
+	time.Sleep(1000 * time.Millisecond)
+
+	exitCode := 0
+
+	go func() {
+		res := utils.FindArt()
+		if !res {
+			logger.Error("Could not find art!", zap.Error(err))
+			exitCode = 1
+		}
+
+		cancel()
+	}()
+
+	err = cmd.Wait()
+	if err != nil && cmd.ProcessState.ExitCode() != -1 {
+		logger.Fatal("Error with minui-presenter display of download message", zap.Error(err))
+	}
+
+	return shared.Selection{Code: exitCode}
 }

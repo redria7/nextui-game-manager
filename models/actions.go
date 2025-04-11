@@ -1,27 +1,34 @@
 package models
 
-import "qlova.tech/sum"
+import (
+	"qlova.tech/sum"
+)
 
-type Actions struct {
+type Action struct {
 	DeleteRom,
+	RenameRom,
 	DownloadArt,
 	DeleteArt,
 	ClearGameTracker,
-	Nuke sum.Int[Screen]
+	Nuke sum.Int[Action]
 }
 
-var ActionMap = map[string]sum.Int[Screen]{
-	"Delete Rom":         Actions{}.DeleteRom,
-	"Download Art":       Actions{}.DownloadArt,
-	"Delete Art":         Actions{}.DeleteArt,
-	"Clear Game Tracker": Actions{}.ClearGameTracker,
-	"Nuke All":           Actions{}.Nuke,
+var Actions = sum.Int[Action]{}.Sum()
+
+var ActionMap = map[string]sum.Int[Action]{
+	"Delete ROM":         Actions.DeleteRom,
+	"Rename ROM":         Actions.RenameRom,
+	"Download Art":       Actions.DownloadArt,
+	"Delete Art":         Actions.DeleteArt,
+	"Clear Game Tracker": Actions.ClearGameTracker,
+	"Nuke All":           Actions.Nuke,
 }
 
 var ActionKeys = []string{
 	"Download Art",
 	"Delete Art",
+	"Rename ROM",
 	"Clear Game Tracker",
-	"Delete Rom",
+	"Delete ROM",
 	"Nuke All",
 }

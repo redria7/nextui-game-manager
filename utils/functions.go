@@ -1,29 +1,13 @@
 package utils
 
 import (
-	"context"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
+	"github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"go.uber.org/zap"
-	"mortar/clients"
-	"mortar/models"
 	"nextui-game-manager/state"
-	"os"
 	"path/filepath"
 	"strings"
 )
-
-func DeleteFile(path string) {
-	logger := common.GetLoggerInstance()
-
-	err := os.Remove(path)
-	if err != nil {
-		logger.Error("Issue removing file",
-			zap.String("path", path),
-			zap.Error(err))
-	} else {
-		logger.Debug("Removed file", zap.String("path", path))
-	}
-}
 
 func FindArt() bool {
 	logger := common.GetLoggerInstance()
@@ -35,7 +19,7 @@ func FindArt() bool {
 		return false
 	}
 
-	client := clients.NewThumbnailClient()
+	client := common.NewThumbnailClient()
 	section := client.BuildThumbnailSection(tag[1])
 
 	artList, err := client.ListDirectory(section)
@@ -62,39 +46,19 @@ func FindArt() bool {
 	}
 
 	if matched.Filename != "" {
-		err = client.DownloadFileRename(section.HostSubdirectory,
+		lastSavedArtPath, err := client.DownloadFileRename(section.HostSubdirectory,
 			filepath.Join(appState.CurrentSection.LocalDirectory, ".media"), matched.Filename, appState.SelectedFile)
 
 		if err != nil {
 			return false
 		}
 
+		appState.LastSavedArtPath = lastSavedArtPath
+
+		state.UpdateAppState(appState)
+
 		return true
 	}
 
 	return false
-}
-
-func DownloadFile(cancel context.CancelFunc) error {
-	defer cancel()
-
-	logger := common.GetLoggerInstance()
-	appState := state.GetAppState()
-
-	client, err := clients.BuildClient(appState.CurrentHost)
-	if err != nil {
-		return err
-	}
-
-	defer func(client models.Client) {
-		err := client.Close()
-		if err != nil {
-			logger.Error("Unable to close client", zap.Error(err))
-		}
-	}(client)
-
-	var hostSubdirectory string
-
-	return client.DownloadFile(hostSubdirectory,
-		appState.CurrentSection.LocalDirectory, appState.SelectedFile)
 }

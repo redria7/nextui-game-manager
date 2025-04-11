@@ -63,8 +63,8 @@ func SetSelectedFile(file string) {
 	UpdateAppState(temp)
 }
 
-func SetSelectedAction(action string) {
+func SetSelectedAction(rawAction string) {
 	temp := GetAppState()
-	temp.SelectedAction = action
+	temp.SelectedAction = models.ActionMap[rawAction]
 	UpdateAppState(temp)
 }
