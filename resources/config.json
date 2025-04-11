@@ -1,0 +1,8 @@
+{
+  "label": "Game Manager",
+  "launch": "launch.sh",
+  "description": "Delete Roms, Artwork, Game Tracker Info",
+  "platforms": [
+    "tg5040"
+  ]
+}
