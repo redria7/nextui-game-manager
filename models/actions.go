@@ -35,7 +35,7 @@ var ActionMessages = map[sum.Int[Action]]string{
 	Actions.ClearSaveStates:  "Clear Save States",
 	Actions.ArchiveRom:       "Archive",
 	Actions.DeleteRom:        "Delete",
-	Actions.Nuke:             "Nuke",
+	Actions.Nuke:             "Nuke (Deletes ROM, Art and Game Tracker)",
 }
 
 var ActionKeys = []string{
