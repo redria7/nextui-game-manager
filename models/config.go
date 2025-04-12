@@ -5,8 +5,7 @@ import (
 )
 
 type Config struct {
-	LogLevel        string `yaml:"log_level"`
-	IBackedUpMyShit bool   `yaml:"i_backed_up_my_shit"`
+	LogLevel string `yaml:"log_level"`
 }
 
 func (c *Config) MarshalLogObject(enc zapcore.ObjectEncoder) error {

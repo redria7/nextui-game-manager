@@ -22,11 +22,6 @@ func init() {
 		common.LogStandardFatal("Error loading config", err)
 	}
 
-	if !config.IBackedUpMyShit {
-		ui.ShowMessage("Config file says you didn't back up your shit! Quitting!", "3")
-		common.LogStandardFatal("Back up your shit!", err)
-	}
-
 	common.SetLogLevel(config.LogLevel)
 
 	logger := common.GetLoggerInstance()
