@@ -91,15 +91,11 @@ func gamesList() shared.Selection {
 	}
 
 	var itemEntries []string
-	var displayNameToFilename = make(map[string]string)
 
 	for _, item := range itemList {
 		itemName := strings.TrimSuffix(item.Filename, filepath.Ext(item.Filename))
 		itemEntries = append(itemEntries, itemName)
-		displayNameToFilename[itemName] = item.Filename
 	}
-
-	appState.CurrentItemListWithExtensionMap = displayNameToFilename
 
 	state.UpdateAppState(appState)
 
@@ -196,8 +192,11 @@ func confirmationScreen() shared.Selection {
 
 func renameRomScreen() shared.Selection {
 	logger := common.GetLoggerInstance()
+	appState := state.GetAppState()
 
-	args := []string{"--title", "Rename ROM (Exclude Extension)"}
+	args := []string{"--initial-value", appState.SelectedFile, "--title", "Rename ROM", "--show-hardware-group"}
+
+	logger.Info("Opening Rename Keyboard", zap.Strings("args", args))
 
 	cmd := exec.Command("minui-keyboard", args...)
 	cmd.Env = os.Environ()
@@ -213,7 +212,8 @@ func renameRomScreen() shared.Selection {
 
 	err := cmd.Start()
 	if err != nil {
-		logger.Fatal("failed to start minui-keyboard", zap.Error(err))
+		logger.Fatal("failed to start minui-keyboard", zap.Error(err),
+			zap.String("stdout", stdoutbuf.String()), zap.String("error", stderrbuf.String()))
 	}
 
 	err = cmd.Wait()

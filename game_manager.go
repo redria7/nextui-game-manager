@@ -63,6 +63,8 @@ func cleanup() {
 func main() {
 	defer cleanup()
 
+	logger := common.GetLoggerInstance()
+
 	for {
 		appState := state.GetAppState()
 
@@ -194,6 +196,8 @@ func main() {
 		case ui.Screens.DownloadArt:
 			switch selection.Code {
 			case 0:
+				logger.Debug("Download Art", zap.String("last_saved_art_path", state.GetAppState().LastSavedArtPath))
+
 				code := ui.ShowMessageWithOptions("　　　　　　　　　　　　　　　　　　　　　　　　　", "0",
 					"--background-image", state.GetAppState().LastSavedArtPath,
 					"--confirm-text", "Use",

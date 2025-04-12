@@ -53,12 +53,20 @@ func RefreshRomsList() error {
 	}
 
 	var roms models.Items
+	var displayNameToFilename = make(map[string]string)
 
 	for _, entry := range romEntries {
 		roms = append(roms, models.Item{
 			Filename: entry,
 		})
 	}
+
+	for _, item := range roms {
+		itemName := strings.TrimSuffix(item.Filename, filepath.Ext(item.Filename))
+		displayNameToFilename[itemName] = item.Filename
+	}
+
+	appState.CurrentItemListWithExtensionMap = displayNameToFilename
 
 	appState.CurrentItemsList = roms
 
@@ -152,8 +160,10 @@ func FindExistingArt() (string, error) {
 
 	artFilename := ""
 
+	artFilenameNoExtension := strings.ReplaceAll(appState.SelectedFile, filepath.Ext(appState.SelectedFile), "")
+
 	for _, art := range artList {
-		if strings.Contains(art, appState.SelectedFile) {
+		if strings.ReplaceAll(art, filepath.Ext(art), "") == artFilenameNoExtension {
 			artFilename = art
 			break
 		}
@@ -184,18 +194,22 @@ func RenameRom(filename string) {
 			oldArtExt := filepath.Ext(existingArtFilename)
 			newArtPath := filepath.Join(appState.CurrentSection.LocalDirectory, ".media", filename+oldArtExt)
 
+			if _, err := os.Stat(oldArtPath); os.IsNotExist(err) {
+				logger.Info("No media exists. Skipping...")
+				return
+			}
+
 			err := moveFile(oldArtPath, newArtPath)
 			if err != nil {
 				logger.Error("failed to rename existing art", zap.Error(err))
 			}
 		}
 
-		appState.SelectedFile = filename
-		state.UpdateAppState(appState)
+		state.SetSelectedFile(filename)
 
 		err = RefreshRomsList()
 		if err != nil {
-			logger.Error("failed to refresh roms", zap.Error(err))
+			logger.Error("failed to refresh roms list", zap.Error(err))
 		}
 	}
 }
@@ -321,6 +335,8 @@ func ArchiveRom() {
 	appState := state.GetAppState()
 
 	selectedFile := appState.CurrentItemListWithExtensionMap[appState.SelectedFile]
+
+	logger.Debug("Archive Start", zap.String("selected_file", appState.SelectedFile), zap.Any("with_ext", selectedFile))
 
 	oldPath := filepath.Join(appState.CurrentSection.LocalDirectory, selectedFile)
 	oldPathSubdirectory := strings.ReplaceAll(appState.CurrentSection.LocalDirectory, common.RomDirectory, "")
