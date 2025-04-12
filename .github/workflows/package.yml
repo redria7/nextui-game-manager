@@ -13,8 +13,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Zig
-        uses: mlugg/setup-zig@v1
-        run: zig build test
+        uses: goto-bus-stop/setup-zig@v2
 
       - name: Setup Go
         uses: actions/setup-go@v4
