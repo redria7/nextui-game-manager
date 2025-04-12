@@ -196,8 +196,6 @@ func renameRomScreen() shared.Selection {
 
 	args := []string{"--initial-value", appState.SelectedFile, "--title", "Rename ROM", "--show-hardware-group"}
 
-	logger.Info("Opening Rename Keyboard", zap.Strings("args", args))
-
 	cmd := exec.Command("minui-keyboard", args...)
 	cmd.Env = os.Environ()
 	cmd.Env = os.Environ()

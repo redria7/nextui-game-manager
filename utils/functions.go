@@ -186,6 +186,10 @@ func RenameRom(filename string) {
 
 	err := moveFile(oldPath, newPath)
 	if err == nil {
+
+		MigrateGameTrackerData(filename, strings.ReplaceAll(oldPath, common.RomDirectory+"/", ""),
+			strings.ReplaceAll(newPath, common.RomDirectory+"/", ""))
+
 		existingArtFilename, err := FindExistingArt()
 		if err != nil {
 			logger.Error("failed to find existing art", zap.Error(err))
@@ -249,7 +253,7 @@ func HasGameTrackerData() bool {
 
 	tag := common.TagRegex.FindStringSubmatch(appState.CurrentSection.LocalDirectory)
 	tagWildCard := "%" + tag[1] + "%"
-	romName := appState.SelectedFile // Replace with actual name if needed
+	romName := appState.SelectedFile
 
 	var romID string
 	err = db.QueryRow("SELECT id FROM rom WHERE file_path LIKE ? AND name = ?", tagWildCard, romName).Scan(&romID)
@@ -259,6 +263,62 @@ func HasGameTrackerData() bool {
 	}
 
 	return romID != ""
+}
+
+func MigrateGameTrackerData(filename string, oldPath string, newPath string) bool {
+	logger := common.GetLoggerInstance()
+	appState := state.GetAppState()
+
+	db, err := sql.Open("sqlite3", gameTrackerDBPath)
+	if err != nil {
+		logger.Error("Failed to open game tracker database", zap.Error(err))
+		return false
+	}
+	defer func(db *sql.DB) {
+		err := db.Close()
+		if err != nil {
+			logger.Error("Failed to close game tracker database", zap.Error(err))
+		}
+	}(db)
+
+	logger.Debug("Migrating game tracker data", zap.String("filename", filename),
+		zap.String("oldPath", oldPath), zap.String("newPath", newPath))
+
+	tx, err := db.Begin()
+	if err != nil {
+		logger.Error("Failed to begin transaction", zap.Error(err))
+		return false
+	}
+
+	var romID string
+	err = tx.QueryRow("SELECT id FROM rom WHERE file_path = ?", oldPath).Scan(&romID)
+	if err != nil {
+		_ = tx.Rollback()
+		logger.Error("Failed to find ROM ID", zap.Error(err))
+		return false
+	}
+
+	if romID == "" {
+		logger.Warn("No ROM ID found", zap.String("old_path", oldPath))
+		return false
+	}
+
+	_, err = tx.Exec("UPDATE rom SET name = ?, file_path = ? WHERE id = ?", filename,
+		filepath.Join(appState.CurrentSection.LocalDirectory, newPath), romID)
+	if err != nil {
+		_ = tx.Rollback()
+		logger.Error("Failed to update game tracker Rom name", zap.Error(err))
+		return false
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		logger.Error("Failed to commit transaction", zap.Error(err))
+		return false
+	}
+
+	logger.Info("Game tracker Rom Name updated successfully")
+	return true
 }
 
 func ClearGameTracker() bool {
@@ -285,7 +345,7 @@ func ClearGameTracker() bool {
 
 	tag := common.TagRegex.FindStringSubmatch(appState.CurrentSection.LocalDirectory)
 	tagWildCard := "%" + tag[1] + "%"
-	romName := appState.SelectedFile // Replace with actual name if needed
+	romName := appState.SelectedFile
 
 	var romID string
 	err = tx.QueryRow("SELECT id FROM rom WHERE file_path LIKE ? AND name = ?", tagWildCard, romName).Scan(&romID)
