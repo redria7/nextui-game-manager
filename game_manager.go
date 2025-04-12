@@ -22,6 +22,11 @@ func init() {
 		common.LogStandardFatal("Error loading config", err)
 	}
 
+	if !config.IBackedUpMyShit {
+		ui.ShowMessage("Config file says you didn't back up your shit! Quitting!", "3")
+		common.LogStandardFatal("Back up your shit!", err)
+	}
+
 	common.SetLogLevel(config.LogLevel)
 
 	logger := common.GetLoggerInstance()
@@ -140,8 +145,6 @@ func main() {
 					switch appState.SelectedAction {
 					case models.Actions.DownloadArt:
 						ui.SetScreen(ui.Screens.DownloadArt)
-					case models.Actions.ReplaceArt:
-						ui.SetScreen(ui.Screens.DownloadArt)
 					case models.Actions.RenameRom:
 						ui.SetScreen(ui.Screens.RenameRom)
 					default:
@@ -157,16 +160,23 @@ func main() {
 			case 0:
 				switch appState.SelectedAction {
 				case models.Actions.DeleteArt:
+					utils.DeleteArt()
 					ui.SetScreen(ui.Screens.Actions)
 				case models.Actions.ClearGameTracker:
 					utils.ClearGameTracker()
 					ui.SetScreen(ui.Screens.Actions)
+				case models.Actions.ClearSaveStates:
+					utils.ClearSaveStates()
+					ui.SetScreen(ui.Screens.Actions)
+				case models.Actions.ArchiveRom:
+					utils.ArchiveRom()
+					ui.SetScreen(ui.Screens.GamesList)
 				case models.Actions.DeleteRom:
 					utils.DeleteRom()
-					ui.SetScreen(ui.Screens.Loading)
+					ui.SetScreen(ui.Screens.GamesList)
 				case models.Actions.Nuke:
 					utils.Nuke()
-					ui.SetScreen(ui.Screens.Loading)
+					ui.SetScreen(ui.Screens.GamesList)
 				default:
 					ui.SetScreen(ui.Screens.Actions)
 				}

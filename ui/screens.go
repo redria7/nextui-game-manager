@@ -154,13 +154,18 @@ func actionScreen() shared.Selection {
 		logger.Error("failed to find existing arts", zap.Error(err))
 	}
 
+	hasGameTrackerData := utils.HasGameTrackerData()
+
 	actions := models.ActionKeys
 
 	if existingArtFilename == "" {
 		actions = utils.InsertIntoSlice(actions, 1, "Download Art")
-
 	} else {
-		actions = utils.InsertIntoSlice(actions, 1, "Replace Art", "Delete Art")
+		actions = utils.InsertIntoSlice(actions, 1, "Delete Art")
+	}
+
+	if hasGameTrackerData {
+		actions = utils.InsertIntoSlice(actions, 2, "Clear Game Tracker")
 	}
 
 	return ui.DisplayMinUiList(strings.Join(actions, "\n"), "text", appState.SelectedFile)
@@ -169,9 +174,9 @@ func actionScreen() shared.Selection {
 func confirmationScreen() shared.Selection {
 	appState := state.GetAppState()
 
-	actionDisplay := models.ActionNames[appState.SelectedAction]
+	actionMessage := models.ActionMessages[appState.SelectedAction]
 
-	message := fmt.Sprintf("%s for %s?", actionDisplay, strings.Split(appState.SelectedFile, ".")[0])
+	message := fmt.Sprintf("%s %s?", actionMessage, strings.Split(appState.SelectedFile, ".")[0])
 
 	code, err := ui.ShowMessageWithOptions(message, "0",
 		"--confirm-text", "DO IT!",

@@ -5,32 +5,45 @@ import (
 )
 
 type Action struct {
-	DeleteRom,
 	RenameRom,
 	DownloadArt,
-	ReplaceArt,
 	DeleteArt,
 	ClearGameTracker,
+	ClearSaveStates,
+	ArchiveRom,
+	DeleteRom,
 	Nuke sum.Int[Action]
 }
 
 var Actions = sum.Int[Action]{}.Sum()
 
 var ActionMap = map[string]sum.Int[Action]{
-	"Delete ROM":         Actions.DeleteRom,
 	"Rename ROM":         Actions.RenameRom,
 	"Download Art":       Actions.DownloadArt,
-	"Replace Art":        Actions.ReplaceArt,
 	"Delete Art":         Actions.DeleteArt,
 	"Clear Game Tracker": Actions.ClearGameTracker,
-	"Nuke All":           Actions.Nuke,
+	"Archive ROM":        Actions.ArchiveRom,
+	"Delete ROM":         Actions.DeleteRom,
+	"Nuclear Option":     Actions.Nuke,
+}
+
+var ActionMessages = map[sum.Int[Action]]string{
+	Actions.RenameRom:        "Rename",
+	Actions.DownloadArt:      "Download Art for",
+	Actions.DeleteArt:        "Delete Art for",
+	Actions.ClearGameTracker: "Clear Game Tracker for",
+	Actions.ClearSaveStates:  "Clear Save States",
+	Actions.ArchiveRom:       "Archive",
+	Actions.DeleteRom:        "Delete",
+	Actions.Nuke:             "Nuke",
 }
 
 var ActionKeys = []string{
 	"Rename ROM",
-	"Clear Game Tracker",
+	//"Clear Save States",
+	"Archive ROM",
 	"Delete ROM",
-	"Nuke All",
+	"Nuclear Option",
 }
 
 var ActionNames = map[sum.Int[Action]]string{}
