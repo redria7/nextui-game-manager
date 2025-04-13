@@ -56,6 +56,12 @@ A one-stop pak for all your game management needs.
 
 ---
 
+## Shameless Plug: Want to download ROMs on your device? 
+
+Go snag [Mortar](https://github.com/UncleJunVIP/Mortar.pak): a customizable ROM download client.
+
+---
+
 ## 🌸 Flower Giving Time! 🌸
 
 Like with my other Pak [Mortar](https://github.com/UncleJunVIP/Mortar.pak), I want to also
