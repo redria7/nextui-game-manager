@@ -8,6 +8,13 @@
 A one-stop pak for all your game management needs.
 </h4>
 
+
+![GitHub License](https://img.shields.io/github/license/UncleJunVip/nextui-game-manager?style=for-the-badge)
+![GitHub Release](https://img.shields.io/github/v/release/UncleJunVIP/nextui-game-manager?sort=semver&style=for-the-badge)
+![GitHub Repo stars](https://img.shields.io/github/stars/UncleJunVip/nextui-game-manager?style=for-the-badge)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/UncleJunVIP/nextui-game-manager/total?style=for-the-badge&label=Total%20Downloads)
+
+
 <hr />
 
 <img src=".github/resources/game_tracker_preview.webp" width="auto" alt="Preview">
