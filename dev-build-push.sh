@@ -5,4 +5,4 @@ adb push ./game-manager "/mnt/SDCARD/Tools/tg5040/Game Manager.pak"
 
 echo '\a'
 
-echo "Donzo Washington!"
+echo "Donzo! Game Manager has been pushed to device!"

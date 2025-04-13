@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/models"
+	"github.com/disintegration/imaging"
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
 	"nextui-game-manager/state"
@@ -45,10 +46,12 @@ func FilterList(itemList []models.Item, keywords ...string) []models.Item {
 }
 
 func RefreshRomsList() error {
+	logger := common.GetLoggerInstance()
 	appState := state.GetAppState()
 
 	romEntries, err := GetFileList(appState.CurrentSection.LocalDirectory)
 	if err != nil {
+		logger.Error("Unable to refresh ROMs list", zap.Error(err))
 		return err
 	}
 
@@ -130,6 +133,18 @@ func FindArt() bool {
 			return false
 		}
 
+		src, err := imaging.Open(lastSavedArtPath)
+		if err != nil {
+			logger.Error("Unable to open last saved art", zap.Error(err))
+		}
+
+		dst := imaging.Resize(src, 400, 0, imaging.Lanczos)
+
+		err = imaging.Save(dst, lastSavedArtPath)
+		if err != nil {
+			logger.Error("Unable to save resized last saved art", zap.Error(err))
+		}
+
 		appState.LastSavedArtPath = lastSavedArtPath
 
 		state.UpdateAppState(appState)
@@ -185,36 +200,42 @@ func RenameRom(filename string) {
 	logger.Debug("Renaming Rom", zap.String("oldPath", oldPath), zap.String("newPath", newPath))
 
 	err := moveFile(oldPath, newPath)
-	if err == nil {
+	if err != nil {
+		logger.Error("failed to move file", zap.Error(err))
+		return
+	}
 
-		MigrateGameTrackerData(filename, strings.ReplaceAll(oldPath, common.RomDirectory+"/", ""),
-			strings.ReplaceAll(newPath, common.RomDirectory+"/", ""))
+	gameTrackerOldPath := strings.ReplaceAll(oldPath, common.RomDirectory+"/", "")
+	gameTrackerNewPath := strings.ReplaceAll(newPath, common.RomDirectory+"/", "")
 
-		existingArtFilename, err := FindExistingArt()
-		if err != nil {
-			logger.Error("failed to find existing art", zap.Error(err))
+	logger.Debug("Updating Game Tracker for Rename",
+		zap.String("old_path", oldPath), zap.String("new_path", newPath))
+
+	MigrateGameTrackerData(filename, gameTrackerOldPath, gameTrackerNewPath)
+
+	existingArtFilename, err := FindExistingArt()
+	if err != nil {
+		logger.Error("failed to find existing art", zap.Error(err))
+	} else {
+		oldArtPath := filepath.Join(appState.CurrentSection.LocalDirectory, ".media", existingArtFilename)
+		oldArtExt := filepath.Ext(existingArtFilename)
+		newArtPath := filepath.Join(appState.CurrentSection.LocalDirectory, ".media", filename+oldArtExt)
+
+		if _, err := os.Stat(oldArtPath); os.IsNotExist(err) {
+			logger.Info("No media exists. Skipping...")
 		} else {
-			oldArtPath := filepath.Join(appState.CurrentSection.LocalDirectory, ".media", existingArtFilename)
-			oldArtExt := filepath.Ext(existingArtFilename)
-			newArtPath := filepath.Join(appState.CurrentSection.LocalDirectory, ".media", filename+oldArtExt)
-
-			if _, err := os.Stat(oldArtPath); os.IsNotExist(err) {
-				logger.Info("No media exists. Skipping...")
-				return
-			}
-
 			err := moveFile(oldArtPath, newArtPath)
 			if err != nil {
 				logger.Error("failed to rename existing art", zap.Error(err))
 			}
 		}
+	}
 
-		state.SetSelectedFile(filename)
+	state.SetSelectedFile(filename)
 
-		err = RefreshRomsList()
-		if err != nil {
-			logger.Error("failed to refresh roms list", zap.Error(err))
-		}
+	err = RefreshRomsList()
+	if err != nil {
+		logger.Error("failed to refresh roms list", zap.Error(err))
 	}
 }
 
@@ -267,7 +288,6 @@ func HasGameTrackerData() bool {
 
 func MigrateGameTrackerData(filename string, oldPath string, newPath string) bool {
 	logger := common.GetLoggerInstance()
-	appState := state.GetAppState()
 
 	db, err := sql.Open("sqlite3", gameTrackerDBPath)
 	if err != nil {
@@ -303,8 +323,7 @@ func MigrateGameTrackerData(filename string, oldPath string, newPath string) boo
 		return false
 	}
 
-	_, err = tx.Exec("UPDATE rom SET name = ?, file_path = ? WHERE id = ?", filename,
-		filepath.Join(appState.CurrentSection.LocalDirectory, newPath), romID)
+	_, err = tx.Exec("UPDATE rom SET name = ?, file_path = ? WHERE id = ?", filename, newPath, romID)
 	if err != nil {
 		_ = tx.Rollback()
 		logger.Error("Failed to update game tracker Rom name", zap.Error(err))
@@ -436,9 +455,9 @@ func DeleteRom() {
 	res := common.DeleteFile(romPath)
 
 	if res {
+		DeleteArt()
 		appState.SelectedFile = ""
 		state.UpdateAppState(appState)
-		DeleteArt()
 		err := RefreshRomsList()
 		if err != nil {
 			logger := common.GetLoggerInstance()
