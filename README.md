@@ -39,6 +39,7 @@ A one-stop pak for all your game management needs.
 # Future Features
 
 - [ ] Collection Management
+- [ ] Save File Management
 - [ ] Save State Management
 
 ---
