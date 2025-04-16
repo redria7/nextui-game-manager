@@ -21,19 +21,13 @@ const gameTrackerDBPath = "/mnt/SDCARD/.userdata/shared/game_logs.sqlite"
 const saveFileDirectory = "/mnt/SDCARD/Saves/"
 const saveFileBackupDirectory = "/mnt/SDCARD/Saves/Backups/"
 
-func GetFileList(dirPath string) ([]string, error) {
+func GetFileList(dirPath string) ([]os.DirEntry, error) {
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read directory: %w", err)
 	}
 
-	var files []string
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			files = append(files, entry.Name())
-		}
-	}
-	return files, nil
+	return entries, nil
 }
 
 func FilterList(itemList []models.Item, keywords ...string) []models.Item {
@@ -65,14 +59,15 @@ func RefreshRomsList() error {
 	var displayNameToFilename = make(map[string]string)
 
 	for _, entry := range romEntries {
+		displayName := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
 		roms = append(roms, models.Item{
-			Filename: entry,
+			DisplayName: displayName,
+			Filename:    entry.Name(),
+			IsDirectory: entry.IsDir(),
+			Path:        filepath.Join(appState.CurrentSection.LocalDirectory, entry.Name()),
 		})
-	}
 
-	for _, item := range roms {
-		itemName := strings.TrimSuffix(item.Filename, filepath.Ext(item.Filename))
-		displayNameToFilename[itemName] = item.Filename
+		displayNameToFilename[displayName] = entry.Name()
 	}
 
 	appState.CurrentItemListWithExtensionMap = displayNameToFilename
@@ -215,8 +210,8 @@ func FindExistingArt() (string, error) {
 	artFilenameNoExtension := strings.ReplaceAll(appState.SelectedFile, filepath.Ext(appState.SelectedFile), "")
 
 	for _, art := range artList {
-		if strings.ReplaceAll(art, filepath.Ext(art), "") == artFilenameNoExtension {
-			artFilename = art
+		if strings.ReplaceAll(art.Name(), filepath.Ext(art.Name()), "") == artFilenameNoExtension {
+			artFilename = art.Name()
 			break
 		}
 	}
@@ -236,7 +231,7 @@ func RenameRom(filename string) {
 
 	logger.Debug("Renaming Rom", zap.String("oldPath", oldPath), zap.String("newPath", newPath))
 
-	err := moveFile(oldPath, newPath)
+	err := MoveFile(oldPath, newPath)
 	if err != nil {
 		logger.Error("failed to move file", zap.Error(err))
 		return
@@ -261,7 +256,7 @@ func RenameRom(filename string) {
 		if _, err := os.Stat(oldArtPath); os.IsNotExist(err) {
 			logger.Info("No media exists. Skipping...")
 		} else {
-			err := moveFile(oldArtPath, newArtPath)
+			err := MoveFile(oldArtPath, newArtPath)
 			if err != nil {
 				logger.Error("failed to rename existing art", zap.Error(err))
 			}
@@ -300,7 +295,7 @@ func RenameSaveFile(filename string) {
 		return
 	}
 
-	err = moveFile(oldPath, newPath)
+	err = MoveFile(oldPath, newPath)
 	if err != nil {
 		logger.Error("failed to rename save file", zap.Error(err))
 		return
@@ -491,7 +486,7 @@ func ArchiveRom() {
 
 	logger.Debug("Archiving Rom", zap.String("oldPath", oldPath), zap.String("newPath", newPath))
 
-	err := moveFile(oldPath, newPath)
+	err := MoveFile(oldPath, newPath)
 	if err == nil {
 		existingArtFilename, err := FindExistingArt()
 		if err != nil {
@@ -500,7 +495,7 @@ func ArchiveRom() {
 			oldArtPath := filepath.Join(appState.CurrentSection.LocalDirectory, ".media", existingArtFilename)
 			newArtPath := filepath.Join(archiveRoot, oldPathSubdirectory, ".media", existingArtFilename)
 
-			err := moveFile(oldArtPath, newArtPath)
+			err := MoveFile(oldArtPath, newArtPath)
 			if err != nil {
 				logger.Error("failed to archive existing art", zap.Error(err))
 			}
@@ -577,7 +572,7 @@ func copyFile(srcPath, dstPath string) error {
 	return nil
 }
 
-func moveFile(oldPath, newPath string) error {
+func MoveFile(oldPath, newPath string) error {
 	logger := common.GetLoggerInstance()
 
 	dir := filepath.Dir(newPath)

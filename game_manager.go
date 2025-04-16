@@ -11,6 +11,7 @@ import (
 	"nextui-game-manager/ui"
 	"nextui-game-manager/utils"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -133,11 +134,37 @@ func main() {
 		case ui.Screens.GamesList:
 			switch selection.ExitCode {
 			case 0:
-				state.SetSelectedFile(strings.TrimSpace(selection.Value))
+				selection := strings.TrimSpace(selection.Value)
+
+				isDirectory := false
+				for _, item := range appState.CurrentItemsList {
+					if item.Filename == selection && item.IsDirectory {
+						appState.PreviousSection = appState.CurrentSection
+						appState.CurrentSection = models.Section{
+							Name:           item.Filename,
+							LocalDirectory: item.Path,
+						}
+						isDirectory = true
+						state.UpdateAppState(appState)
+						break
+					}
+				}
+
+				if appState.PreviousSection.Name != "" && isDirectory {
+					ui.SetScreen(ui.Screens.Loading)
+					continue // Nested Directory
+				}
+
+				state.SetSelectedFile(selection)
 
 				ui.SetScreen(ui.Screens.Actions)
 			case 2:
-				if appState.SearchFilter != "" {
+				if appState.PreviousSection.Name != "" {
+					state.SetSection(appState.PreviousSection)
+					appState.PreviousSection = models.Section{}
+					state.UpdateAppState(appState)
+					ui.SetScreen(ui.Screens.Loading)
+				} else if appState.SearchFilter != "" {
 					state.SetSearchFilter("")
 				} else {
 					ui.SetScreen(ui.Screens.MainMenu)
@@ -166,13 +193,10 @@ func main() {
 					CollectionFilePath: collection.Path,
 				})
 				ui.SetScreen(ui.Screens.CollectionManagement)
-			case 2:
-				if appState.SearchFilter != "" {
-					state.SetSearchFilter("")
-				} else {
-					ui.SetScreen(ui.Screens.MainMenu)
-				}
 			default:
+				appState.RomDirectories = appState.RomDirectories[1:]
+				state.UpdateAppState(appState)
+				ui.ShowMessage("No collections present.", "3")
 				ui.SetScreen(ui.Screens.MainMenu)
 			}
 
@@ -181,14 +205,6 @@ func main() {
 			case 0:
 				ui.SetScreen(ui.Screens.Actions)
 			case 4:
-				selection := strings.TrimSpace(selection.Value)
-				collection := appState.CollectionDirectoryMap[selection]
-
-				state.SetSection(models.Section{
-					Name:               collection.DisplayName,
-					CollectionFilePath: collection.Path,
-				})
-
 				ui.SetScreen(ui.Screens.CollectionOptions)
 			default:
 				ui.SetScreen(ui.Screens.CollectionsList)
@@ -209,8 +225,44 @@ func main() {
 				}
 			default:
 				ui.SetScreen(ui.Screens.CollectionManagement)
+			}
+
+		case ui.Screens.RenameCollection:
+			switch selection.ExitCode {
+			case 0:
+				newName := strings.TrimSpace(selection.Value)
+
+				if _, err := os.Stat(appState.CurrentSection.CollectionFilePath); os.IsNotExist(err) {
+					logger.Info("Collection no longer exists. Skipping...")
+				} else {
+					path.Dir(appState.CurrentSection.CollectionFilePath)
+					newArtPath := path.Join(
+						path.Dir(appState.CurrentSection.CollectionFilePath),
+						newName+".txt",
+					)
+
+					err := utils.MoveFile(appState.CurrentSection.CollectionFilePath, newArtPath)
+					if err != nil {
+						logger.Error("failed to rename collection", zap.Error(err))
+					} else {
+
+						appState.CollectionDirectoryMap[newName] = shared.RomDirectory{
+							DisplayName: newName,
+							Path:        newArtPath,
+						}
+
+						state.UpdateAppState(appState)
+
+						state.SetSection(models.Section{
+							Name:               newName,
+							CollectionFilePath: newArtPath,
+						})
+					}
+				}
 
 			}
+
+			ui.SetScreen(ui.Screens.CollectionOptions)
 
 		case ui.Screens.SearchBox:
 			switch selection.ExitCode {
@@ -263,6 +315,10 @@ func main() {
 				case models.Actions.Nuke:
 					utils.Nuke()
 					ui.SetScreen(ui.Screens.GamesList)
+				case models.Actions.CollectionDelete:
+					common.DeleteFile(appState.CurrentSection.CollectionFilePath)
+					ui.SetScreen(ui.Screens.CollectionsList)
+
 				default:
 					ui.SetScreen(ui.Screens.Actions)
 				}

@@ -16,13 +16,16 @@ type AppState struct {
 	CollectionDirectories  []shared.RomDirectory
 	CollectionDirectoryMap map[string]shared.RomDirectory
 
-	CurrentSection                  Section
+	CurrentSection  Section
+	PreviousSection Section
+
 	CurrentItemsList                shared.Items
 	CurrentItemListWithExtensionMap map[string]string
-	SearchFilter                    string
-	SelectedFile                    string
-	SelectedFileHasArt              bool
-	SelectedAction                  sum.Int[Action]
+
+	SearchFilter       string
+	SelectedFile       string
+	SelectedFileHasArt bool
+	SelectedAction     sum.Int[Action]
 
 	LastSavedArtPath string
 }

@@ -118,6 +118,10 @@ func collectionList() (shared.ListSelection, error) {
 		common.LogStandardFatal("Error loading fetching Collection directories", err)
 	}
 
+	if len(fb.Items) == 0 {
+		return shared.ListSelection{ExitCode: 404}, nil
+	}
+
 	itemList := fb.Items
 	var collectionDirectory []shared.RomDirectory
 	collectionDirectoryMap := make(map[string]shared.RomDirectory)
@@ -179,7 +183,39 @@ func collectionOptions() (shared.ListSelection, error) {
 }
 
 func renameCollection() (shared.ListSelection, error) {
-	return shared.ListSelection{ExitCode: 0}, nil
+	logger := common.GetLoggerInstance()
+	appState := state.GetAppState()
+
+	args := []string{"--initial-value", appState.CurrentSection.Name, "--title", "Rename ROM", "--show-hardware-group"}
+
+	cmd := exec.Command("minui-keyboard", args...)
+	cmd.Env = os.Environ()
+	cmd.Env = os.Environ()
+
+	var stdoutbuf, stderrbuf bytes.Buffer
+	cmd.Stdout = &stdoutbuf
+	cmd.Stderr = &stderrbuf
+
+	if errors.Is(cmd.Err, exec.ErrDot) {
+		cmd.Err = nil
+	}
+
+	err := cmd.Start()
+	if err != nil {
+		logger.Fatal("failed to start minui-keyboard", zap.Error(err))
+	}
+
+	err = cmd.Wait()
+	if err != nil && cmd.ProcessState.ExitCode() == 1 {
+		logger.Error("Error with keyboard", zap.String("error", stderrbuf.String()))
+		ShowMessage("Unable to open keyboard!", "3")
+		return shared.ListSelection{ExitCode: 1}, err
+	}
+
+	outValue := stdoutbuf.String()
+	_ = stderrbuf.String()
+
+	return shared.ListSelection{Value: strings.TrimSpace(outValue), ExitCode: cmd.ProcessState.ExitCode()}, nil
 }
 
 func collectionManagement() (shared.ListSelection, error) {
@@ -294,7 +330,12 @@ func confirmationScreen() (shared.ListSelection, error) {
 
 	actionMessage := models.ActionMessages[appState.SelectedAction]
 
-	message := fmt.Sprintf("%s %s?", actionMessage, strings.Split(appState.SelectedFile, ".")[0])
+	target := strings.Split(appState.SelectedFile, ".")[0]
+	if appState.SelectedAction == models.Actions.CollectionDelete {
+		target = appState.CurrentSection.Name
+	}
+
+	message := fmt.Sprintf("%s %s?", actionMessage, target)
 
 	code, err := commonUI.ShowMessageWithOptions(message, "0",
 		"--confirm-text", "DO IT!",
