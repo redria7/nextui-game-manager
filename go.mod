@@ -2,8 +2,9 @@ module nextui-game-manager
 
 go 1.24
 
+replace github.com/UncleJunVIP/nextui-pak-shared-functions => ../nextui-pak-shared-functions // TODO remove this before committing!
+
 require (
-	github.com/UncleJunVIP/nextui-pak-shared-functions v0.0.0-20250412031208-66aefeb92629
 	github.com/disintegration/imaging v1.6.2
 	github.com/mattn/go-sqlite3 v1.14.27
 	go.uber.org/atomic v1.11.0
@@ -13,10 +14,11 @@ require (
 )
 
 require (
-	github.com/PuerkitoBio/goquery v1.9.2 // indirect
+	github.com/PuerkitoBio/goquery v1.10.3 // indirect
+	github.com/UncleJunVIP/nextui-pak-shared-functions v1.0.0 // indirect
 	github.com/activcoding/HTML-Table-to-JSON v0.0.4 // indirect
-	github.com/andybalholm/cascadia v1.3.2 // indirect
-	go.uber.org/multierr v1.10.0 // indirect
-	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
-	golang.org/x/net v0.24.0 // indirect
+	github.com/andybalholm/cascadia v1.3.3 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
+	golang.org/x/image v0.18.0 // indirect
+	golang.org/x/net v0.39.0 // indirect
 )

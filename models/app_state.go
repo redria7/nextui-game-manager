@@ -13,6 +13,9 @@ type AppState struct {
 	RomDirectories  []shared.RomDirectory
 	RomDirectoryMap map[string]shared.RomDirectory
 
+	CollectionDirectories  []shared.RomDirectory
+	CollectionDirectoryMap map[string]shared.RomDirectory
+
 	CurrentSection                  Section
 	CurrentItemsList                shared.Items
 	CurrentItemListWithExtensionMap map[string]string

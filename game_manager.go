@@ -2,7 +2,9 @@ package main
 
 import (
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
-	sharedModels "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
+	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
+	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
+	commonUI "github.com/UncleJunVIP/nextui-pak-shared-functions/ui"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
 	"nextui-game-manager/state"
@@ -32,16 +34,39 @@ func init() {
 	state.SetConfig(config)
 
 	appState := state.GetAppState()
+	fb := filebrowser.NewFileBrowser(logger)
 
-	romDirectories, err := common.FetchRomDirectories()
+	var romDirectories []shared.RomDirectory
+
+	err = fb.CWD(common.CollectionDirectory)
 	if err != nil {
-		logger.Error("Issue fetching rom directories", zap.Error(err))
+		logger.Info("Unable to fetch Collection directories! Continuing without them", zap.Error(err))
 	}
 
-	romDirectoryMap := make(map[string]sharedModels.RomDirectory)
+	if len(fb.Items) > 0 {
+		romDirectories = append(romDirectories, shared.RomDirectory{
+			DisplayName: "Collections",
+			Tag:         "Collections",
+			Path:        common.CollectionDirectory,
+		})
+	}
 
-	for _, dir := range romDirectories {
-		romDirectoryMap[dir.DisplayName] = dir
+	err = fb.CWD(common.RomDirectory)
+	if err != nil {
+		_, _ = commonUI.ShowMessage("Unable to fetch ROM directories! Quitting!", "3")
+		common.LogStandardFatal("Error loading fetching ROM directories", err)
+	}
+
+	romDirectoryMap := make(map[string]shared.RomDirectory)
+
+	for _, item := range fb.Items {
+		romDirectory := shared.RomDirectory{
+			DisplayName: item.DisplayName,
+			Tag:         item.Tag,
+			Path:        item.Path,
+		}
+		romDirectories = append(romDirectories, romDirectory)
+		romDirectoryMap[item.DisplayName] = romDirectory
 	}
 
 	appState.RomDirectories = romDirectories
@@ -62,7 +87,10 @@ func main() {
 	for {
 		appState := state.GetAppState()
 
-		selection := ui.ScreenFuncs[appState.CurrentScreen]()
+		selection, err := ui.ScreenFuncs[appState.CurrentScreen]()
+		if err != nil {
+			logger.Error("Error loading screen")
+		}
 
 		// Hacky way to handle bad input on deep sleep
 		if strings.Contains(selection.Value, "SetRawBrightness") ||
@@ -72,10 +100,15 @@ func main() {
 
 		switch appState.CurrentScreen {
 		case ui.Screens.MainMenu:
-			switch selection.Code {
+			switch selection.ExitCode {
 			case 0:
 				ui.SetScreen(ui.Screens.Loading)
 				selection := strings.TrimSpace(selection.Value)
+
+				if selection == "Collections" {
+					ui.SetScreen(ui.Screens.CollectionsList)
+					continue
+				}
 
 				directory := appState.RomDirectoryMap[selection]
 
@@ -89,7 +122,7 @@ func main() {
 			}
 
 		case ui.Screens.Loading:
-			switch selection.Code {
+			switch selection.ExitCode {
 			case 0:
 				ui.SetScreen(ui.Screens.GamesList)
 			case 1:
@@ -98,7 +131,7 @@ func main() {
 			}
 
 		case ui.Screens.GamesList:
-			switch selection.Code {
+			switch selection.ExitCode {
 			case 0:
 				state.SetSelectedFile(strings.TrimSpace(selection.Value))
 
@@ -122,8 +155,65 @@ func main() {
 				}
 			}
 
+		case ui.Screens.CollectionsList:
+			switch selection.ExitCode {
+			case 0:
+				selection := strings.TrimSpace(selection.Value)
+				collection := appState.CollectionDirectoryMap[selection]
+
+				state.SetSection(models.Section{
+					Name:               collection.DisplayName,
+					CollectionFilePath: collection.Path,
+				})
+				ui.SetScreen(ui.Screens.CollectionManagement)
+			case 2:
+				if appState.SearchFilter != "" {
+					state.SetSearchFilter("")
+				} else {
+					ui.SetScreen(ui.Screens.MainMenu)
+				}
+			default:
+				ui.SetScreen(ui.Screens.MainMenu)
+			}
+
+		case ui.Screens.CollectionManagement:
+			switch selection.ExitCode {
+			case 0:
+				ui.SetScreen(ui.Screens.Actions)
+			case 4:
+				selection := strings.TrimSpace(selection.Value)
+				collection := appState.CollectionDirectoryMap[selection]
+
+				state.SetSection(models.Section{
+					Name:               collection.DisplayName,
+					CollectionFilePath: collection.Path,
+				})
+
+				ui.SetScreen(ui.Screens.CollectionOptions)
+			default:
+				ui.SetScreen(ui.Screens.CollectionsList)
+			}
+
+		case ui.Screens.CollectionOptions:
+			switch selection.ExitCode {
+			case 0:
+				action := strings.TrimSpace(selection.Value)
+
+				state.SetSelectedAction(action)
+
+				switch models.ActionMap[action] {
+				case models.Actions.CollectionRename:
+					ui.SetScreen(ui.Screens.RenameCollection)
+				case models.Actions.CollectionDelete:
+					ui.SetScreen(ui.Screens.Confirm)
+				}
+			default:
+				ui.SetScreen(ui.Screens.CollectionManagement)
+
+			}
+
 		case ui.Screens.SearchBox:
-			switch selection.Code {
+			switch selection.ExitCode {
 			case 0:
 				state.SetSearchFilter(strings.TrimSpace(selection.Value))
 			case 1, 2, 3:
@@ -133,7 +223,7 @@ func main() {
 			ui.SetScreen(ui.Screens.GamesList)
 
 		case ui.Screens.Actions:
-			switch selection.Code {
+			switch selection.ExitCode {
 			case 0:
 				{
 					state.SetSelectedAction(strings.TrimSpace(selection.Value))
@@ -152,7 +242,7 @@ func main() {
 			}
 
 		case ui.Screens.Confirm:
-			switch selection.Code {
+			switch selection.ExitCode {
 			case 0:
 				switch appState.SelectedAction {
 				case models.Actions.DeleteArt:
@@ -181,14 +271,14 @@ func main() {
 			}
 
 		case ui.Screens.RenameRom:
-			switch selection.Code {
+			switch selection.ExitCode {
 			case 0:
 				utils.RenameRom(selection.Value)
 			}
 			ui.SetScreen(ui.Screens.Actions)
 
 		case ui.Screens.DownloadArt:
-			switch selection.Code {
+			switch selection.ExitCode {
 			case 0:
 				logger.Debug("Showing Art Download", zap.String("last_saved_art_path", state.GetAppState().LastSavedArtPath))
 

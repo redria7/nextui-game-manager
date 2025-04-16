@@ -1,12 +1,15 @@
 package utils
 
 import (
+	"bufio"
 	"database/sql"
+	"fmt"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"github.com/disintegration/imaging"
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
+	"io"
 	"nextui-game-manager/state"
 	"os"
 	"path/filepath"
@@ -14,6 +17,9 @@ import (
 )
 
 const gameTrackerDBPath = "/mnt/SDCARD/.userdata/shared/game_logs.sqlite"
+
+const saveFileDirectory = "/mnt/SDCARD/Saves/"
+const saveFileBackupDirectory = "/mnt/SDCARD/Saves/Backups/"
 
 func GetFileList(dirPath string) ([]string, error) {
 	entries, err := os.ReadDir(dirPath)
@@ -78,6 +84,35 @@ func RefreshRomsList() error {
 	return nil
 }
 
+func LoadCollectionList(collectionPath string) (map[string]string, error) {
+	file, err := os.Open(collectionPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open collection file: %w", err)
+	}
+	defer file.Close()
+
+	result := make(map[string]string)
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" {
+			continue
+		}
+
+		base := filepath.Base(line)
+		nameWithoutExt := strings.TrimSuffix(base, filepath.Ext(base))
+
+		result[nameWithoutExt] = line
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("failed to scan collection file: %w", err)
+	}
+
+	return result, nil
+}
+
 func InsertIntoSlice(s []string, index int, values ...string) []string {
 	if index < 0 {
 		index = 0
@@ -99,7 +134,7 @@ func FindArt() bool {
 		return false
 	}
 
-	client := common.NewThumbnailClient()
+	client := common.NewThumbnailClient(appState.Config.ArtDownloadType)
 	section := client.BuildThumbnailSection(tag[1])
 
 	artList, err := client.ListDirectory(section)
@@ -238,6 +273,37 @@ func RenameRom(filename string) {
 	err = RefreshRomsList()
 	if err != nil {
 		logger.Error("failed to refresh roms list", zap.Error(err))
+	}
+}
+
+func RenameSaveFile(filename string) {
+	logger := common.GetLoggerInstance()
+	appState := state.GetAppState()
+
+	tag := common.TagRegex.FindStringSubmatch(appState.CurrentSection.LocalDirectory)
+
+	if tag == nil {
+		return
+	}
+
+	selectedFile := appState.CurrentItemListWithExtensionMap[appState.SelectedFile]
+
+	oldPath := filepath.Join(saveFileDirectory, tag[1], selectedFile)
+	backupPath := filepath.Join(saveFileBackupDirectory, tag[1], selectedFile)
+
+	oldExt := filepath.Ext(selectedFile)
+	newPath := filepath.Join(saveFileDirectory, tag[1], filename+oldExt)
+
+	err := copyFile(oldPath, backupPath)
+	if err != nil {
+		logger.Error("failed to copy save file", zap.Error(err))
+		return
+	}
+
+	err = moveFile(oldPath, newPath)
+	if err != nil {
+		logger.Error("failed to rename save file", zap.Error(err))
+		return
 	}
 }
 
@@ -477,6 +543,38 @@ func Nuke() {
 		logger := common.GetLoggerInstance()
 		logger.Error("failed to refresh roms", zap.Error(err))
 	}
+}
+
+func copyFile(srcPath, dstPath string) error {
+	logger := common.GetLoggerInstance()
+
+	srcFile, err := os.Open(srcPath)
+	if err != nil {
+		logger.Error("Failed to open source file", zap.Error(err))
+		return err
+	}
+	defer srcFile.Close()
+
+	err = os.MkdirAll(filepath.Dir(dstPath), os.ModePerm)
+	if err != nil {
+		logger.Error("Failed to create destination directory", zap.Error(err))
+		return err
+	}
+
+	dstFile, err := os.Create(dstPath)
+	if err != nil {
+		logger.Error("Failed to create destination file", zap.Error(err))
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	if err != nil {
+		logger.Error("Failed to copy file contents", zap.Error(err))
+		return err
+	}
+
+	return nil
 }
 
 func moveFile(oldPath, newPath string) error {

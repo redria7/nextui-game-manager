@@ -8,7 +8,13 @@ type Screen struct {
 	GamesList,
 	SearchBox,
 	Actions,
+	AddToCollection,
 	Confirm,
 	RenameRom,
-	DownloadArt sum.Int[Screen]
+	DownloadArt,
+
+	CollectionsList,
+	CollectionOptions,
+	RenameCollection,
+	CollectionManagement sum.Int[Screen]
 }

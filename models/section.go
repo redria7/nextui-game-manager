@@ -3,8 +3,9 @@ package models
 import "go.uber.org/zap/zapcore"
 
 type Section struct {
-	Name           string `yaml:"section_name"`
-	LocalDirectory string `yaml:"local_directory"`
+	Name               string `yaml:"section_name"`
+	LocalDirectory     string `yaml:"local_directory"`
+	CollectionFilePath string `yaml:"collection_file_path"`
 }
 
 type Sections []Section
