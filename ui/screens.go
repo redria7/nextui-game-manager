@@ -94,16 +94,32 @@ func gamesList() (shared.ListSelection, error) {
 		return shared.ListSelection{ExitCode: 404}, nil
 	}
 
+	var directoryEntries shared.Items
 	var itemEntries shared.Items
 
 	for _, item := range itemList {
+		if strings.HasPrefix(item.Filename, ".") { // Skip hidden files
+			continue
+		}
+
 		itemName := strings.TrimSuffix(item.Filename, filepath.Ext(item.Filename))
+
+		if item.IsDirectory {
+			itemName = "/" + itemName
+			directoryEntries = append(directoryEntries, shared.Item{
+				DisplayName: itemName,
+			})
+			continue
+		}
+
 		itemEntries = append(itemEntries, shared.Item{
 			DisplayName: itemName,
 		})
 	}
 
-	return commonUI.DisplayList(itemEntries, title, "SEARCH", extraArgs...)
+	allEntries := append(directoryEntries, itemEntries...)
+
+	return commonUI.DisplayList(allEntries, title, "SEARCH", extraArgs...)
 }
 
 func collectionList() (shared.ListSelection, error) {

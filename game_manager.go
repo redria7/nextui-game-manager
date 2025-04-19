@@ -135,6 +135,7 @@ func main() {
 			switch selection.ExitCode {
 			case 0:
 				selection := strings.TrimSpace(selection.Value)
+				selection = strings.ReplaceAll(selection, "/", "")
 
 				isDirectory := false
 				for _, item := range appState.CurrentItemsList {
