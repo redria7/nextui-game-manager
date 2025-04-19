@@ -61,13 +61,15 @@ func init() {
 	romDirectoryMap := make(map[string]shared.RomDirectory)
 
 	for _, item := range fb.Items {
-		romDirectory := shared.RomDirectory{
-			DisplayName: item.DisplayName,
-			Tag:         item.Tag,
-			Path:        item.Path,
+		if item.IsDirectory {
+			romDirectory := shared.RomDirectory{
+				DisplayName: item.DisplayName,
+				Tag:         item.Tag,
+				Path:        item.Path,
+			}
+			romDirectories = append(romDirectories, romDirectory)
+			romDirectoryMap[item.DisplayName] = romDirectory
 		}
-		romDirectories = append(romDirectories, romDirectory)
-		romDirectoryMap[item.DisplayName] = romDirectory
 	}
 
 	appState.RomDirectories = romDirectories
