@@ -45,40 +45,6 @@ func FilterList(itemList []models.Item, keywords ...string) []models.Item {
 	return filteredItemList
 }
 
-func RefreshRomsList() error {
-	logger := common.GetLoggerInstance()
-	appState := state.GetAppState()
-
-	romEntries, err := GetFileList(appState.CurrentSection.LocalDirectory)
-	if err != nil {
-		logger.Error("Unable to refresh ROMs list", zap.Error(err))
-		return err
-	}
-
-	var roms models.Items
-	var displayNameToFilename = make(map[string]string)
-
-	for _, entry := range romEntries {
-		displayName := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
-		roms = append(roms, models.Item{
-			DisplayName: displayName,
-			Filename:    entry.Name(),
-			IsDirectory: entry.IsDir(),
-			Path:        filepath.Join(appState.CurrentSection.LocalDirectory, entry.Name()),
-		})
-
-		displayNameToFilename[displayName] = entry.Name()
-	}
-
-	appState.CurrentItemListWithExtensionMap = displayNameToFilename
-
-	appState.CurrentItemsList = roms
-
-	state.UpdateAppState(appState)
-
-	return nil
-}
-
 func LoadCollectionList(collectionPath string) (map[string]string, error) {
 	file, err := os.Open(collectionPath)
 	if err != nil {
@@ -119,27 +85,21 @@ func InsertIntoSlice(s []string, index int, values ...string) []string {
 	return append(s[:index], append(values, s[index:]...)...)
 }
 
-func FindArt() bool {
+func FindArt(selectedFile string, romDirectory models.RomDirectory) (lastSavedArtPath string, err error) {
 	logger := common.GetLoggerInstance()
 	appState := state.GetAppState()
 
-	tag := common.TagRegex.FindStringSubmatch(appState.CurrentSection.LocalDirectory)
-
-	if tag == nil {
-		return false
-	}
-
 	client := common.NewThumbnailClient(appState.Config.ArtDownloadType)
-	section := client.BuildThumbnailSection(tag[1])
+	section := client.BuildThumbnailSection(romDirectory.Tag)
 
 	artList, err := client.ListDirectory(section)
 
 	if err != nil {
 		logger.Info("Unable to fetch artlist", zap.Error(err))
-		return false
+		return "", err
 	}
 
-	noExtension := strings.TrimSuffix(appState.SelectedFile, filepath.Ext(appState.SelectedFile))
+	noExtension := strings.TrimSuffix(selectedFile, filepath.Ext(selectedFile))
 
 	var matched models.Item
 
@@ -151,22 +111,18 @@ func FindArt() bool {
 		}
 	}
 
-	if matched.Filename == "" {
-		// TODO Levenshtein Distance support at some point
-	}
-
 	if matched.Filename != "" {
 		lastSavedArtPath, err := client.DownloadFileRename(section.HostSubdirectory,
-			filepath.Join(appState.CurrentSection.LocalDirectory, ".media"), matched.Filename, appState.SelectedFile)
+			filepath.Join(romDirectory.Path, ".media"), matched.Filename, selectedFile)
 
 		if err != nil {
-			return false
+			return "", err
 		}
 
 		src, err := imaging.Open(lastSavedArtPath)
 		if err != nil {
 			logger.Error("Unable to open last saved art", zap.Error(err))
-			return false
+			return "", err
 		}
 
 		dst := imaging.Resize(src, 400, 0, imaging.Lanczos)
@@ -174,31 +130,26 @@ func FindArt() bool {
 		err = imaging.Save(dst, lastSavedArtPath)
 		if err != nil {
 			logger.Error("Unable to save resized last saved art", zap.Error(err))
-			return false
+			return "", err
 		}
 
-		appState.LastSavedArtPath = lastSavedArtPath
-
-		state.UpdateAppState(appState)
-
-		return true
+		return lastSavedArtPath, nil
 	}
 
-	return false
+	return "", nil
 }
 
-func FindExistingArt() (string, error) {
+func FindExistingArt(selectedFile string, romDirectory models.RomDirectory) (string, error) {
 	logger := common.GetLoggerInstance()
-	appState := state.GetAppState()
 
-	mediaDir := filepath.Join(appState.CurrentSection.LocalDirectory, ".media")
+	mediaDir := filepath.Join(romDirectory.Path, ".media")
 
 	if _, err := os.Stat(mediaDir); os.IsNotExist(err) {
-		logger.Info("No media directory found", zap.String("current_directory", appState.CurrentSection.LocalDirectory))
+		logger.Info("No media directory found", zap.String("current_directory", romDirectory.Path))
 		return "", nil
 	}
 
-	artDir := filepath.Join(appState.CurrentSection.LocalDirectory, ".media")
+	artDir := filepath.Join(romDirectory.Path, ".media")
 	artList, err := GetFileList(artDir)
 	if err != nil {
 		logger.Error("failed to list arts", zap.Error(err))
@@ -207,7 +158,7 @@ func FindExistingArt() (string, error) {
 
 	artFilename := ""
 
-	artFilenameNoExtension := strings.ReplaceAll(appState.SelectedFile, filepath.Ext(appState.SelectedFile), "")
+	artFilenameNoExtension := strings.ReplaceAll(selectedFile, filepath.Ext(selectedFile), "")
 
 	for _, art := range artList {
 		if strings.ReplaceAll(art.Name(), filepath.Ext(art.Name()), "") == artFilenameNoExtension {
@@ -219,15 +170,12 @@ func FindExistingArt() (string, error) {
 	return artFilename, err
 }
 
-func RenameRom(filename string) {
+func RenameRom(filename string, romDirectory models.RomDirectory) {
 	logger := common.GetLoggerInstance()
-	appState := state.GetAppState()
 
-	selectedFile := appState.CurrentItemListWithExtensionMap[appState.SelectedFile]
-
-	oldPath := filepath.Join(appState.CurrentSection.LocalDirectory, selectedFile)
-	oldExt := filepath.Ext(selectedFile)
-	newPath := filepath.Join(appState.CurrentSection.LocalDirectory, filename+oldExt)
+	oldPath := filepath.Join(romDirectory.Path, filename)
+	oldExt := filepath.Ext(filename)
+	newPath := filepath.Join(romDirectory.Path, filename+oldExt)
 
 	logger.Debug("Renaming Rom", zap.String("oldPath", oldPath), zap.String("newPath", newPath))
 
@@ -245,13 +193,13 @@ func RenameRom(filename string) {
 
 	MigrateGameTrackerData(filename, gameTrackerOldPath, gameTrackerNewPath)
 
-	existingArtFilename, err := FindExistingArt()
+	existingArtFilename, err := FindExistingArt(filename, romDirectory)
 	if err != nil {
 		logger.Error("failed to find existing art", zap.Error(err))
 	} else {
-		oldArtPath := filepath.Join(appState.CurrentSection.LocalDirectory, ".media", existingArtFilename)
+		oldArtPath := filepath.Join(romDirectory.Path, ".media", existingArtFilename)
 		oldArtExt := filepath.Ext(existingArtFilename)
-		newArtPath := filepath.Join(appState.CurrentSection.LocalDirectory, ".media", filename+oldArtExt)
+		newArtPath := filepath.Join(romDirectory.Path, ".media", filename+oldArtExt)
 
 		if _, err := os.Stat(oldArtPath); os.IsNotExist(err) {
 			logger.Info("No media exists. Skipping...")
@@ -262,32 +210,16 @@ func RenameRom(filename string) {
 			}
 		}
 	}
-
-	state.SetSelectedFile(filename)
-
-	err = RefreshRomsList()
-	if err != nil {
-		logger.Error("failed to refresh roms list", zap.Error(err))
-	}
 }
 
-func RenameSaveFile(filename string) {
+func RenameSaveFile(filename string, romDirectory models.RomDirectory) {
 	logger := common.GetLoggerInstance()
-	appState := state.GetAppState()
 
-	tag := common.TagRegex.FindStringSubmatch(appState.CurrentSection.LocalDirectory)
+	oldPath := filepath.Join(saveFileDirectory, romDirectory.Tag, filename)
+	backupPath := filepath.Join(saveFileBackupDirectory, romDirectory.Tag, filename)
 
-	if tag == nil {
-		return
-	}
-
-	selectedFile := appState.CurrentItemListWithExtensionMap[appState.SelectedFile]
-
-	oldPath := filepath.Join(saveFileDirectory, tag[1], selectedFile)
-	backupPath := filepath.Join(saveFileBackupDirectory, tag[1], selectedFile)
-
-	oldExt := filepath.Ext(selectedFile)
-	newPath := filepath.Join(saveFileDirectory, tag[1], filename+oldExt)
+	oldExt := filepath.Ext(filename)
+	newPath := filepath.Join(saveFileDirectory, romDirectory.Tag, filename+oldExt)
 
 	err := copyFile(oldPath, backupPath)
 	if err != nil {
@@ -302,11 +234,10 @@ func RenameSaveFile(filename string) {
 	}
 }
 
-func DeleteArt() {
+func DeleteArt(filename string, romDirectory models.RomDirectory) {
 	logger := common.GetLoggerInstance()
-	appState := state.GetAppState()
 
-	art, err := FindExistingArt()
+	art, err := FindExistingArt(filename, romDirectory)
 	if err != nil {
 		logger.Error("failed to find existing art", zap.Error(err))
 		return
@@ -315,13 +246,12 @@ func DeleteArt() {
 		return
 	}
 
-	artPath := filepath.Join(appState.CurrentSection.LocalDirectory, ".media", art)
+	artPath := filepath.Join(romDirectory.Path, ".media", art)
 	common.DeleteFile(artPath)
 }
 
-func HasGameTrackerData() bool {
+func HasGameTrackerData(romName string, romDirectory models.RomDirectory) bool {
 	logger := common.GetLoggerInstance()
-	appState := state.GetAppState()
 
 	db, err := sql.Open("sqlite3", gameTrackerDBPath)
 	if err != nil {
@@ -335,9 +265,8 @@ func HasGameTrackerData() bool {
 		}
 	}(db)
 
-	tag := common.TagRegex.FindStringSubmatch(appState.CurrentSection.LocalDirectory)
+	tag := common.TagRegex.FindStringSubmatch(romDirectory.Path)
 	tagWildCard := "%" + tag[1] + "%"
-	romName := appState.SelectedFile
 
 	var romID string
 	err = db.QueryRow("SELECT id FROM rom WHERE file_path LIKE ? AND name = ?", tagWildCard, romName).Scan(&romID)
@@ -403,9 +332,8 @@ func MigrateGameTrackerData(filename string, oldPath string, newPath string) boo
 	return true
 }
 
-func ClearGameTracker() bool {
+func ClearGameTracker(romName string, romDirectory models.RomDirectory) bool {
 	logger := common.GetLoggerInstance()
-	appState := state.GetAppState()
 
 	db, err := sql.Open("sqlite3", gameTrackerDBPath)
 	if err != nil {
@@ -425,9 +353,8 @@ func ClearGameTracker() bool {
 		return false
 	}
 
-	tag := common.TagRegex.FindStringSubmatch(appState.CurrentSection.LocalDirectory)
+	tag := common.TagRegex.FindStringSubmatch(romDirectory.Path)
 	tagWildCard := "%" + tag[1] + "%"
-	romName := appState.SelectedFile
 
 	var romID string
 	err = tx.QueryRow("SELECT id FROM rom WHERE file_path LIKE ? AND name = ?", tagWildCard, romName).Scan(&romID)
@@ -467,32 +394,29 @@ func ClearGameTracker() bool {
 }
 
 func ClearSaveStates() {
-
+	// TODO - implement
 }
 
-func ArchiveRom() {
+func ArchiveRom(selectedFile string, romDirectory models.RomDirectory) {
 	const archiveRoot = "/mnt/SDCARD/Roms/.Archive"
 
 	logger := common.GetLoggerInstance()
-	appState := state.GetAppState()
 
-	selectedFile := appState.CurrentItemListWithExtensionMap[appState.SelectedFile]
+	logger.Debug("Archive Start", zap.String("selected_file", selectedFile), zap.Any("with_ext", selectedFile))
 
-	logger.Debug("Archive Start", zap.String("selected_file", appState.SelectedFile), zap.Any("with_ext", selectedFile))
-
-	oldPath := filepath.Join(appState.CurrentSection.LocalDirectory, selectedFile)
-	oldPathSubdirectory := strings.ReplaceAll(appState.CurrentSection.LocalDirectory, common.RomDirectory, "")
+	oldPath := filepath.Join(romDirectory.Path, selectedFile)
+	oldPathSubdirectory := strings.ReplaceAll(romDirectory.Path, common.RomDirectory, "")
 	newPath := filepath.Join(archiveRoot, oldPathSubdirectory, selectedFile)
 
 	logger.Debug("Archiving Rom", zap.String("oldPath", oldPath), zap.String("newPath", newPath))
 
 	err := MoveFile(oldPath, newPath)
 	if err == nil {
-		existingArtFilename, err := FindExistingArt()
+		existingArtFilename, err := FindExistingArt(selectedFile, romDirectory)
 		if err != nil {
 			logger.Error("failed to find existing art", zap.Error(err))
 		} else {
-			oldArtPath := filepath.Join(appState.CurrentSection.LocalDirectory, ".media", existingArtFilename)
+			oldArtPath := filepath.Join(romDirectory.Path, ".media", existingArtFilename)
 			newArtPath := filepath.Join(archiveRoot, oldPathSubdirectory, ".media", existingArtFilename)
 
 			err := MoveFile(oldArtPath, newArtPath)
@@ -500,44 +424,22 @@ func ArchiveRom() {
 				logger.Error("failed to archive existing art", zap.Error(err))
 			}
 		}
-
-		appState.SelectedFile = ""
-		state.UpdateAppState(appState)
-
-		err = RefreshRomsList()
-		if err != nil {
-			logger.Error("failed to refresh roms", zap.Error(err))
-		}
 	}
 }
 
-func DeleteRom() {
-	appState := state.GetAppState()
-	filename := appState.CurrentItemListWithExtensionMap[appState.SelectedFile]
-	romPath := filepath.Join(appState.CurrentSection.LocalDirectory, filename)
+func DeleteRom(filename string, romDirectory models.RomDirectory) {
+	romPath := filepath.Join(romDirectory.Path, filename)
 	res := common.DeleteFile(romPath)
 
 	if res {
-		DeleteArt()
-		appState.SelectedFile = ""
-		state.UpdateAppState(appState)
-		err := RefreshRomsList()
-		if err != nil {
-			logger := common.GetLoggerInstance()
-			logger.Error("failed to refresh roms", zap.Error(err))
-		}
+		DeleteArt(filename, romDirectory)
 	}
 }
 
-func Nuke() {
-	ClearGameTracker()
-	DeleteArt()
-	DeleteRom()
-	err := RefreshRomsList()
-	if err != nil {
-		logger := common.GetLoggerInstance()
-		logger.Error("failed to refresh roms", zap.Error(err))
-	}
+func Nuke(filename string, romDirectory models.RomDirectory) {
+	ClearGameTracker(filename, romDirectory)
+	DeleteArt(filename, romDirectory)
+	DeleteRom(filename, romDirectory)
 }
 
 func copyFile(srcPath, dstPath string) error {

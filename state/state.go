@@ -44,27 +44,3 @@ func SetConfig(config *models.Config) {
 
 	UpdateAppState(temp)
 }
-
-func SetSection(section models.Section) {
-	temp := GetAppState()
-	temp.CurrentSection = section
-	UpdateAppState(temp)
-}
-
-func SetSearchFilter(filter string) {
-	temp := GetAppState()
-	temp.SearchFilter = filter
-	UpdateAppState(temp)
-}
-
-func SetSelectedFile(file string) {
-	temp := GetAppState()
-	temp.SelectedFile = file
-	UpdateAppState(temp)
-}
-
-func SetSelectedAction(rawAction string) {
-	temp := GetAppState()
-	temp.SelectedAction = models.ActionMap[rawAction]
-	UpdateAppState(temp)
-}

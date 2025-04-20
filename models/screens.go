@@ -2,19 +2,39 @@ package models
 
 import "qlova.tech/sum"
 
-type Screen struct {
+type ScreenName struct {
 	MainMenu,
-	Loading,
 	GamesList,
 	SearchBox,
 	Actions,
-	AddToCollection,
 	Confirm,
 	RenameRom,
 	DownloadArt,
 
 	CollectionsList,
 	CollectionOptions,
-	RenameCollection,
-	CollectionManagement sum.Int[Screen]
+	CollectionManagement sum.Int[ScreenName]
+}
+
+var ScreenNames = sum.Int[ScreenName]{}.Sum()
+
+type Screen interface {
+	Name() sum.Int[ScreenName]
+	Draw() (value ScreenReturn, exitCode int, e error)
+}
+
+type ScreenReturn interface {
+	Value() interface{}
+}
+
+type WrappedString struct {
+	Contents string
+}
+
+func NewWrappedString(s string) WrappedString {
+	return WrappedString{Contents: s}
+}
+
+func (s WrappedString) Value() interface{} {
+	return s.Contents
 }
