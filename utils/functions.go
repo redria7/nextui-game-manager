@@ -5,21 +5,21 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
+	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"github.com/disintegration/imaging"
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
 	"io"
-	"nextui-game-manager/state"
 	"os"
 	"path/filepath"
+	"qlova.tech/sum"
 	"strings"
 )
 
 const gameTrackerDBPath = "/mnt/SDCARD/.userdata/shared/game_logs.sqlite"
 
 const saveFileDirectory = "/mnt/SDCARD/Saves/"
-const saveFileBackupDirectory = "/mnt/SDCARD/Saves/Backups/"
 
 func GetFileList(dirPath string) ([]os.DirEntry, error) {
 	entries, err := os.ReadDir(dirPath)
@@ -85,21 +85,26 @@ func InsertIntoSlice(s []string, index int, values ...string) []string {
 	return append(s[:index], append(values, s[index:]...)...)
 }
 
-func FindArt(selectedFile string, romDirectory models.RomDirectory) (lastSavedArtPath string, err error) {
+func FindArt(game models.Item, romDirectory models.RomDirectory, downloadType sum.Int[models.ArtDownloadType]) string {
 	logger := common.GetLoggerInstance()
-	appState := state.GetAppState()
 
-	client := common.NewThumbnailClient(appState.Config.ArtDownloadType)
-	section := client.BuildThumbnailSection(romDirectory.Tag)
+	if romDirectory.Tag == "" {
+		return ""
+	}
+
+	tag := common.TagRegex.FindStringSubmatch(romDirectory.Path)
+
+	client := common.NewThumbnailClient(downloadType)
+	section := client.BuildThumbnailSection(tag[1])
 
 	artList, err := client.ListDirectory(section)
 
 	if err != nil {
 		logger.Info("Unable to fetch artlist", zap.Error(err))
-		return "", err
+		return ""
 	}
 
-	noExtension := strings.TrimSuffix(selectedFile, filepath.Ext(selectedFile))
+	noExtension := strings.TrimSuffix(game.Filename, filepath.Ext(game.Filename))
 
 	var matched models.Item
 
@@ -111,18 +116,22 @@ func FindArt(selectedFile string, romDirectory models.RomDirectory) (lastSavedAr
 		}
 	}
 
+	if matched.Filename == "" {
+		// TODO Levenshtein Distance support at some point
+	}
+
 	if matched.Filename != "" {
 		lastSavedArtPath, err := client.DownloadFileRename(section.HostSubdirectory,
-			filepath.Join(romDirectory.Path, ".media"), matched.Filename, selectedFile)
+			filepath.Join(romDirectory.Path, ".media"), matched.Filename, game.Filename)
 
 		if err != nil {
-			return "", err
+			return ""
 		}
 
 		src, err := imaging.Open(lastSavedArtPath)
 		if err != nil {
 			logger.Error("Unable to open last saved art", zap.Error(err))
-			return "", err
+			return ""
 		}
 
 		dst := imaging.Resize(src, 400, 0, imaging.Lanczos)
@@ -130,13 +139,13 @@ func FindArt(selectedFile string, romDirectory models.RomDirectory) (lastSavedAr
 		err = imaging.Save(dst, lastSavedArtPath)
 		if err != nil {
 			logger.Error("Unable to save resized last saved art", zap.Error(err))
-			return "", err
+			return ""
 		}
 
-		return lastSavedArtPath, nil
+		return lastSavedArtPath
 	}
 
-	return "", nil
+	return ""
 }
 
 func FindExistingArt(selectedFile string, romDirectory models.RomDirectory) (string, error) {
@@ -170,19 +179,19 @@ func FindExistingArt(selectedFile string, romDirectory models.RomDirectory) (str
 	return artFilename, err
 }
 
-func RenameRom(filename string, romDirectory models.RomDirectory) {
+func RenameRom(oldFilename string, newFilename string, romDirectory models.RomDirectory) (string, error) {
 	logger := common.GetLoggerInstance()
 
-	oldPath := filepath.Join(romDirectory.Path, filename)
-	oldExt := filepath.Ext(filename)
-	newPath := filepath.Join(romDirectory.Path, filename+oldExt)
+	oldPath := filepath.Join(romDirectory.Path, oldFilename)
+	oldExt := filepath.Ext(oldFilename)
+	newPath := filepath.Join(romDirectory.Path, newFilename+oldExt)
 
 	logger.Debug("Renaming Rom", zap.String("oldPath", oldPath), zap.String("newPath", newPath))
 
 	err := MoveFile(oldPath, newPath)
 	if err != nil {
 		logger.Error("failed to move file", zap.Error(err))
-		return
+		return "", err
 	}
 
 	gameTrackerOldPath := strings.ReplaceAll(oldPath, common.RomDirectory+"/", "")
@@ -191,43 +200,66 @@ func RenameRom(filename string, romDirectory models.RomDirectory) {
 	logger.Debug("Updating Game Tracker for Rename",
 		zap.String("old_path", oldPath), zap.String("new_path", newPath))
 
-	MigrateGameTrackerData(filename, gameTrackerOldPath, gameTrackerNewPath)
+	MigrateGameTrackerData(newFilename, gameTrackerOldPath, gameTrackerNewPath)
 
-	existingArtFilename, err := FindExistingArt(filename, romDirectory)
+	RenameSaveFile(strings.ReplaceAll(oldFilename, filepath.Ext(oldFilename), ""), newFilename, romDirectory)
+
+	existingArtFilename, err := FindExistingArt(oldFilename, romDirectory)
 	if err != nil {
 		logger.Error("failed to find existing art", zap.Error(err))
-	} else {
+		return "", err
+	} else if existingArtFilename != "" {
 		oldArtPath := filepath.Join(romDirectory.Path, ".media", existingArtFilename)
 		oldArtExt := filepath.Ext(existingArtFilename)
-		newArtPath := filepath.Join(romDirectory.Path, ".media", filename+oldArtExt)
+		newArtPath := filepath.Join(romDirectory.Path, ".media", newFilename+oldArtExt)
 
 		if _, err := os.Stat(oldArtPath); os.IsNotExist(err) {
 			logger.Info("No media exists. Skipping...")
+			return "", err
 		} else {
 			err := MoveFile(oldArtPath, newArtPath)
 			if err != nil {
 				logger.Error("failed to rename existing art", zap.Error(err))
+				return "", err
 			}
 		}
 	}
+	return newFilename + oldExt, nil
 }
 
-func RenameSaveFile(filename string, romDirectory models.RomDirectory) {
+func RenameSaveFile(oldFilename string, newFilename string, romDirectory models.RomDirectory) {
 	logger := common.GetLoggerInstance()
 
-	oldPath := filepath.Join(saveFileDirectory, romDirectory.Tag, filename)
-	backupPath := filepath.Join(saveFileBackupDirectory, romDirectory.Tag, filename)
+	unwrappedTag := strings.ReplaceAll(romDirectory.Tag, "(", "")
+	unwrappedTag = strings.ReplaceAll(unwrappedTag, ")", "")
 
-	oldExt := filepath.Ext(filename)
-	newPath := filepath.Join(saveFileDirectory, romDirectory.Tag, filename+oldExt)
+	saveFileDirectoryWithTag := filepath.Join(saveFileDirectory, unwrappedTag)
 
-	err := copyFile(oldPath, backupPath)
+	fb := filebrowser.NewFileBrowser(logger)
+
+	err := fb.CWD(saveFileDirectoryWithTag)
 	if err != nil {
-		logger.Error("failed to copy save file", zap.Error(err))
+		logger.Error("failed to change directory", zap.Error(err))
 		return
 	}
 
-	err = MoveFile(oldPath, newPath)
+	var foundSaveFile models.Item
+
+	for _, item := range fb.Items {
+		if strings.Contains(strings.ToLower(item.Filename), strings.ToLower(oldFilename)) {
+			foundSaveFile = item
+		}
+	}
+
+	if foundSaveFile.Filename == "" {
+		logger.Info("No save file found. Skipping...")
+		return
+	}
+
+	oldExt := strings.ReplaceAll(foundSaveFile.Filename, oldFilename, "")
+	newPath := filepath.Join(saveFileDirectory, unwrappedTag, newFilename+oldExt)
+
+	err = MoveFile(foundSaveFile.Path, newPath)
 	if err != nil {
 		logger.Error("failed to rename save file", zap.Error(err))
 		return
@@ -353,11 +385,10 @@ func ClearGameTracker(romName string, romDirectory models.RomDirectory) bool {
 		return false
 	}
 
-	tag := common.TagRegex.FindStringSubmatch(romDirectory.Path)
-	tagWildCard := "%" + tag[1] + "%"
+	romPath := filepath.Join(strings.ReplaceAll(romDirectory.Path, common.RomDirectory+"/", ""), romName)
 
 	var romID string
-	err = tx.QueryRow("SELECT id FROM rom WHERE file_path LIKE ? AND name = ?", tagWildCard, romName).Scan(&romID)
+	err = tx.QueryRow("SELECT id FROM rom WHERE file_path = ?", romPath).Scan(&romID)
 	if err != nil {
 		_ = tx.Rollback()
 		logger.Error("Failed to find ROM ID", zap.Error(err))
@@ -365,7 +396,7 @@ func ClearGameTracker(romName string, romDirectory models.RomDirectory) bool {
 	}
 
 	if romID == "" {
-		logger.Warn("No ROM ID found", zap.String("tag", tag[1]), zap.String("name", romName))
+		logger.Warn("No ROM ID found", zap.String("fullpath", romPath), zap.String("name", romName))
 		return false
 	}
 
@@ -438,7 +469,6 @@ func DeleteRom(filename string, romDirectory models.RomDirectory) {
 
 func Nuke(filename string, romDirectory models.RomDirectory) {
 	ClearGameTracker(filename, romDirectory)
-	DeleteArt(filename, romDirectory)
 	DeleteRom(filename, romDirectory)
 }
 

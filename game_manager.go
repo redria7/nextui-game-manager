@@ -66,6 +66,9 @@ func main() {
 		case models.ScreenNames.CollectionsList:
 			switch code {
 			case 0:
+				// screen = ui.InitCollectionManagement()
+			case 4:
+				// screen = ui.InitCollectionOptions()
 			case 1, 2:
 				screen = ui.InitMainMenu()
 			}
@@ -126,7 +129,16 @@ func main() {
 			case 0:
 				switch models.ActionMap[res.(shared.ListSelection).SelectedValue] {
 				case models.Actions.DownloadArt:
+					screen = ui.InitDownloadArtScreen(screen.(ui.ActionsScreen).Game,
+						screen.(ui.ActionsScreen).RomDirectory,
+						screen.(ui.ActionsScreen).PreviousRomDirectory,
+						screen.(ui.ActionsScreen).SearchFilter,
+						state.GetAppState().Config.ArtDownloadType)
 				case models.Actions.RenameRom:
+					screen = ui.InitRenameRomScreen(screen.(ui.ActionsScreen).Game,
+						screen.(ui.ActionsScreen).RomDirectory,
+						screen.(ui.ActionsScreen).PreviousRomDirectory,
+						screen.(ui.ActionsScreen).SearchFilter)
 				default:
 					screen = ui.InitConfirmScreen(screen.(ui.ActionsScreen).Game,
 						screen.(ui.ActionsScreen).RomDirectory,
@@ -140,8 +152,31 @@ func main() {
 			}
 
 		case models.ScreenNames.RenameRom:
+			rrs := screen.(ui.RenameRomScreen)
+			newName := res.(models.WrappedString).Contents
+			var err error
+			newFilename := ""
+			switch code {
+			case 0:
+				newFilename, err = utils.RenameRom(rrs.Game.Filename, newName, rrs.RomDirectory)
+				if err != nil {
+					ui.ShowMessage("Unable to rename ROM!", "3")
+					screen = ui.InitActionsScreenWithPreviousDirectory(rrs.Game, rrs.RomDirectory,
+						rrs.PreviousRomDirectory, rrs.SearchFilter)
+					continue
+				}
+			}
+			screen = ui.InitActionsScreenWithPreviousDirectory(shared.Item{DisplayName: newName, Filename: newFilename},
+				rrs.RomDirectory, rrs.PreviousRomDirectory, rrs.SearchFilter)
 
 		case models.ScreenNames.DownloadArt:
+			switch code {
+			default:
+				screen = ui.InitActionsScreenWithPreviousDirectory(screen.(ui.DownloadArtScreen).Game,
+					screen.(ui.DownloadArtScreen).RomDirectory,
+					screen.(ui.DownloadArtScreen).PreviousRomDirectory,
+					screen.(ui.DownloadArtScreen).SearchFilter)
+			}
 
 		case models.ScreenNames.Confirm:
 			confirmScreen := screen.(ui.ConfirmScreen)
