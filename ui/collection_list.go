@@ -36,8 +36,8 @@ func (c CollectionListScreen) Draw() (collection models.ScreenReturn, exitCode i
 		common.LogStandardFatal("Error loading fetching Collection directories", err)
 	}
 
-	if len(fb.Items) == 0 {
-		return shared.ListSelection{ExitCode: 404}, 404, nil
+	if fb.Items == nil || len(fb.Items) == 0 {
+		return models.Collection{}, 404, nil
 	}
 
 	itemList := fb.Items
@@ -63,7 +63,7 @@ func (c CollectionListScreen) Draw() (collection models.ScreenReturn, exitCode i
 	}
 
 	if len(itemList) == 0 {
-		return shared.ListSelection{ExitCode: 404}, 404, nil
+		return models.Collection{}, 404, nil
 	}
 
 	var itemEntries shared.Items
@@ -77,7 +77,7 @@ func (c CollectionListScreen) Draw() (collection models.ScreenReturn, exitCode i
 
 	selection, err := commonUI.DisplayList(itemEntries, title, "", extraArgs...)
 	if err != nil {
-		return shared.ListSelection{ExitCode: 1}, 1, err
+		return models.Collection{}, 1, err
 	}
 
 	return collectionsMap[selection.SelectedValue], selection.ExitCode, nil

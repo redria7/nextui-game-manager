@@ -79,7 +79,10 @@ func main() {
 			case 0:
 				screen = ui.InitCollectionManagement(collection, screen.(ui.CollectionListScreen).SearchFilter)
 			case 4:
-				// TODO add search box
+			// TODO add search box
+			case 404:
+				ui.ShowMessage("No collections found!", "3")
+				screen = ui.InitMainMenu()
 			case 1, 2:
 				screen = ui.InitMainMenu()
 			}
@@ -155,7 +158,7 @@ func main() {
 				}
 			}
 
-			screen = ui.InitCollectionManagement(rcs.Collection, "")
+			screen = ui.InitCollectionOptions(rcs.Collection, "")
 
 		case models.ScreenNames.GamesList:
 			switch code {
