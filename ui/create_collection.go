@@ -5,23 +5,27 @@ import (
 	"errors"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
+	"github.com/UncleJunVIP/nextui-pak-shared-functions/ui"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
+	"nextui-game-manager/utils"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"qlova.tech/sum"
 	"strings"
 )
 
-type RenameRomScreen struct {
+type CreateCollectionScreen struct {
 	Game                 shared.Item
 	RomDirectory         shared.RomDirectory
 	PreviousRomDirectory shared.RomDirectory
 	SearchFilter         string
 }
 
-func InitRenameRomScreen(game shared.Item, romDirectory shared.RomDirectory, previousRomDirectory shared.RomDirectory, searchFilter string) RenameRomScreen {
-	return RenameRomScreen{
+func InitCreateCollectionScreen(game shared.Item, romDirectory shared.RomDirectory,
+	previousRomDirectory shared.RomDirectory, searchFilter string) CreateCollectionScreen {
+	return CreateCollectionScreen{
 		Game:                 game,
 		RomDirectory:         romDirectory,
 		PreviousRomDirectory: previousRomDirectory,
@@ -29,14 +33,14 @@ func InitRenameRomScreen(game shared.Item, romDirectory shared.RomDirectory, pre
 	}
 }
 
-func (r RenameRomScreen) Name() sum.Int[models.ScreenName] {
-	return models.ScreenNames.RenameRom
+func (c CreateCollectionScreen) Name() sum.Int[models.ScreenName] {
+	return models.ScreenNames.CollectionCreate
 }
 
-func (r RenameRomScreen) Draw() (value models.ScreenReturn, exitCode int, e error) {
+func (c CreateCollectionScreen) Draw() (collection models.ScreenReturn, exitCode int, e error) {
 	logger := common.GetLoggerInstance()
 
-	args := []string{"--initial-value", r.Game.DisplayName, "--title", "Rename ROM", "--show-hardware-group"}
+	args := []string{"--title", "Create New Collection", "--show-hardware-group"}
 
 	cmd := exec.Command("minui-keyboard", args...)
 	cmd.Env = os.Environ()
@@ -64,13 +68,22 @@ func (r RenameRomScreen) Draw() (value models.ScreenReturn, exitCode int, e erro
 	}
 
 	if cmd.ProcessState.ExitCode() == 2 {
-		return models.WrappedString{Contents: r.Game.DisplayName}, 2, nil
+		return models.WrappedString{}, 2, nil
 	}
 
 	outValue := stdoutbuf.String()
 	_ = stderrbuf.String()
 
-	newFilename := strings.ReplaceAll(outValue, "\n", "")
+	newCollectionName := strings.ReplaceAll(outValue, "\n", "")
 
-	return models.NewWrappedString(newFilename), cmd.ProcessState.ExitCode(), nil
+	_, err = utils.AddCollectionGame(models.Collection{
+		DisplayName:    newCollectionName,
+		CollectionFile: filepath.Join(common.CollectionDirectory, newCollectionName+".txt"),
+	}, c.Game)
+	if err != nil {
+		_, _ = ui.ShowMessage("Failed to add game to collection!", "3")
+		return models.WrappedString{}, 1, err
+	}
+
+	return models.NewWrappedString(newCollectionName), cmd.ProcessState.ExitCode(), nil
 }

@@ -6,14 +6,15 @@ import (
 	"fmt"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
-	"github.com/UncleJunVIP/nextui-pak-shared-functions/models"
+	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"github.com/disintegration/imaging"
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
-	"io"
+	"nextui-game-manager/models"
 	"os"
 	"path/filepath"
 	"qlova.tech/sum"
+	"sort"
 	"strings"
 )
 
@@ -30,8 +31,8 @@ func GetFileList(dirPath string) ([]os.DirEntry, error) {
 	return entries, nil
 }
 
-func FilterList(itemList []models.Item, keywords ...string) []models.Item {
-	var filteredItemList []models.Item
+func FilterList(itemList []shared.Item, keywords ...string) []shared.Item {
+	var filteredItemList []shared.Item
 
 	for _, item := range itemList {
 		for _, keyword := range keywords {
@@ -45,35 +46,6 @@ func FilterList(itemList []models.Item, keywords ...string) []models.Item {
 	return filteredItemList
 }
 
-func LoadCollectionList(collectionPath string) (map[string]string, error) {
-	file, err := os.Open(collectionPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open collection file: %w", err)
-	}
-	defer file.Close()
-
-	result := make(map[string]string)
-	scanner := bufio.NewScanner(file)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "" {
-			continue
-		}
-
-		base := filepath.Base(line)
-		nameWithoutExt := strings.TrimSuffix(base, filepath.Ext(base))
-
-		result[nameWithoutExt] = line
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("failed to scan collection file: %w", err)
-	}
-
-	return result, nil
-}
-
 func InsertIntoSlice(s []string, index int, values ...string) []string {
 	if index < 0 {
 		index = 0
@@ -85,7 +57,7 @@ func InsertIntoSlice(s []string, index int, values ...string) []string {
 	return append(s[:index], append(values, s[index:]...)...)
 }
 
-func FindArt(game models.Item, romDirectory models.RomDirectory, downloadType sum.Int[models.ArtDownloadType]) string {
+func FindArt(game shared.Item, romDirectory shared.RomDirectory, downloadType sum.Int[shared.ArtDownloadType]) string {
 	logger := common.GetLoggerInstance()
 
 	if romDirectory.Tag == "" {
@@ -106,7 +78,7 @@ func FindArt(game models.Item, romDirectory models.RomDirectory, downloadType su
 
 	noExtension := strings.TrimSuffix(game.Filename, filepath.Ext(game.Filename))
 
-	var matched models.Item
+	var matched shared.Item
 
 	// naive search first
 	for _, art := range artList {
@@ -148,7 +120,7 @@ func FindArt(game models.Item, romDirectory models.RomDirectory, downloadType su
 	return ""
 }
 
-func FindExistingArt(selectedFile string, romDirectory models.RomDirectory) (string, error) {
+func FindExistingArt(selectedFile string, romDirectory shared.RomDirectory) (string, error) {
 	logger := common.GetLoggerInstance()
 
 	mediaDir := filepath.Join(romDirectory.Path, ".media")
@@ -179,7 +151,7 @@ func FindExistingArt(selectedFile string, romDirectory models.RomDirectory) (str
 	return artFilename, err
 }
 
-func RenameRom(oldFilename string, newFilename string, romDirectory models.RomDirectory) (string, error) {
+func RenameRom(oldFilename string, newFilename string, romDirectory shared.RomDirectory) (string, error) {
 	logger := common.GetLoggerInstance()
 
 	oldPath := filepath.Join(romDirectory.Path, oldFilename)
@@ -227,7 +199,7 @@ func RenameRom(oldFilename string, newFilename string, romDirectory models.RomDi
 	return newFilename + oldExt, nil
 }
 
-func RenameSaveFile(oldFilename string, newFilename string, romDirectory models.RomDirectory) {
+func RenameSaveFile(oldFilename string, newFilename string, romDirectory shared.RomDirectory) {
 	logger := common.GetLoggerInstance()
 
 	unwrappedTag := strings.ReplaceAll(romDirectory.Tag, "(", "")
@@ -243,7 +215,7 @@ func RenameSaveFile(oldFilename string, newFilename string, romDirectory models.
 		return
 	}
 
-	var foundSaveFile models.Item
+	var foundSaveFile shared.Item
 
 	for _, item := range fb.Items {
 		if strings.Contains(strings.ToLower(item.Filename), strings.ToLower(oldFilename)) {
@@ -266,7 +238,7 @@ func RenameSaveFile(oldFilename string, newFilename string, romDirectory models.
 	}
 }
 
-func DeleteArt(filename string, romDirectory models.RomDirectory) {
+func DeleteArt(filename string, romDirectory shared.RomDirectory) {
 	logger := common.GetLoggerInstance()
 
 	art, err := FindExistingArt(filename, romDirectory)
@@ -282,7 +254,7 @@ func DeleteArt(filename string, romDirectory models.RomDirectory) {
 	common.DeleteFile(artPath)
 }
 
-func HasGameTrackerData(romName string, romDirectory models.RomDirectory) bool {
+func HasGameTrackerData(romFilename string, romDirectory shared.RomDirectory) bool {
 	logger := common.GetLoggerInstance()
 
 	db, err := sql.Open("sqlite3", gameTrackerDBPath)
@@ -297,11 +269,10 @@ func HasGameTrackerData(romName string, romDirectory models.RomDirectory) bool {
 		}
 	}(db)
 
-	tag := common.TagRegex.FindStringSubmatch(romDirectory.Path)
-	tagWildCard := "%" + tag[1] + "%"
+	romPath := filepath.Join(strings.ReplaceAll(romDirectory.Path, common.RomDirectory+"/", ""), romFilename)
 
 	var romID string
-	err = db.QueryRow("SELECT id FROM rom WHERE file_path LIKE ? AND name = ?", tagWildCard, romName).Scan(&romID)
+	err = db.QueryRow("SELECT id FROM rom WHERE file_path = ?", romPath).Scan(&romID)
 	if err != nil {
 		logger.Error("Failed to find ROM ID", zap.Error(err))
 		return false
@@ -364,7 +335,7 @@ func MigrateGameTrackerData(filename string, oldPath string, newPath string) boo
 	return true
 }
 
-func ClearGameTracker(romName string, romDirectory models.RomDirectory) bool {
+func ClearGameTracker(romName string, romDirectory shared.RomDirectory) bool {
 	logger := common.GetLoggerInstance()
 
 	db, err := sql.Open("sqlite3", gameTrackerDBPath)
@@ -428,7 +399,7 @@ func ClearSaveStates() {
 	// TODO - implement
 }
 
-func ArchiveRom(selectedFile string, romDirectory models.RomDirectory) {
+func ArchiveRom(selectedFile string, romDirectory shared.RomDirectory) {
 	const archiveRoot = "/mnt/SDCARD/Roms/.Archive"
 
 	logger := common.GetLoggerInstance()
@@ -458,7 +429,7 @@ func ArchiveRom(selectedFile string, romDirectory models.RomDirectory) {
 	}
 }
 
-func DeleteRom(filename string, romDirectory models.RomDirectory) {
+func DeleteRom(filename string, romDirectory shared.RomDirectory) {
 	romPath := filepath.Join(romDirectory.Path, filename)
 	res := common.DeleteFile(romPath)
 
@@ -467,41 +438,9 @@ func DeleteRom(filename string, romDirectory models.RomDirectory) {
 	}
 }
 
-func Nuke(filename string, romDirectory models.RomDirectory) {
+func Nuke(filename string, romDirectory shared.RomDirectory) {
 	ClearGameTracker(filename, romDirectory)
 	DeleteRom(filename, romDirectory)
-}
-
-func copyFile(srcPath, dstPath string) error {
-	logger := common.GetLoggerInstance()
-
-	srcFile, err := os.Open(srcPath)
-	if err != nil {
-		logger.Error("Failed to open source file", zap.Error(err))
-		return err
-	}
-	defer srcFile.Close()
-
-	err = os.MkdirAll(filepath.Dir(dstPath), os.ModePerm)
-	if err != nil {
-		logger.Error("Failed to create destination directory", zap.Error(err))
-		return err
-	}
-
-	dstFile, err := os.Create(dstPath)
-	if err != nil {
-		logger.Error("Failed to create destination file", zap.Error(err))
-		return err
-	}
-	defer dstFile.Close()
-
-	_, err = io.Copy(dstFile, srcFile)
-	if err != nil {
-		logger.Error("Failed to copy file contents", zap.Error(err))
-		return err
-	}
-
-	return nil
 }
 
 func MoveFile(oldPath, newPath string) error {
@@ -520,4 +459,143 @@ func MoveFile(oldPath, newPath string) error {
 	}
 
 	return nil
+}
+
+func RenameCollection(collection models.Collection, name string) error {
+	logger := common.GetLoggerInstance()
+
+	name = name + ".txt"
+
+	filepath.Dir(collection.CollectionFile)
+	newPath := filepath.Join(filepath.Dir(collection.CollectionFile), name)
+
+	err := os.Rename(collection.CollectionFile, newPath)
+	if err != nil {
+		logger.Error("Failed to move file", zap.Error(err))
+	}
+
+	return err
+}
+
+func DeleteCollection(collection models.Collection) {
+	common.DeleteFile(collection.CollectionFile)
+}
+
+func AddCollectionGame(collection models.Collection, game shared.Item) (models.Collection, error) {
+	logger := common.GetLoggerInstance()
+
+	if len(collection.Games) == 0 {
+		if _, err := os.Stat(collection.CollectionFile); !os.IsNotExist(err) {
+			logger.Debug("Collection file already exists. Loading...")
+
+			loadCollection, err := ReadCollection(collection)
+
+			if err != nil {
+				return collection, err
+			}
+			collection = loadCollection
+		}
+	}
+
+	collection.Games = append(collection.Games, game)
+	collection.Games = alphabetizeCollection(collection.Games)
+	_ = saveCollection(collection)
+
+	return collection, nil
+}
+
+func RemoveCollectionGame(collection models.Collection, gameName string) (models.Collection, error) {
+	if len(collection.Games) == 0 {
+		loadCollection, err := ReadCollection(collection)
+		if err != nil {
+			return collection, err
+		}
+		collection = loadCollection
+	}
+
+	var newList []shared.Item
+
+	for _, game := range collection.Games {
+		if !strings.Contains(game.Path, gameName) {
+			newList = append(newList, game)
+		}
+	}
+
+	collection.Games = newList
+	err := saveCollection(collection)
+
+	return collection, err
+}
+
+func ReadCollection(collection models.Collection) (models.Collection, error) {
+	logger := common.GetLoggerInstance()
+
+	file, err := os.Open(collection.CollectionFile)
+	if err != nil {
+		logger.Error("failed to open collection", zap.Error(err))
+		return collection, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	var games []shared.Item
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		displayName := filepath.Base(line)
+		displayName, _ = filebrowser.ItemNameCleaner(displayName, false)
+		games = append(games, shared.Item{
+			DisplayName: displayName,
+			Path:        line,
+		})
+	}
+
+	if err := scanner.Err(); err != nil {
+		logger.Error("failed to read collection", zap.Error(err))
+		return collection, err
+	}
+
+	collection.Games = games
+
+	return collection, nil
+}
+
+func saveCollection(collection models.Collection) error {
+	dir := filepath.Dir(collection.CollectionFile)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
+	}
+
+	collection.Games = alphabetizeCollection(collection.Games)
+
+	file, err := os.OpenFile(collection.CollectionFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	writer := bufio.NewWriter(file)
+	for _, line := range collection.Games {
+
+		path := strings.ReplaceAll(line.Path, common.SDCardRoot, "")
+
+		if _, err := writer.WriteString(path + "\n"); err != nil {
+			return fmt.Errorf("failed to write line: %w", err)
+		}
+	}
+
+	if err := writer.Flush(); err != nil {
+		return fmt.Errorf("failed to flush buffer: %w", err)
+	}
+
+	return nil
+}
+
+func alphabetizeCollection(items []shared.Item) []shared.Item {
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].DisplayName < items[j].DisplayName
+	})
+
+	return items
 }

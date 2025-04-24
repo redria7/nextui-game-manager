@@ -6,6 +6,7 @@ type ScreenName struct {
 	MainMenu,
 	GamesList,
 	SearchBox,
+	AddToCollection,
 	Actions,
 	Confirm,
 	RenameRom,
@@ -13,7 +14,9 @@ type ScreenName struct {
 
 	CollectionsList,
 	CollectionOptions,
-	CollectionManagement sum.Int[ScreenName]
+	CollectionManagement,
+	CollectionRename,
+	CollectionCreate sum.Int[ScreenName]
 }
 
 var ScreenNames = sum.Int[ScreenName]{}.Sum()

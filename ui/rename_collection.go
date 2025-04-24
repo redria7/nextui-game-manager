@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
-	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
 	"os"
@@ -13,30 +12,24 @@ import (
 	"strings"
 )
 
-type RenameRomScreen struct {
-	Game                 shared.Item
-	RomDirectory         shared.RomDirectory
-	PreviousRomDirectory shared.RomDirectory
-	SearchFilter         string
+type RenameCollectionScreen struct {
+	Collection models.Collection
 }
 
-func InitRenameRomScreen(game shared.Item, romDirectory shared.RomDirectory, previousRomDirectory shared.RomDirectory, searchFilter string) RenameRomScreen {
-	return RenameRomScreen{
-		Game:                 game,
-		RomDirectory:         romDirectory,
-		PreviousRomDirectory: previousRomDirectory,
-		SearchFilter:         searchFilter,
+func InitRenameCollectionScreen(collection models.Collection) RenameCollectionScreen {
+	return RenameCollectionScreen{
+		Collection: collection,
 	}
 }
 
-func (r RenameRomScreen) Name() sum.Int[models.ScreenName] {
-	return models.ScreenNames.RenameRom
+func (r RenameCollectionScreen) Name() sum.Int[models.ScreenName] {
+	return models.ScreenNames.CollectionRename
 }
 
-func (r RenameRomScreen) Draw() (value models.ScreenReturn, exitCode int, e error) {
+func (r RenameCollectionScreen) Draw() (value models.ScreenReturn, exitCode int, e error) {
 	logger := common.GetLoggerInstance()
 
-	args := []string{"--initial-value", r.Game.DisplayName, "--title", "Rename ROM", "--show-hardware-group"}
+	args := []string{"--initial-value", r.Collection.DisplayName, "--title", "Rename Collection", "--show-hardware-group"}
 
 	cmd := exec.Command("minui-keyboard", args...)
 	cmd.Env = os.Environ()
@@ -64,7 +57,7 @@ func (r RenameRomScreen) Draw() (value models.ScreenReturn, exitCode int, e erro
 	}
 
 	if cmd.ProcessState.ExitCode() == 2 {
-		return models.WrappedString{Contents: r.Game.DisplayName}, 2, nil
+		return models.WrappedString{Contents: r.Collection.DisplayName}, 2, nil
 	}
 
 	outValue := stdoutbuf.String()

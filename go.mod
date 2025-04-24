@@ -2,10 +2,8 @@ module nextui-game-manager
 
 go 1.24
 
-replace github.com/UncleJunVIP/nextui-pak-shared-functions => ../nextui-pak-shared-functions // TODO remove this before committing!
-
 require (
-	github.com/UncleJunVIP/nextui-pak-shared-functions v1.2.1
+	github.com/UncleJunVIP/nextui-pak-shared-functions v1.3.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/mattn/go-sqlite3 v1.14.28
 	go.uber.org/atomic v1.11.0

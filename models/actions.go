@@ -15,7 +15,8 @@ type Action struct {
 	Nuke,
 
 	CollectionRename,
-	CollectionDelete sum.Int[Action]
+	CollectionDelete,
+	CollectionAdd sum.Int[Action]
 }
 
 var Actions = sum.Int[Action]{}.Sum()
@@ -31,6 +32,7 @@ var ActionMap = map[string]sum.Int[Action]{
 
 	"Rename Collection": Actions.CollectionRename,
 	"Delete Collection": Actions.CollectionDelete,
+	"Add to Collection": Actions.CollectionAdd,
 }
 
 var ActionMessages = map[sum.Int[Action]]string{
@@ -44,10 +46,12 @@ var ActionMessages = map[sum.Int[Action]]string{
 	Actions.Nuke:             "Nuke (Deletes ROM, Art and Game Tracker)",
 	Actions.CollectionDelete: "Delete",
 	Actions.CollectionRename: "Rename",
+	Actions.CollectionAdd:    "Add to",
 }
 
 var ActionKeys = []string{
 	"Rename ROM",
+	"Add to Collection",
 	//"Clear Save States",
 	"Archive ROM",
 	"Delete ROM",

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
+	commonUI "github.com/UncleJunVIP/nextui-pak-shared-functions/ui"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
 	"nextui-game-manager/state"
@@ -28,6 +30,14 @@ func init() {
 	logger.Debug("Config Loaded",
 		zap.Object("config", config))
 
+	if _, err := os.Stat(common.CollectionDirectory); os.IsNotExist(err) {
+		err := os.MkdirAll(common.CollectionDirectory, 0755)
+		if err != nil {
+			ui.ShowMessage("Unable to create collection directory! Quitting!", "3")
+			logger.Fatal("Unable to create collection directory", zap.Error(err))
+		}
+	}
+
 	state.SetConfig(config)
 }
 
@@ -51,7 +61,7 @@ func main() {
 		case models.ScreenNames.MainMenu:
 			switch code {
 			case 0:
-				if res.Value() == "Collections" {
+				if res.(shared.RomDirectory).DisplayName == "Collections" {
 					screen = ui.InitCollectionList("")
 					continue
 				}
@@ -64,18 +74,88 @@ func main() {
 			}
 
 		case models.ScreenNames.CollectionsList:
+			collection := res.(models.Collection)
 			switch code {
 			case 0:
-				// screen = ui.InitCollectionManagement()
+				screen = ui.InitCollectionManagement(collection, screen.(ui.CollectionListScreen).SearchFilter)
 			case 4:
-				// screen = ui.InitCollectionOptions()
+				// TODO add search box
 			case 1, 2:
 				screen = ui.InitMainMenu()
 			}
 
-		case models.ScreenNames.CollectionOptions:
-
 		case models.ScreenNames.CollectionManagement:
+			collection := screen.(ui.CollectionManagementScreen).Collection
+			switch code {
+			case 0:
+				updatedCollection, err := utils.RemoveCollectionGame(collection, res.(shared.Item).DisplayName)
+				if err != nil {
+					ui.ShowMessage("Unable to remove game from collection!", "3")
+					screen = ui.InitCollectionManagement(collection, screen.(ui.CollectionManagementScreen).SearchFilter)
+				} else {
+					screen = ui.InitCollectionManagement(updatedCollection, screen.(ui.CollectionManagementScreen).SearchFilter)
+				}
+			case 4:
+				screen = ui.InitCollectionOptions(collection, screen.(ui.CollectionManagementScreen).SearchFilter)
+			case 404:
+				ui.ShowMessage("No games found in collection", "3")
+				screen = ui.InitCollectionList(screen.(ui.CollectionManagementScreen).SearchFilter)
+			default:
+				screen = ui.InitCollectionList(screen.(ui.CollectionManagementScreen).SearchFilter)
+			}
+
+		case models.ScreenNames.CollectionOptions:
+			collectionOptions := screen.(ui.CollectionOptionsScreen)
+			switch code {
+			case 0:
+				action := models.ActionMap[res.(shared.ListSelection).SelectedValue]
+
+				switch action {
+				case models.Actions.CollectionRename:
+					screen = ui.InitRenameCollectionScreen(collectionOptions.Collection)
+				case models.Actions.CollectionDelete:
+					message := fmt.Sprintf("Delete %s?", collectionOptions.Collection.DisplayName)
+
+					code, err := commonUI.ShowMessageWithOptions(message, "0",
+						"--confirm-text", "DO IT!",
+						"--confirm-show", "true",
+						"--confirm-button", "X",
+						"--cancel-show", "true",
+						"--cancel-text", "CHANGED MY MIND",
+					)
+
+					if err != nil {
+						logger := common.GetLoggerInstance()
+						logger.Info("Oh no", zap.Error(err))
+					}
+
+					switch code {
+					case 0:
+						utils.DeleteCollection(collectionOptions.Collection)
+						screen = ui.InitCollectionList(collectionOptions.SearchFilter)
+					default:
+						screen = ui.InitCollectionOptions(collectionOptions.Collection, collectionOptions.SearchFilter)
+					}
+				}
+			case 2:
+				screen = ui.InitCollectionManagement(collectionOptions.Collection, collectionOptions.SearchFilter)
+			}
+
+		case models.ScreenNames.CollectionRename:
+			rcs := screen.(ui.RenameCollectionScreen)
+			newName := res.(models.WrappedString).Contents
+			var err error
+			switch code {
+			case 0:
+				err = utils.RenameCollection(rcs.Collection, newName)
+				if err != nil {
+					ui.ShowMessage("Unable to rename ROM!", "3")
+				} else {
+					rcs.Collection.DisplayName = newName
+				}
+			}
+
+			screen = ui.InitCollectionManagement(rcs.Collection, "")
 
 		case models.ScreenNames.GamesList:
 			switch code {
@@ -125,30 +205,70 @@ func main() {
 			screen = ui.InitGamesList(screen.(ui.Search).RomDirectory, searchFilter)
 
 		case models.ScreenNames.Actions:
+			as := screen.(ui.ActionsScreen)
 			switch code {
 			case 0:
 				switch models.ActionMap[res.(shared.ListSelection).SelectedValue] {
 				case models.Actions.DownloadArt:
-					screen = ui.InitDownloadArtScreen(screen.(ui.ActionsScreen).Game,
-						screen.(ui.ActionsScreen).RomDirectory,
-						screen.(ui.ActionsScreen).PreviousRomDirectory,
-						screen.(ui.ActionsScreen).SearchFilter,
+					screen = ui.InitDownloadArtScreen(as.Game,
+						as.RomDirectory,
+						as.PreviousRomDirectory,
+						as.SearchFilter,
 						state.GetAppState().Config.ArtDownloadType)
 				case models.Actions.RenameRom:
-					screen = ui.InitRenameRomScreen(screen.(ui.ActionsScreen).Game,
-						screen.(ui.ActionsScreen).RomDirectory,
-						screen.(ui.ActionsScreen).PreviousRomDirectory,
-						screen.(ui.ActionsScreen).SearchFilter)
+					screen = ui.InitRenameRomScreen(as.Game,
+						as.RomDirectory,
+						as.PreviousRomDirectory,
+						as.SearchFilter)
+				case models.Actions.CollectionAdd:
+					screen = ui.InitAddToCollectionScreen(as.Game,
+						as.RomDirectory,
+						as.PreviousRomDirectory,
+						as.SearchFilter)
 				default:
-					screen = ui.InitConfirmScreen(screen.(ui.ActionsScreen).Game,
-						screen.(ui.ActionsScreen).RomDirectory,
-						screen.(ui.ActionsScreen).PreviousRomDirectory,
-						screen.(ui.ActionsScreen).SearchFilter,
+					screen = ui.InitConfirmScreen(as.Game,
+						as.RomDirectory,
+						as.PreviousRomDirectory,
+						as.SearchFilter,
 						models.ActionMap[res.(shared.ListSelection).SelectedValue])
 				}
 			default:
-				screen = ui.InitGamesList(screen.(ui.ActionsScreen).RomDirectory,
-					screen.(ui.ActionsScreen).SearchFilter)
+				screen = ui.InitGamesList(as.RomDirectory,
+					as.SearchFilter)
+			}
+
+		case models.ScreenNames.AddToCollection:
+			atc := screen.(ui.AddToCollectionScreen)
+			switch code {
+			case 0:
+				_, err := utils.AddCollectionGame(res.(models.Collection), atc.Game)
+				if err != nil {
+					ui.ShowMessage("Unable to add game to collection!", "2")
+				} else {
+					ui.ShowMessage("Added to collection!", "2")
+					continue
+				}
+			case 4:
+				screen = ui.InitCreateCollectionScreen(atc.Game, atc.RomDirectory, atc.PreviousRomDirectory, atc.SearchFilter)
+				continue
+			case 404:
+				screen = ui.InitCreateCollectionScreen(atc.Game, atc.RomDirectory, atc.PreviousRomDirectory, atc.SearchFilter)
+				continue
+			}
+
+			screen = ui.InitActionsScreenWithPreviousDirectory(atc.Game,
+				atc.RomDirectory,
+				atc.PreviousRomDirectory,
+				atc.SearchFilter)
+
+		case models.ScreenNames.CollectionCreate:
+			cc := screen.(ui.CreateCollectionScreen)
+			switch code {
+			case 0:
+				ui.ShowMessage("Created collection & added game!", "2")
+				screen = ui.InitAddToCollectionScreen(cc.Game, cc.RomDirectory, cc.PreviousRomDirectory, cc.SearchFilter)
+			case 2:
+				screen = ui.InitActionsScreenWithPreviousDirectory(cc.Game, cc.RomDirectory, cc.PreviousRomDirectory, cc.SearchFilter)
 			}
 
 		case models.ScreenNames.RenameRom:
@@ -161,13 +281,15 @@ func main() {
 				newFilename, err = utils.RenameRom(rrs.Game.Filename, newName, rrs.RomDirectory)
 				if err != nil {
 					ui.ShowMessage("Unable to rename ROM!", "3")
-					screen = ui.InitActionsScreenWithPreviousDirectory(rrs.Game, rrs.RomDirectory,
-						rrs.PreviousRomDirectory, rrs.SearchFilter)
+				} else {
+					screen = ui.InitActionsScreenWithPreviousDirectory(shared.Item{DisplayName: newName, Filename: newFilename},
+						rrs.RomDirectory, rrs.PreviousRomDirectory, rrs.SearchFilter)
 					continue
 				}
 			}
-			screen = ui.InitActionsScreenWithPreviousDirectory(shared.Item{DisplayName: newName, Filename: newFilename},
-				rrs.RomDirectory, rrs.PreviousRomDirectory, rrs.SearchFilter)
+
+			screen = ui.InitActionsScreenWithPreviousDirectory(rrs.Game, rrs.RomDirectory,
+				rrs.PreviousRomDirectory, rrs.SearchFilter)
 
 		case models.ScreenNames.DownloadArt:
 			switch code {
@@ -188,7 +310,7 @@ func main() {
 					screen = ui.InitActionsScreen(confirmScreen.Game, confirmScreen.RomDirectory,
 						confirmScreen.SearchFilter)
 				case models.Actions.ClearGameTracker:
-					utils.ClearGameTracker(confirmScreen.Game.DisplayName, confirmScreen.RomDirectory)
+					utils.ClearGameTracker(confirmScreen.Game.Filename, confirmScreen.RomDirectory)
 					screen = ui.InitActionsScreen(confirmScreen.Game, confirmScreen.RomDirectory,
 						confirmScreen.SearchFilter)
 				case models.Actions.ClearSaveStates:

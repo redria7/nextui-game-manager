@@ -41,17 +41,16 @@ func (c CollectionListScreen) Draw() (collection models.ScreenReturn, exitCode i
 	}
 
 	itemList := fb.Items
-	var collectionDirectory []shared.RomDirectory
-	collectionDirectoryMap := make(map[string]shared.RomDirectory)
+	var collections []models.Collection
+	collectionsMap := make(map[string]models.Collection)
 
 	for _, item := range fb.Items {
-		romDirectory := shared.RomDirectory{
-			DisplayName: item.DisplayName,
-			Tag:         item.Tag,
-			Path:        item.Path,
+		collection := models.Collection{
+			DisplayName:    item.DisplayName,
+			CollectionFile: item.Path,
 		}
-		collectionDirectory = append(collectionDirectory, romDirectory)
-		collectionDirectoryMap[item.DisplayName] = romDirectory
+		collections = append(collections, collection)
+		collectionsMap[item.DisplayName] = collection
 	}
 
 	var extraArgs []string
@@ -81,5 +80,5 @@ func (c CollectionListScreen) Draw() (collection models.ScreenReturn, exitCode i
 		return shared.ListSelection{ExitCode: 1}, 1, err
 	}
 
-	return collectionDirectoryMap[selection.SelectedValue], selection.ExitCode, nil
+	return collectionsMap[selection.SelectedValue], selection.ExitCode, nil
 }

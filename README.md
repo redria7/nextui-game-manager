@@ -26,7 +26,8 @@ A one-stop pak for all your game management needs.
 # Features
 
 - [x] Renaming ROMs
-    - [x] Renames Art & Game Tracker Name Automagically
+    - [x] Renames Art, Save File & Game Tracker Name Automagically
+- [x] Collection Management (Create, Rename, Delete + Add & Remove Games)
 - [x] Download Box Art (from Libretro Thumbnails Project)
 - [x] Delete Box Art
 - [x] Clear Game Tracker Entry
@@ -38,7 +39,6 @@ A one-stop pak for all your game management needs.
 
 # Future Features
 
-- [ ] Collection Management
 - [ ] Save File Management
 - [ ] Save State Management
 
