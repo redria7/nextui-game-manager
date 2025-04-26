@@ -6,7 +6,7 @@
   "author": "K-Wall",
   "repo_url": "https://github.com/UncleJunVIP/nextui-game-manager",
   "banners": {
-    "BRICK": ".github/resources/game_tracker_preview.webp"
+    "BRICK": ".github/resources/banner.png"
   },
   "platforms": [
     "tg5040"
