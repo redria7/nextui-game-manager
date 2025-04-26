@@ -5,6 +5,7 @@
   "description": "A one-stop pak for all your game management needs.",
   "author": "K-Wall",
   "repo_url": "https://github.com/UncleJunVIP/nextui-game-manager",
+  "release_filename": "Game.Manager.pak.zip",
   "banners": {
     "BRICK": ".github/resources/banner.png"
   },
