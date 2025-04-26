@@ -5,7 +5,9 @@
   "description": "A one-stop pak for all your game management needs.",
   "author": "K-Wall",
   "repo_url": "https://github.com/UncleJunVIP/nextui-game-manager",
-  "banner": ".github/resources/game_tracker_preview.webp",
+  "banners": {
+    "BRICK": ".github/resources/game_tracker_preview.webp"
+  },
   "platforms": [
     "tg5040"
   ],
