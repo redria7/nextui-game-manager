@@ -8,6 +8,7 @@
 A one-stop pak for all your game management needs.
 </h4>
 
+## [Now Avalaible in Pak Store!](https://github.com/UncleJunVIP/nextui-pak-store)
 
 ![GitHub License](https://img.shields.io/github/license/UncleJunVip/nextui-game-manager?style=for-the-badge)
 ![GitHub Release](https://img.shields.io/github/v/release/UncleJunVIP/nextui-game-manager?sort=semver&style=for-the-badge)
@@ -47,7 +48,7 @@ A one-stop pak for all your game management needs.
 ## How do I setup Game Manager?
 
 1. Own a TrimUI Brick and have a SD Card with NextUI configured.
-2. Connect your Brick to a Wi-Fi network. (This is need for Art Work Download Support)
+2. Connect your Brick to a Wi-Fi network. (This is needed for Artwork Download Support)
 3. Download the latest Game Manager release from this repo.
 4. Unzip the release download.
 5. With your Brick powered off, eject the SD Card and connect it to your computer.
@@ -59,7 +60,7 @@ A one-stop pak for all your game management needs.
 
 ## Shameless Plug: Want to download ROMs on your device? 
 
-Go snag [Mortar](https://github.com/UncleJunVIP/Mortar.pak): a customizable ROM download client.
+Go snag [Mortar](https://github.com/UncleJunVIP/Mortar): a customizable ROM download client.
 
 ---
 
