@@ -3,7 +3,7 @@ module nextui-game-manager
 go 1.24
 
 require (
-	github.com/UncleJunVIP/nextui-pak-shared-functions v1.3.0
+	github.com/UncleJunVIP/nextui-pak-shared-functions v1.4.1
 	github.com/disintegration/imaging v1.6.2
 	github.com/mattn/go-sqlite3 v1.14.28
 	go.uber.org/atomic v1.11.0

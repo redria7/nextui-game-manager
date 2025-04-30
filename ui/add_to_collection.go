@@ -37,7 +37,7 @@ func (a AddToCollectionScreen) Draw() (collection models.ScreenReturn, exitCode 
 	logger := common.GetLoggerInstance()
 
 	fb := filebrowser.NewFileBrowser(common.GetLoggerInstance())
-	err := fb.CWD(common.CollectionDirectory)
+	err := fb.CWD(common.CollectionDirectory, false)
 	if err != nil {
 		_, _ = commonUI.ShowMessage("Unable to fetch Collection directories! Quitting!", "3")
 		common.LogStandardFatal("Error loading fetching Collection directories", err)

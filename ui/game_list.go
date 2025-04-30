@@ -41,7 +41,7 @@ func (gl GameList) Draw() (item models.ScreenReturn, exitCode int, e error) {
 
 	fb := filebrowser.NewFileBrowser(logger)
 
-	err := fb.CWD(gl.RomDirectory.Path)
+	err := fb.CWD(gl.RomDirectory.Path, false)
 	if err != nil {
 		logger.Info("Unable to fetch ROM directory! Continuing without them",
 			zap.String("rom_directory", gl.RomDirectory.Path),

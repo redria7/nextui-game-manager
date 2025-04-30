@@ -7,9 +7,7 @@ import (
 	commonUI "github.com/UncleJunVIP/nextui-pak-shared-functions/ui"
 	"nextui-game-manager/models"
 	"nextui-game-manager/utils"
-	"path/filepath"
 	"qlova.tech/sum"
-	"strings"
 )
 
 type CollectionListScreen struct {
@@ -30,7 +28,7 @@ func (c CollectionListScreen) Draw() (collection models.ScreenReturn, exitCode i
 	title := "Collections"
 
 	fb := filebrowser.NewFileBrowser(common.GetLoggerInstance())
-	err := fb.CWD(common.CollectionDirectory)
+	err := fb.CWD(common.CollectionDirectory, false)
 	if err != nil {
 		_, _ = commonUI.ShowMessage("Unable to fetch Collection directories! Quitting!", "3")
 		common.LogStandardFatal("Error loading fetching Collection directories", err)
@@ -41,17 +39,6 @@ func (c CollectionListScreen) Draw() (collection models.ScreenReturn, exitCode i
 	}
 
 	itemList := fb.Items
-	var collections []models.Collection
-	collectionsMap := make(map[string]models.Collection)
-
-	for _, item := range fb.Items {
-		collection := models.Collection{
-			DisplayName:    item.DisplayName,
-			CollectionFile: item.Path,
-		}
-		collections = append(collections, collection)
-		collectionsMap[item.DisplayName] = collection
-	}
 
 	var extraArgs []string
 	extraArgs = append(extraArgs, "--confirm-text", "SELECT")
@@ -62,17 +49,24 @@ func (c CollectionListScreen) Draw() (collection models.ScreenReturn, exitCode i
 		itemList = utils.FilterList(itemList, c.SearchFilter)
 	}
 
-	if len(itemList) == 0 {
-		return models.Collection{}, 404, nil
-	}
-
 	var itemEntries shared.Items
+	var collections []models.Collection
+	collectionsMap := make(map[string]models.Collection)
 
 	for _, item := range itemList {
-		itemName := strings.TrimSuffix(item.Filename, filepath.Ext(item.Filename))
+		collection := models.Collection{
+			DisplayName:    item.DisplayName,
+			CollectionFile: item.Path,
+		}
+		collections = append(collections, collection)
+		collectionsMap[item.DisplayName] = collection
 		itemEntries = append(itemEntries, shared.Item{
-			DisplayName: itemName,
+			DisplayName: item.DisplayName,
 		})
+	}
+
+	if len(itemList) == 0 {
+		return models.Collection{}, 404, nil
 	}
 
 	selection, err := commonUI.DisplayList(itemEntries, title, "", extraArgs...)

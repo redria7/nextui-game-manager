@@ -29,7 +29,7 @@ func (m MainMenu) Draw() (romDirectory models.ScreenReturn, exitCode int, e erro
 	romDirectoryMap := make(map[string]shared.RomDirectory)
 	var romDirectories shared.RomDirectories
 
-	err := fb.CWD(common.CollectionDirectory)
+	err := fb.CWD(common.CollectionDirectory, false)
 	if err != nil {
 		logger.Info("Unable to fetch Collection directories! Continuing without them", zap.Error(err))
 	}
@@ -44,7 +44,7 @@ func (m MainMenu) Draw() (romDirectory models.ScreenReturn, exitCode int, e erro
 		romDirectoryMap["Collections"] = collections
 	}
 
-	err = fb.CWD(common.RomDirectory)
+	err = fb.CWD(common.RomDirectory, false)
 	if err != nil {
 		_, _ = cui.ShowMessage("Unable to fetch ROM directories! Quitting!", "3")
 		common.LogStandardFatal("Error loading fetching ROM directories", err)

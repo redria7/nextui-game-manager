@@ -209,7 +209,7 @@ func RenameSaveFile(oldFilename string, newFilename string, romDirectory shared.
 
 	fb := filebrowser.NewFileBrowser(logger)
 
-	err := fb.CWD(saveFileDirectoryWithTag)
+	err := fb.CWD(saveFileDirectoryWithTag, true)
 	if err != nil {
 		logger.Error("failed to change directory", zap.Error(err))
 		return
