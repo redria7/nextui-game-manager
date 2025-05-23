@@ -1,10 +1,10 @@
 package ui
 
 import (
+	"fmt"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
-	commonUI "github.com/UncleJunVIP/nextui-pak-shared-functions/ui"
 	"nextui-game-manager/models"
 	"nextui-game-manager/utils"
 	"qlova.tech/sum"
@@ -24,13 +24,14 @@ func (c CollectionListScreen) Name() sum.Int[models.ScreenName] {
 	return models.ScreenNames.CollectionsList
 }
 
-func (c CollectionListScreen) Draw() (collection models.ScreenReturn, exitCode int, e error) {
+func (c CollectionListScreen) Draw() (collection interface{}, exitCode int, e error) {
 	title := "Collections"
+	fmt.Println(title)
 
 	fb := filebrowser.NewFileBrowser(common.GetLoggerInstance())
 	err := fb.CWD(common.CollectionDirectory, false)
 	if err != nil {
-		_, _ = commonUI.ShowMessage("Unable to fetch Collection directories! Quitting!", "3")
+		// TODO display ui error
 		common.LogStandardFatal("Error loading fetching Collection directories", err)
 	}
 
@@ -69,10 +70,7 @@ func (c CollectionListScreen) Draw() (collection models.ScreenReturn, exitCode i
 		return models.Collection{}, 404, nil
 	}
 
-	selection, err := commonUI.DisplayList(itemEntries, title, "", extraArgs...)
-	if err != nil {
-		return models.Collection{}, 1, err
-	}
+	// TODO show list
 
-	return collectionsMap[selection.SelectedValue], selection.ExitCode, nil
+	return nil, 0, nil
 }

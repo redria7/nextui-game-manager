@@ -2,7 +2,8 @@
 /game-manager
 /nextui-game-manager.iml
 /game_logs.sqlite
-/game-manager.log
 .DS_Store
 **/.DS_Store
 
+/resources/fonts/
+/*.log

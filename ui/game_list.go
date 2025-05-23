@@ -1,10 +1,10 @@
 package ui
 
 import (
+	"fmt"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
-	cui "github.com/UncleJunVIP/nextui-pak-shared-functions/ui"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
 	"nextui-game-manager/utils"
@@ -35,7 +35,7 @@ func (gl GameList) Name() sum.Int[models.ScreenName] {
 	return models.ScreenNames.GamesList
 }
 
-func (gl GameList) Draw() (item models.ScreenReturn, exitCode int, e error) {
+func (gl GameList) Draw() (item interface{}, exitCode int, e error) {
 	logger := common.GetLoggerInstance()
 	title := gl.RomDirectory.DisplayName
 
@@ -103,12 +103,9 @@ func (gl GameList) Draw() (item models.ScreenReturn, exitCode int, e error) {
 
 	allEntries := append(directoryEntries, itemEntries...)
 
-	selection, err := cui.DisplayList(allEntries, title, "SEARCH", extraArgs...)
-	if err != nil {
-		return shared.Item{}, 1, err
-	}
+	// TODO list here
 
-	selectedItem := displayNameToItem[selection.SelectedValue]
+	fmt.Println(title)
 
-	return selectedItem, selection.ExitCode, nil
+	return allEntries, 0, nil // TODO list selection
 }

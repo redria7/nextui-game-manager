@@ -3,7 +3,6 @@ package ui
 import (
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
-	cui "github.com/UncleJunVIP/nextui-pak-shared-functions/ui"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
 	"nextui-game-manager/utils"
@@ -36,7 +35,7 @@ func (a ActionsScreen) Name() sum.Int[models.ScreenName] {
 	return models.ScreenNames.Actions
 }
 
-func (a ActionsScreen) Draw() (action models.ScreenReturn, exitCode int, e error) {
+func (a ActionsScreen) Draw() (action interface{}, exitCode int, e error) {
 	logger := common.GetLoggerInstance()
 
 	existingArtFilename, err := utils.FindExistingArt(a.Game.Filename, a.RomDirectory)
@@ -63,10 +62,7 @@ func (a ActionsScreen) Draw() (action models.ScreenReturn, exitCode int, e error
 		actionEntries = append(actionEntries, shared.Item{DisplayName: action})
 	}
 
-	res, err := cui.DisplayList(actionEntries, a.Game.DisplayName, "")
-	if err != nil {
-		return shared.Item{}, 1, err
-	}
+	// TODO show action list
 
-	return shared.ListSelection{SelectedValue: res.SelectedValue}, res.ExitCode, nil
+	return nil, 0, nil
 }

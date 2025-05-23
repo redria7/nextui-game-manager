@@ -7,13 +7,11 @@ import (
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
-	"github.com/disintegration/imaging"
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
 	"os"
 	"path/filepath"
-	"qlova.tech/sum"
 	"sort"
 	"strings"
 )
@@ -21,6 +19,42 @@ import (
 const gameTrackerDBPath = "/mnt/SDCARD/.userdata/shared/game_logs.sqlite"
 
 const saveFileDirectory = "/mnt/SDCARD/Saves/"
+
+func IsDev() bool {
+	return os.Getenv("ENVIRONMENT") == "DEV"
+}
+
+func GetRomDirectory() string {
+	if IsDev() {
+		return os.Getenv("ROM_DIRECTORY")
+	}
+
+	return common.RomDirectory
+}
+
+func GetCollectionDirectory() string {
+	if IsDev() {
+		return os.Getenv("COLLECTION_DIRECTORY")
+	}
+
+	return common.CollectionDirectory
+}
+
+func GetSaveFileDirectory() string {
+	if IsDev() {
+		return os.Getenv("SAVE_FILE_DIRECTORY")
+	}
+
+	return saveFileDirectory
+}
+
+func GetGameTrackerDBPath() string {
+	if IsDev() {
+		return os.Getenv("GAME_TRACKER_DB_PATH")
+	}
+
+	return gameTrackerDBPath
+}
 
 func GetFileList(dirPath string) ([]os.DirEntry, error) {
 	entries, err := os.ReadDir(dirPath)
@@ -55,69 +89,6 @@ func InsertIntoSlice(s []string, index int, values ...string) []string {
 	}
 
 	return append(s[:index], append(values, s[index:]...)...)
-}
-
-func FindArt(game shared.Item, romDirectory shared.RomDirectory, downloadType sum.Int[shared.ArtDownloadType]) string {
-	logger := common.GetLoggerInstance()
-
-	if romDirectory.Tag == "" {
-		return ""
-	}
-
-	tag := common.TagRegex.FindStringSubmatch(romDirectory.Path)
-
-	client := common.NewThumbnailClient(downloadType)
-	section := client.BuildThumbnailSection(tag[1])
-
-	artList, err := client.ListDirectory(section)
-
-	if err != nil {
-		logger.Info("Unable to fetch artlist", zap.Error(err))
-		return ""
-	}
-
-	noExtension := strings.TrimSuffix(game.Filename, filepath.Ext(game.Filename))
-
-	var matched shared.Item
-
-	// naive search first
-	for _, art := range artList {
-		if strings.Contains(strings.ToLower(art.Filename), strings.ToLower(noExtension)) {
-			matched = art
-			break
-		}
-	}
-
-	if matched.Filename == "" {
-		// TODO Levenshtein Distance support at some point
-	}
-
-	if matched.Filename != "" {
-		lastSavedArtPath, err := client.DownloadFileRename(section.HostSubdirectory,
-			filepath.Join(romDirectory.Path, ".media"), matched.Filename, game.Filename)
-
-		if err != nil {
-			return ""
-		}
-
-		src, err := imaging.Open(lastSavedArtPath)
-		if err != nil {
-			logger.Error("Unable to open last saved art", zap.Error(err))
-			return ""
-		}
-
-		dst := imaging.Resize(src, 400, 0, imaging.Lanczos)
-
-		err = imaging.Save(dst, lastSavedArtPath)
-		if err != nil {
-			logger.Error("Unable to save resized last saved art", zap.Error(err))
-			return ""
-		}
-
-		return lastSavedArtPath
-	}
-
-	return ""
 }
 
 func FindExistingArt(selectedFile string, romDirectory shared.RomDirectory) (string, error) {

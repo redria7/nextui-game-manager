@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
-	commonUI "github.com/UncleJunVIP/nextui-pak-shared-functions/ui"
 	"nextui-game-manager/models"
 	"qlova.tech/sum"
 )
@@ -24,7 +23,7 @@ func (c CollectionOptionsScreen) Name() sum.Int[models.ScreenName] {
 	return models.ScreenNames.CollectionOptions
 }
 
-func (c CollectionOptionsScreen) Draw() (screenReturn models.ScreenReturn, exitCode int, e error) {
+func (c CollectionOptionsScreen) Draw() (screenReturn interface{}, exitCode int, e error) {
 	title := fmt.Sprintf("Collection Options: %s", c.Collection.DisplayName)
 
 	var extraArgs []string
@@ -35,10 +34,9 @@ func (c CollectionOptionsScreen) Draw() (screenReturn models.ScreenReturn, exitC
 		actions = append(actions, shared.Item{DisplayName: action})
 	}
 
-	selection, err := commonUI.DisplayList(actions, title, "", extraArgs...)
-	if err != nil {
-		return c.Collection, 1, err
-	}
+	// TODO display actions list
 
-	return shared.ListSelection{SelectedValue: selection.SelectedValue}, selection.ExitCode, nil
+	fmt.Println(title)
+
+	return nil, 0, nil
 }
