@@ -12,7 +12,6 @@ import (
 	"nextui-game-manager/models"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 )
 
@@ -432,20 +431,24 @@ func MoveFile(oldPath, newPath string) error {
 	return nil
 }
 
-func RenameCollection(collection models.Collection, name string) error {
+func RenameCollection(collection models.Collection, name string) (models.Collection, error) {
 	logger := common.GetLoggerInstance()
 
-	name = name + ".txt"
+	newFileName := name + ".txt"
 
 	filepath.Dir(collection.CollectionFile)
-	newPath := filepath.Join(filepath.Dir(collection.CollectionFile), name)
+	newPath := filepath.Join(filepath.Dir(collection.CollectionFile), newFileName)
 
 	err := os.Rename(collection.CollectionFile, newPath)
 	if err != nil {
 		logger.Error("Failed to move file", zap.Error(err))
+		return models.Collection{}, err
 	}
 
-	return err
+	collection.DisplayName = name
+	collection.CollectionFile = newPath
+
+	return collection, nil
 }
 
 func DeleteCollection(collection models.Collection) {
@@ -469,8 +472,7 @@ func AddCollectionGame(collection models.Collection, game shared.Item) (models.C
 	}
 
 	collection.Games = append(collection.Games, game)
-	collection.Games = alphabetizeCollection(collection.Games)
-	_ = saveCollection(collection)
+	_ = SaveCollection(collection)
 
 	return collection, nil
 }
@@ -493,7 +495,7 @@ func RemoveCollectionGame(collection models.Collection, gameName string) (models
 	}
 
 	collection.Games = newList
-	err := saveCollection(collection)
+	err := SaveCollection(collection)
 
 	return collection, err
 }
@@ -532,13 +534,11 @@ func ReadCollection(collection models.Collection) (models.Collection, error) {
 	return collection, nil
 }
 
-func saveCollection(collection models.Collection) error {
+func SaveCollection(collection models.Collection) error {
 	dir := filepath.Dir(collection.CollectionFile)
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
-
-	collection.Games = alphabetizeCollection(collection.Games)
 
 	file, err := os.OpenFile(collection.CollectionFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
@@ -561,12 +561,4 @@ func saveCollection(collection models.Collection) error {
 	}
 
 	return nil
-}
-
-func alphabetizeCollection(items []shared.Item) []shared.Item {
-	sort.Slice(items, func(i, j int) bool {
-		return items[i].DisplayName < items[j].DisplayName
-	})
-
-	return items
 }

@@ -76,29 +76,32 @@ func main() {
 			}
 
 		case models.ScreenNames.CollectionsList:
-
-		case models.ScreenNames.CollectionManagement:
-
-		case models.ScreenNames.CollectionOptions:
-			collectionOptions := screen.(ui.CollectionOptionsScreen)
 			switch code {
 			case 0:
-				action := models.ActionMap["replace me"]
+				col := res.(models.Collection)
+				screen = ui.InitCollectionManagement(col)
+			default:
+				screen = ui.InitMainMenu()
+			}
 
-				switch action {
-				case models.Actions.CollectionRename:
-				case models.Actions.CollectionDelete:
-					// TODO confirmation
-
-					switch code {
-					case 0:
-						utils.DeleteCollection(collectionOptions.Collection)
-						screen = ui.InitCollectionList(collectionOptions.SearchFilter)
-					default:
-						screen = ui.InitCollectionOptions(collectionOptions.Collection, collectionOptions.SearchFilter)
-					}
-				}
+		case models.ScreenNames.CollectionManagement:
+			switch code {
+			case 0:
+			case 4:
+				screen = ui.InitCollectionOptions(screen.(ui.CollectionManagement).Collection,
+					screen.(ui.CollectionManagement).SearchFilter)
 			case 2:
+				screen = ui.InitCollectionList(screen.(ui.CollectionManagement).SearchFilter)
+			}
+
+		case models.ScreenNames.CollectionOptions:
+			switch code {
+			case 0, 2, 3:
+				collectionOptions := screen.(ui.CollectionOptionsScreen)
+				screen = ui.InitCollectionList(collectionOptions.SearchFilter)
+			case 4:
+				updatedCollection := res.(models.Collection)
+				screen = ui.InitCollectionOptions(updatedCollection, screen.(ui.CollectionOptionsScreen).SearchFilter)
 			}
 
 		case models.ScreenNames.GamesList:

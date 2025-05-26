@@ -7,3 +7,11 @@
 
 /resources/fonts/
 /*.log
+/build/lib/libSDL2_gfx-1.0.so.0
+/build/RFDT.pak/resources/lib/libSDL2_gfx-1.0.so.0
+/build/RFDT.pak/launch.sh
+/build/RFDT.pak/LICENSE
+/build/RFDT.pak/pak.json
+/build/RFDT.pak/README.md
+/build/RFDT.pak/rom-folder
+/build/rom-folder

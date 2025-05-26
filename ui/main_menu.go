@@ -95,7 +95,7 @@ func (m MainMenu) Draw() (romDirectory interface{}, exitCode int, e error) {
 
 	if selection.IsSome() && selection.Unwrap().ActionTriggered {
 		return nil, 4, nil
-	} else if selection.IsSome() && !selection.Unwrap().Cancelled && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
+	} else if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
 		return selection.Unwrap().SelectedItem.Metadata.(shared.RomDirectory), 0, nil
 	}
 
