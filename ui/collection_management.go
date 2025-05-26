@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
@@ -9,6 +10,7 @@ import (
 	"nextui-game-manager/models"
 	"nextui-game-manager/utils"
 	"qlova.tech/sum"
+	"slices"
 )
 
 type CollectionManagement struct {
@@ -78,28 +80,58 @@ func (c CollectionManagement) Draw() (value interface{}, exitCode int, e error) 
 		{ButtonName: "Menu", HelpText: "Controls"},
 	}
 
-	selection, err := gaba.List(options)
-
-	if err != nil {
-		return nil, -1, err
-	}
+	selection, _ := gaba.List(options)
 
 	if selection.IsSome() && selection.Unwrap().ActionTriggered {
 		return nil, 4, nil
 	} else if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
+		selected := selection.Unwrap()
 
+		var message string
+
+		if len(selected.SelectedItems) == 1 {
+			message = fmt.Sprintf("Remove %s from %s?", selected.SelectedItem.Text, c.Collection.DisplayName)
+		} else {
+			message = fmt.Sprintf("Remove %d ROMs from %s?", len(selected.SelectedItems), c.Collection.DisplayName)
+		}
+
+		confirm, _ := gaba.ConfirmationMessage(message, []gaba.FooterHelpItem{
+			{ButtonName: "B", HelpText: "Cancel"},
+			{ButtonName: "X", HelpText: "Remove"},
+		}, gaba.MessageOptions{
+			ImagePath:     "",
+			ConfirmButton: gaba.ButtonX,
+		})
+
+		if confirm.IsSome() && !confirm.Unwrap().Cancelled {
+			var games shared.Items
+			for _, item := range c.Collection.Games {
+				if !slices.ContainsFunc(selected.SelectedItems, func(i *gaba.MenuItem) bool {
+					return item.DisplayName == i.Text
+				}) {
+					games = append(games, item)
+				}
+			}
+
+			c.Collection.Games = games
+
+			utils.SaveCollection(c.Collection)
+
+		}
+
+		return c.Collection, 0, nil
+	} else {
+		rawItems := selection.Unwrap().Items
+
+		var games shared.Items
+		for _, item := range rawItems {
+			games = append(games, item.Metadata.(shared.Item))
+		}
+
+		c.Collection.Games = games
+
+		utils.SaveCollection(c.Collection)
+
+		return c.Collection, 2, nil
 	}
-
-	rawItems := selection.Unwrap().Items
-
-	var games shared.Items
-	for _, item := range rawItems {
-		games = append(games, item.Metadata.(shared.Item))
-	}
-
-	c.Collection.Games = games
-
-	utils.SaveCollection(c.Collection)
-
-	return c.Collection, 2, nil
 }

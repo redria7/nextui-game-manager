@@ -7,8 +7,9 @@ import (
 )
 
 type Config struct {
-	LogLevel        string                          `yaml:"log_level"`
 	ArtDownloadType sum.Int[shared.ArtDownloadType] `yaml:"art_download_type"`
+	ShowEmpty       bool                            `yaml:"show_empty"`
+	LogLevel        string                          `yaml:"log_level"`
 }
 
 func (c *Config) MarshalLogObject(enc zapcore.ObjectEncoder) error {

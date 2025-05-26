@@ -4,6 +4,8 @@ import "qlova.tech/sum"
 
 type ScreenName struct {
 	MainMenu,
+	Settings,
+
 	GamesList,
 	SearchBox,
 	Actions,

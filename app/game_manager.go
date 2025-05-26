@@ -73,7 +73,12 @@ func main() {
 				screen = ui.InitGamesList(platform, "")
 			case 1, 2:
 				os.Exit(0)
+			case 4:
+				screen = ui.InitSettingsScreen()
 			}
+
+		case models.ScreenNames.Settings:
+			screen = ui.InitMainMenu()
 
 		case models.ScreenNames.CollectionsList:
 			switch code {
@@ -87,10 +92,12 @@ func main() {
 		case models.ScreenNames.CollectionManagement:
 			switch code {
 			case 0:
+				collection := res.(models.Collection)
+				screen = ui.InitCollectionManagement(collection)
 			case 4:
 				screen = ui.InitCollectionOptions(screen.(ui.CollectionManagement).Collection,
 					screen.(ui.CollectionManagement).SearchFilter)
-			case 2:
+			case -1, 2:
 				screen = ui.InitCollectionList(screen.(ui.CollectionManagement).SearchFilter)
 			}
 
