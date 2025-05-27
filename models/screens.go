@@ -10,7 +10,6 @@ type ScreenName struct {
 	SearchBox,
 	Actions,
 	Confirm,
-	RenameRom,
 	DownloadArt,
 
 	CollectionsList,

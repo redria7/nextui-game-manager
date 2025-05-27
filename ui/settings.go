@@ -5,10 +5,10 @@ import (
 	"github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
 	"nextui-game-manager/state"
+	"nextui-game-manager/utils"
 	"qlova.tech/sum"
 )
 
@@ -77,10 +77,17 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 			},
 			Options: []gabagool.Option{
 				{DisplayName: "Debug", Value: "DEBUG"},
-				{DisplayName: "Info", Value: "INFO"},
-				{DisplayName: "Warn", Value: "WARN"},
 				{DisplayName: "Error", Value: "ERROR"},
 			},
+			SelectedOption: func() int {
+				switch appState.Config.LogLevel {
+				case "DEBUG":
+					return 0
+				case "ERROR":
+					return 1
+				}
+				return 0
+			}(),
 		},
 	}
 
@@ -125,7 +132,7 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 			}
 		}
 
-		err := SaveConfig(appState.Config)
+		err := utils.SaveConfig(appState.Config)
 		if err != nil {
 			logger.Error("Error saving config", zap.Error(err))
 			return nil, 0, err
@@ -137,20 +144,4 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 	}
 
 	return nil, 2, nil
-}
-
-func SaveConfig(config *models.Config) error {
-	viper.SetConfigName("config")
-	viper.SetConfigType("yml")
-	viper.AddConfigPath(".")
-
-	if err := viper.ReadInConfig(); err != nil {
-		return fmt.Errorf("error reading config file: %w", err)
-	}
-
-	viper.Set("art_download_type", config.ArtDownloadType)
-	viper.Set("show_empty", config.ShowEmpty)
-	viper.Set("log_level", config.LogLevel)
-
-	return viper.WriteConfigAs("config.yml")
 }

@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"fmt"
+	"github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
@@ -50,7 +50,6 @@ func (gl GameList) Draw() (item interface{}, exitCode int, e error) {
 	}
 
 	var roms shared.Items
-	var displayNameToFilename = make(map[string]string)
 
 	for _, entry := range fb.Items {
 		roms = append(roms, shared.Item{
@@ -60,16 +59,10 @@ func (gl GameList) Draw() (item interface{}, exitCode int, e error) {
 			IsMultiDiscDirectory: entry.IsMultiDiscDirectory,
 			Path:                 entry.Path,
 		})
-
-		displayNameToFilename[entry.DisplayName] = entry.Filename
 	}
-
-	var extraArgs []string
-	extraArgs = append(extraArgs, "--confirm-text", "SELECT")
 
 	if gl.SearchFilter != "" {
 		title = "[Search: \"" + gl.SearchFilter + "\"]"
-		extraArgs = append(extraArgs, "--cancel-text", "CLEAR SEARCH")
 		roms = utils.FilterList(roms, gl.SearchFilter)
 	}
 
@@ -77,9 +70,8 @@ func (gl GameList) Draw() (item interface{}, exitCode int, e error) {
 		return shared.Item{}, 404, nil
 	}
 
-	var directoryEntries shared.Items
-	var itemEntries shared.Items
-	displayNameToItem := make(map[string]shared.Item)
+	var directoryEntries []gabagool.MenuItem
+	var itemEntries []gabagool.MenuItem
 
 	for _, item := range roms {
 		if strings.HasPrefix(item.Filename, ".") { // Skip hidden files
@@ -90,22 +82,45 @@ func (gl GameList) Draw() (item interface{}, exitCode int, e error) {
 
 		if item.IsDirectory {
 			itemName = "/" + itemName
-			directoryEntries = append(directoryEntries, shared.Item{
-				DisplayName: itemName,
+			directoryEntries = append(directoryEntries, gabagool.MenuItem{
+				Text:               itemName,
+				Selected:           false,
+				Focused:            false,
+				Metadata:           item,
+				NotMultiSelectable: true,
 			})
-			displayNameToItem[itemName] = item
-			continue
+		} else {
+			itemEntries = append(itemEntries, gabagool.MenuItem{
+				Text:     itemName,
+				Selected: false,
+				Focused:  false,
+				Metadata: item,
+			})
 		}
-
-		itemEntries = append(itemEntries, item)
-		displayNameToItem[itemName] = item
 	}
 
 	allEntries := append(directoryEntries, itemEntries...)
 
-	// TODO list here
+	options := gabagool.DefaultListOptions(title, allEntries)
+	options.EnableAction = true
+	options.EnableMultiSelect = true
+	options.FooterHelpItems = []gabagool.FooterHelpItem{
+		{ButtonName: "B", HelpText: "Back"},
+		{ButtonName: "X", HelpText: "Search"},
+		{ButtonName: "Select", HelpText: "Multi"},
+		{ButtonName: "A", HelpText: "Select"},
+	}
 
-	fmt.Println(title)
+	selection, err := gabagool.List(options)
+	if err != nil {
+		return nil, -1, err
+	}
 
-	return allEntries, 0, nil // TODO list selection
+	if selection.IsSome() && selection.Unwrap().ActionTriggered {
+		return nil, 4, nil
+	} else if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
+		return selection.Unwrap().SelectedItem.Metadata.(shared.Item), 0, nil
+	}
+
+	return nil, 2, nil
 }

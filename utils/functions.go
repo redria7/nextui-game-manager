@@ -8,6 +8,7 @@ import (
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
 	"os"
@@ -121,11 +122,11 @@ func FindExistingArt(selectedFile string, romDirectory shared.RomDirectory) (str
 	return artFilename, err
 }
 
-func RenameRom(oldFilename string, newFilename string, romDirectory shared.RomDirectory) (string, error) {
+func RenameRom(game shared.Item, newFilename string, romDirectory shared.RomDirectory) (string, error) {
 	logger := common.GetLoggerInstance()
 
-	oldPath := filepath.Join(romDirectory.Path, oldFilename)
-	oldExt := filepath.Ext(oldFilename)
+	oldPath := filepath.Join(romDirectory.Path, game.Filename)
+	oldExt := filepath.Ext(game.Filename)
 	newPath := filepath.Join(romDirectory.Path, newFilename+oldExt)
 
 	logger.Debug("Renaming Rom", zap.String("oldPath", oldPath), zap.String("newPath", newPath))
@@ -144,9 +145,9 @@ func RenameRom(oldFilename string, newFilename string, romDirectory shared.RomDi
 
 	MigrateGameTrackerData(newFilename, gameTrackerOldPath, gameTrackerNewPath)
 
-	RenameSaveFile(strings.ReplaceAll(oldFilename, filepath.Ext(oldFilename), ""), newFilename, romDirectory)
+	RenameSaveFile(strings.ReplaceAll(game.Filename, filepath.Ext(game.Filename), ""), newFilename, romDirectory)
 
-	existingArtFilename, err := FindExistingArt(oldFilename, romDirectory)
+	existingArtFilename, err := FindExistingArt(game.Filename, romDirectory)
 	if err != nil {
 		logger.Error("failed to find existing art", zap.Error(err))
 		return "", err
@@ -561,4 +562,31 @@ func SaveCollection(collection models.Collection) error {
 	}
 
 	return nil
+}
+
+func SaveConfig(config *models.Config) error {
+	if _, err := os.Stat("config.yml"); os.IsNotExist(err) {
+		logger := common.GetLoggerInstance()
+		logger.Info("Config file does not exist, creating a blank one")
+
+		file, err := os.Create("config.yml")
+		if err != nil {
+			return fmt.Errorf("error creating config file: %w", err)
+		}
+		file.Close()
+	}
+
+	viper.SetConfigName("config")
+	viper.SetConfigType("yml")
+	viper.AddConfigPath(".")
+
+	if err := viper.ReadInConfig(); err != nil {
+		return fmt.Errorf("error reading config file: %w", err)
+	}
+
+	viper.Set("art_download_type", config.ArtDownloadType)
+	viper.Set("show_empty", config.ShowEmpty)
+	viper.Set("log_level", config.LogLevel)
+
+	return viper.WriteConfigAs("config.yml")
 }

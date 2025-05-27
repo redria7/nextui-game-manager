@@ -1,15 +1,18 @@
 package main
 
 import (
+	"fmt"
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"go.uber.org/zap"
+	"log"
 	"nextui-game-manager/models"
 	"nextui-game-manager/state"
 	"nextui-game-manager/ui"
 	"nextui-game-manager/utils"
 	"os"
+	"time"
 )
 
 func init() {
@@ -22,7 +25,16 @@ func init() {
 
 	config, err := state.LoadConfig()
 	if err != nil {
-		// TODO make config
+		config = &models.Config{
+			ArtDownloadType: shared.ArtDownloadTypeFromString["BOX_ART"],
+			ShowEmpty:       false,
+			LogLevel:        "ERROR",
+		}
+
+		err := utils.SaveConfig(config)
+		if err != nil {
+			log.Fatal("Unable to save config", zap.Error(err))
+		}
 	}
 
 	common.SetLogLevel(config.LogLevel)
@@ -115,6 +127,7 @@ func main() {
 			switch code {
 			case 0:
 				selection := res.(shared.Item)
+
 				if selection.IsDirectory {
 					screen = ui.InitGamesListWithPreviousDirectory(shared.RomDirectory{
 						DisplayName: selection.DisplayName,
@@ -122,14 +135,14 @@ func main() {
 						Path:        selection.Path,
 					}, screen.(ui.GameList).RomDirectory, "")
 				} else {
-					screen = ui.InitActionsScreen(selection, screen.(ui.GameList).RomDirectory,
+					screen = ui.InitActionsScreen(res.(shared.Item), screen.(ui.GameList).RomDirectory,
 						screen.(ui.GameList).SearchFilter)
 				}
 			case 2:
 				if screen.(ui.GameList).PreviousRomDirectory.Path != "" {
 					screen = ui.InitGamesList(screen.(ui.GameList).PreviousRomDirectory, "")
 				} else if screen.(ui.GameList).SearchFilter != "" {
-					ui.InitGamesList(screen.(ui.Search).RomDirectory, "")
+					screen = ui.InitGamesList(screen.(ui.GameList).RomDirectory, "")
 				} else {
 					screen = ui.InitMainMenu()
 				}
@@ -137,10 +150,16 @@ func main() {
 				screen = ui.InitSearch(screen.(ui.GameList).RomDirectory)
 			case 404:
 				if screen.(ui.GameList).SearchFilter != "" {
-					// TODO no results message
+					gaba.ProcessMessage(fmt.Sprintf("No results found for %s!", screen.(ui.GameList).SearchFilter), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+						time.Sleep(1250 * time.Millisecond)
+						return nil, nil
+					})
 					screen = ui.InitSearch(screen.(ui.GameList).RomDirectory)
 				} else {
-					// TODO new items for system message
+					gaba.ProcessMessage(fmt.Sprintf("%s is empty!", screen.(ui.GameList).RomDirectory.DisplayName), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+						time.Sleep(3 * time.Second)
+						return nil, nil
+					})
 					screen = ui.InitMainMenu()
 				}
 			default:
@@ -162,7 +181,7 @@ func main() {
 			as := screen.(ui.ActionsScreen)
 			switch code {
 			case 0:
-				switch models.ActionMap["REPLACE ME"] {
+				switch models.ActionMap[res.(string)] {
 				case models.Actions.DownloadArt:
 					screen = ui.InitDownloadArtScreen(as.Game,
 						as.RomDirectory,
@@ -170,10 +189,28 @@ func main() {
 						as.SearchFilter,
 						state.GetAppState().Config.ArtDownloadType)
 				case models.Actions.RenameRom:
-					screen = ui.InitRenameRomScreen(as.Game,
-						as.RomDirectory,
-						as.PreviousRomDirectory,
-						as.SearchFilter)
+					newName, err := gaba.Keyboard(as.Game.DisplayName)
+					if err != nil {
+						gaba.ProcessMessage("Unable to rename ROM!", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+							time.Sleep(3 * time.Second)
+							return nil, nil
+						})
+						break
+					}
+					if newName.IsSome() {
+						path, err := utils.RenameRom(as.Game, newName.Unwrap(), as.RomDirectory)
+						if err != nil {
+							gaba.ProcessMessage("Unable to rename ROM!", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+								time.Sleep(3 * time.Second)
+								return nil, nil
+							})
+						} else {
+							as.Game.DisplayName = newName.Unwrap()
+							as.Game.Filename = path
+							screen = ui.InitActionsScreen(as.Game, as.RomDirectory, as.SearchFilter)
+						}
+					}
+
 				case models.Actions.CollectionAdd:
 				default:
 				}
@@ -189,25 +226,6 @@ func main() {
 			case 2:
 				screen = ui.InitActionsScreenWithPreviousDirectory(cc.Game, cc.RomDirectory, cc.PreviousRomDirectory, cc.SearchFilter)
 			}
-
-		case models.ScreenNames.RenameRom:
-			rrs := screen.(ui.RenameRomScreen)
-			newName := res.(string)
-			var err error
-			newFilename := ""
-			switch code {
-			case 0:
-				newFilename, err = utils.RenameRom(rrs.Game.Filename, newName, rrs.RomDirectory)
-				if err != nil {
-				} else {
-					screen = ui.InitActionsScreenWithPreviousDirectory(shared.Item{DisplayName: newName, Filename: newFilename},
-						rrs.RomDirectory, rrs.PreviousRomDirectory, rrs.SearchFilter)
-					continue
-				}
-			}
-
-			screen = ui.InitActionsScreenWithPreviousDirectory(rrs.Game, rrs.RomDirectory,
-				rrs.PreviousRomDirectory, rrs.SearchFilter)
 
 		case models.ScreenNames.DownloadArt:
 			switch code {

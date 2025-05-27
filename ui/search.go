@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"nextui-game-manager/models"
 	"qlova.tech/sum"
@@ -21,6 +22,14 @@ func (s Search) Name() sum.Int[models.ScreenName] {
 }
 
 func (s Search) Draw() (value interface{}, exitCode int, e error) {
+	query, err := gabagool.Keyboard("")
+	if err != nil {
+		return nil, -1, err
+	}
 
-	return "KEY BOARD OUTPUT", 0, nil
+	if query.IsSome() {
+		return query.Unwrap(), 0, nil
+	}
+
+	return nil, 2, nil
 }

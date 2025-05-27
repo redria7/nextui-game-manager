@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"go.uber.org/zap"
@@ -57,12 +58,31 @@ func (a ActionsScreen) Draw() (action interface{}, exitCode int, e error) {
 		actions = utils.InsertIntoSlice(actions, 2, "Clear Game Tracker")
 	}
 
-	var actionEntries shared.Items
+	var actionEntries []gabagool.MenuItem
 	for _, action := range actions {
-		actionEntries = append(actionEntries, shared.Item{DisplayName: action})
+		actionEntries = append(actionEntries, gabagool.MenuItem{
+			Text:     action,
+			Selected: false,
+			Focused:  false,
+			Metadata: action,
+		})
 	}
 
-	// TODO show action list
+	options := gabagool.DefaultListOptions(a.Game.DisplayName, actionEntries)
+	options.SmallTitle = true
+	options.FooterHelpItems = []gabagool.FooterHelpItem{
+		{ButtonName: "B", HelpText: "Back"},
+		{ButtonName: "A", HelpText: "Select"},
+	}
 
-	return nil, 0, nil
+	selection, err := gabagool.List(options)
+	if err != nil {
+		return nil, -1, err
+	}
+
+	if selection.IsSome() && selection.Unwrap().SelectedIndex != -1 {
+		return selection.Unwrap().SelectedItem.Text, 0, nil
+	}
+
+	return nil, 2, nil
 }
