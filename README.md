@@ -8,7 +8,7 @@
 A one-stop pak for all your game management needs.
 </h4>
 
-## [Now Avalaible in Pak Store!](https://github.com/UncleJunVIP/nextui-pak-store)
+## [Download this in Pak Store!](https://github.com/UncleJunVIP/nextui-pak-store)
 
 ![GitHub License](https://img.shields.io/github/license/UncleJunVip/nextui-game-manager?style=for-the-badge)
 ![GitHub Release](https://img.shields.io/github/v/release/UncleJunVIP/nextui-game-manager?sort=semver&style=for-the-badge)
@@ -47,13 +47,13 @@ A one-stop pak for all your game management needs.
 
 ## How do I setup Game Manager?
 
-1. Own a TrimUI Brick and have a SD Card with NextUI configured.
-2. Connect your Brick to a Wi-Fi network. (This is needed for Artwork Download Support)
+1. Own a TrimUI Brick or Smart Pro and have a SD Card with NextUI configured.
+2. Connect your device to a Wi-Fi network. (This is needed for Artwork Download Support)
 3. Download the latest Game Manager release from this repo.
 4. Unzip the release download.
-5. With your Brick powered off, eject the SD Card and connect it to your computer.
+5. With your device powered off, eject the SD Card and connect it to your computer.
 6. Copy the entire Game Manager.pak file to `SD_ROOT/Tools/tg5040`.
-7. Reinsert your SD Card into your Brick.
+7. Reinsert your SD Card into your device.
 8. Launch `Game Manager` from the `Tools` menu and enjoy!
 
 ---
@@ -63,14 +63,5 @@ A one-stop pak for all your game management needs.
 Go snag [Mortar](https://github.com/UncleJunVIP/Mortar): a customizable ROM download client.
 
 ---
-
-## 🌸 Flower Giving Time! 🌸
-
-Like with my other Pak [Mortar](https://github.com/UncleJunVIP/Mortar.pak), I want to also
-shoutout [@josegonzalez](https://github.com/josegonzalez) for their
-awesome [minui-list](https://github.com/josegonzalez/minui-list), [miniui-presenter](https://github.com/josegonzalez/minui-presenter)
-and [minui-keyboard](https://github.com/josegonzalez/minui-keyboard) projects.
-
-Without these phenomenal pieces of software I likely would not have built Mortar.
 
 ✌️
