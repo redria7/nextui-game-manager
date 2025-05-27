@@ -1,7 +1,10 @@
 package ui
 
 import (
+	"fmt"
+	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
+	"mortar/utils"
 	"nextui-game-manager/models"
 	"qlova.tech/sum"
 )
@@ -31,6 +34,11 @@ func (da DownloadArtScreen) Name() sum.Int[models.ScreenName] {
 }
 
 func (da DownloadArtScreen) Draw() (value interface{}, exitCode int, e error) {
+
+	artPath, err := gaba.ProcessMessage(fmt.Sprintf("Finding art for %s...", da.Game.DisplayName), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+		artPath := utils.FindArt(da.Game, da.RomDirectory, da.DownloadType)
+	})
+
 	artPath := "" // TODO use art fetcher
 
 	if artPath == "" {

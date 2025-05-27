@@ -5,6 +5,7 @@ go 1.24
 require (
 	github.com/UncleJunVIP/gabagool v0.0.36
 	github.com/UncleJunVIP/nextui-pak-shared-functions v1.4.1
+	github.com/disintegration/imaging v1.6.2
 	github.com/mattn/go-sqlite3 v1.14.28
 	github.com/spf13/viper v1.20.1
 	github.com/veandco/go-sdl2 v0.4.40
@@ -31,6 +32,7 @@ require (
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
