@@ -3,10 +3,12 @@ package ui
 import (
 	"fmt"
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
+	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
-	"mortar/utils"
 	"nextui-game-manager/models"
+	"nextui-game-manager/utils"
 	"qlova.tech/sum"
+	"time"
 )
 
 type DownloadArtScreen struct {
@@ -35,18 +37,32 @@ func (da DownloadArtScreen) Name() sum.Int[models.ScreenName] {
 
 func (da DownloadArtScreen) Draw() (value interface{}, exitCode int, e error) {
 
-	artPath, err := gaba.ProcessMessage(fmt.Sprintf("Finding art for %s...", da.Game.DisplayName), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-		artPath := utils.FindArt(da.Game, da.RomDirectory, da.DownloadType)
+	artPath, _ := gaba.ProcessMessage(fmt.Sprintf("Finding art for %s...", da.Game.DisplayName), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+		artPath := utils.FindArt(da.RomDirectory, da.Game, da.DownloadType)
+		return artPath, nil
 	})
 
-	artPath := "" // TODO use art fetcher
-
-	if artPath == "" {
-		// TODO say no art found
+	if artPath.Result.(string) == "" {
+		gaba.ProcessMessage("No art found!",
+			gaba.ProcessMessageOptions{ShowThemeBackground: true}, func() (interface{}, error) {
+				time.Sleep(time.Millisecond * 1500)
+				return nil, nil
+			})
 		return shared.Item{}, 404, nil
 	}
 
-	// TODO use this art?
+	result, err := gaba.ConfirmationMessage("Found This Art!",
+		[]gaba.FooterHelpItem{
+			{ButtonName: "B", HelpText: "I'll Find My Own"},
+			{ButtonName: "A", HelpText: "Use It!"},
+		},
+		gaba.MessageOptions{
+			ImagePath: artPath.Result.(string),
+		})
+
+	if err != nil || result.IsNone() {
+		common.DeleteFile(artPath.Result.(string))
+	}
 
 	return nil, 0, nil
 

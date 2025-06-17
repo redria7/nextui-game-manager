@@ -1,13 +1,15 @@
 package ui
 
 import (
-	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
+	"fmt"
+	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"nextui-game-manager/models"
 	"nextui-game-manager/utils"
 	"path/filepath"
 	"qlova.tech/sum"
 	"strings"
+	"time"
 )
 
 type CreateCollectionScreen struct {
@@ -32,13 +34,32 @@ func (c CreateCollectionScreen) Name() sum.Int[models.ScreenName] {
 }
 
 func (c CreateCollectionScreen) Draw() (collection interface{}, exitCode int, e error) {
+	res, err := gaba.Keyboard("")
 
-	newCollectionName := strings.ReplaceAll("KEYBOARD OUTPUT", "\n", "")
+	if err != nil {
+		return nil, -1, err
+	}
 
-	utils.AddCollectionGame(models.Collection{
-		DisplayName:    newCollectionName,
-		CollectionFile: filepath.Join(common.CollectionDirectory, newCollectionName+".txt"),
-	}, c.Game)
+	if res.IsSome() {
+		newCollectionName := strings.ReplaceAll(res.Unwrap(), " ", "")
 
-	return nil, 0, nil
+		if newCollectionName == "" {
+			return nil, 2, nil
+		}
+
+		utils.AddCollectionGame(models.Collection{
+			DisplayName:    newCollectionName,
+			CollectionFile: filepath.Join(utils.GetCollectionDirectory(), newCollectionName+".txt"),
+		}, c.Game)
+
+		gaba.ProcessMessage(fmt.Sprintf("Created %s!\nAlso added %s!", newCollectionName, c.Game.DisplayName),
+			gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+				time.Sleep(time.Second * 2)
+				return nil, nil
+			})
+
+		return nil, 0, nil
+	}
+
+	return nil, 2, nil
 }

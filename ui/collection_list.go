@@ -37,7 +37,7 @@ func (c CollectionListScreen) Draw() (collection interface{}, exitCode int, e er
 			time.Sleep(time.Second * 2)
 			return nil, nil
 		})
-		common.LogStandardFatal("Error loading fetching Collection directories", err)
+		return nil, 404, nil
 	}
 
 	if fb.Items == nil || len(fb.Items) == 0 {

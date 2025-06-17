@@ -212,6 +212,8 @@ func main() {
 					}
 
 				case models.Actions.CollectionAdd:
+					screen = ui.InitAddToCollectionScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
+
 				default:
 				}
 			default:
@@ -219,13 +221,26 @@ func main() {
 					as.SearchFilter)
 			}
 
-		case models.ScreenNames.CollectionCreate:
-			cc := screen.(ui.CreateCollectionScreen)
+		case models.ScreenNames.AddToCollection:
+			atc := screen.(ui.AddToCollectionScreen)
 			switch code {
 			case 0:
-			case 2:
-				screen = ui.InitActionsScreenWithPreviousDirectory(cc.Game, cc.RomDirectory, cc.PreviousRomDirectory, cc.SearchFilter)
+				screen = ui.InitAddToCollectionScreen(atc.Game,
+					atc.RomDirectory,
+					atc.PreviousRomDirectory,
+					atc.SearchFilter)
+			case 404:
+				screen = ui.InitCreateCollectionScreen(atc.Game, atc.RomDirectory, atc.PreviousRomDirectory, atc.SearchFilter)
+			default:
+				screen = ui.InitActionsScreen(atc.Game,
+					atc.RomDirectory,
+					atc.SearchFilter)
+
 			}
+
+		case models.ScreenNames.CollectionCreate:
+			cc := screen.(ui.CreateCollectionScreen)
+			screen = ui.InitAddToCollectionScreen(cc.Game, cc.RomDirectory, cc.PreviousRomDirectory, cc.SearchFilter)
 
 		case models.ScreenNames.DownloadArt:
 			switch code {

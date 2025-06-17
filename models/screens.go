@@ -9,6 +9,7 @@ type ScreenName struct {
 	GamesList,
 	SearchBox,
 	Actions,
+	AddToCollection,
 	Confirm,
 	DownloadArt,
 

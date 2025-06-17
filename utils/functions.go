@@ -7,12 +7,14 @@ import (
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
+	"github.com/disintegration/imaging"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
 	"os"
 	"path/filepath"
+	"qlova.tech/sum"
 	"strings"
 )
 
@@ -34,9 +36,11 @@ func GetRomDirectory() string {
 
 func GetCollectionDirectory() string {
 	if IsDev() {
+		_ = MakeDirectoryIfNotExist(os.Getenv("COLLECTION_DIRECTORY"))
 		return os.Getenv("COLLECTION_DIRECTORY")
 	}
 
+	_ = MakeDirectoryIfNotExist(common.CollectionDirectory)
 	return common.CollectionDirectory
 }
 
@@ -120,6 +124,69 @@ func FindExistingArt(selectedFile string, romDirectory shared.RomDirectory) (str
 	}
 
 	return artFilename, err
+}
+
+func FindArt(romDirectory shared.RomDirectory, game shared.Item, downloadType sum.Int[shared.ArtDownloadType]) string {
+	logger := common.GetLoggerInstance()
+
+	artDirectory := ""
+
+	if IsDev() {
+		romDirectory := strings.ReplaceAll(romDirectory.Path, common.RomDirectory, GetRomDirectory())
+		artDirectory = filepath.Join(romDirectory, ".media")
+	} else {
+		artDirectory = filepath.Join(romDirectory.Path, ".media")
+	}
+
+	tag := strings.ReplaceAll(romDirectory.Tag, "(", "")
+	tag = strings.ReplaceAll(tag, ")", "")
+
+	client := common.NewThumbnailClient(downloadType)
+	section := client.BuildThumbnailSection(tag)
+
+	artList, err := client.ListDirectory(section.HostSubdirectory)
+
+	if err != nil {
+		logger.Info("Unable to fetch artlist", zap.Error(err))
+		return ""
+	}
+
+	noExtension := strings.TrimSuffix(game.Filename, filepath.Ext(game.Filename))
+
+	var matched shared.Item
+
+	// naive search first
+	for _, art := range artList {
+		if strings.Contains(strings.ToLower(art.Filename), strings.ToLower(noExtension)) {
+			matched = art
+			break
+		}
+	}
+
+	if matched.Filename != "" {
+		lastSavedArtPath, err := client.DownloadArt(section.HostSubdirectory, artDirectory, matched.Filename, game.Filename)
+		if err != nil {
+			return ""
+		}
+
+		src, err := imaging.Open(lastSavedArtPath)
+		if err != nil {
+			logger.Error("Unable to open last saved art", zap.Error(err))
+			return ""
+		}
+
+		dst := imaging.Resize(src, 500, 0, imaging.Lanczos)
+
+		err = imaging.Save(dst, lastSavedArtPath)
+		if err != nil {
+			logger.Error("Unable to save resized last saved art", zap.Error(err))
+			return ""
+		}
+
+		return lastSavedArtPath
+	}
+
+	return ""
 }
 
 func RenameRom(game shared.Item, newFilename string, romDirectory shared.RomDirectory) (string, error) {
@@ -432,6 +499,16 @@ func MoveFile(oldPath, newPath string) error {
 	return nil
 }
 
+func MakeDirectoryIfNotExist(dirPath string) error {
+	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+		err := os.MkdirAll(dirPath, 0755)
+		if err != nil {
+			return fmt.Errorf("failed to create directory %s: %w", dirPath, err)
+		}
+	}
+	return nil
+}
+
 func RenameCollection(collection models.Collection, name string) (models.Collection, error) {
 	logger := common.GetLoggerInstance()
 
@@ -472,7 +549,15 @@ func AddCollectionGame(collection models.Collection, game shared.Item) (models.C
 		}
 	}
 
+	for _, existingGame := range collection.Games {
+		if existingGame.Path == game.Path {
+			logger.Debug("Game already exists in collection", zap.String("path", game.Path))
+			return collection, nil
+		}
+	}
+
 	collection.Games = append(collection.Games, game)
+
 	_ = SaveCollection(collection)
 
 	return collection, nil
