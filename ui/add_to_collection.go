@@ -1,0 +1,179 @@
+package ui
+
+import (
+	"fmt"
+	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
+	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
+	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
+	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
+	"go.uber.org/zap"
+	"nextui-game-manager/models"
+	"nextui-game-manager/utils"
+	"qlova.tech/sum"
+	"slices"
+	"strings"
+	"time"
+)
+
+type AddToCollectionScreen struct {
+	Game                 shared.Item
+	RomDirectory         shared.RomDirectory
+	PreviousRomDirectory shared.RomDirectory
+	SearchFilter         string
+}
+
+func InitAddToCollectionScreen(game shared.Item, romDirectory shared.RomDirectory,
+	previousRomDirectory shared.RomDirectory, searchFilter string) AddToCollectionScreen {
+	return AddToCollectionScreen{
+		Game:                 game,
+		RomDirectory:         romDirectory,
+		PreviousRomDirectory: previousRomDirectory,
+		SearchFilter:         searchFilter,
+	}
+}
+
+func (a AddToCollectionScreen) Name() sum.Int[models.ScreenName] {
+	return models.ScreenNames.AddToCollection
+}
+
+func (a AddToCollectionScreen) Draw() (collection interface{}, exitCode int, e error) {
+	logger := common.GetLoggerInstance()
+
+	fb := filebrowser.NewFileBrowser(common.GetLoggerInstance())
+	err := fb.CWD(utils.GetCollectionDirectory(), false)
+	if err != nil {
+		gaba.ProcessMessage("Unable to Load Collections!", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+			time.Sleep(time.Second * 2)
+			return nil, nil
+		})
+		return nil, -1, nil
+	}
+
+	if len(fb.Items) == 0 {
+		res, err := gaba.ConfirmationMessage("No Collections Found. \n Want to create your first?",
+			[]gaba.FooterHelpItem{{
+				HelpText:   "No Thanks",
+				ButtonName: "B",
+			}, {
+				HelpText:   "Yes",
+				ButtonName: "A",
+			}}, gaba.MessageOptions{})
+
+		if err != nil || res.IsNone() {
+			return nil, 2, nil
+		}
+
+		return nil, 404, nil
+	}
+
+	var collections []models.Collection
+	collectionsMap := make(map[string]models.Collection)
+
+	for _, item := range fb.Items {
+		collection := models.Collection{
+			DisplayName:    item.DisplayName,
+			CollectionFile: item.Path,
+		}
+
+		var err error
+		collection, err = utils.ReadCollection(collection)
+
+		if err != nil {
+			logger.Error("Error reading collection", zap.Error(err))
+		} else if !slices.ContainsFunc(collection.Games, func(element shared.Item) bool {
+			return element.DisplayName == a.Game.DisplayName
+		}) {
+			collections = append(collections, collection)
+			collectionsMap[item.DisplayName] = collection
+		}
+	}
+
+	if len(collections) == 0 {
+		res, err := gaba.ConfirmationMessage(fmt.Sprintf("Every collection contains %s. \n Want to create a new one?", a.Game.DisplayName),
+			[]gaba.FooterHelpItem{{
+				HelpText:   "No Thanks",
+				ButtonName: "B",
+			}, {
+				HelpText:   "Yes",
+				ButtonName: "A",
+			}}, gaba.MessageOptions{})
+
+		if err != nil || res.IsNone() {
+			return nil, 2, nil
+		}
+
+		return nil, 404, nil
+	}
+
+	var itemList []shared.Item
+
+	for _, collection := range collections {
+		itemList = append(itemList, shared.Item{
+			DisplayName: collection.DisplayName,
+			Path:        collection.CollectionFile,
+		})
+	}
+
+	slices.SortFunc(itemList, func(a, b shared.Item) int {
+		return strings.Compare(a.DisplayName, b.DisplayName)
+	})
+
+	var menuItems []gaba.MenuItem
+	for _, item := range itemList {
+		col := models.Collection{DisplayName: item.DisplayName, CollectionFile: item.Path}
+		col, err = utils.ReadCollection(col)
+
+		if err != nil {
+			gaba.ProcessMessage("Unable to Load Collections!", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+				time.Sleep(time.Second * 2)
+				return nil, nil
+			})
+			return nil, -1, err
+		}
+
+		collection := gaba.MenuItem{
+			Text:     item.DisplayName,
+			Selected: false,
+			Focused:  false,
+			Metadata: col,
+		}
+		menuItems = append(menuItems, collection)
+	}
+
+	options := gaba.DefaultListOptions(fmt.Sprintf("Add %s To Collection", a.Game.DisplayName), menuItems)
+	options.SmallTitle = true
+	options.EnableAction = true
+	options.EnableMultiSelect = true
+	options.FooterHelpItems = []gaba.FooterHelpItem{
+		{ButtonName: "B", HelpText: "Back"},
+		{ButtonName: "Y", HelpText: "Create Collection"},
+		{ButtonName: "A", HelpText: "Add"},
+	}
+
+	selection, err := gaba.List(options)
+	if err != nil {
+		return nil, -1, err
+	}
+
+	if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
+		selectedCol := selection.Unwrap().SelectedItem.Metadata.(models.Collection)
+		_, err := utils.AddCollectionGame(selectedCol, a.Game)
+
+		if err != nil {
+			gaba.ProcessMessage("Unable to Add Game To Collection!", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+				time.Sleep(time.Second * 2)
+				return nil, nil
+			})
+			return nil, 0, err
+		}
+
+		gaba.ProcessMessage(fmt.Sprintf("Added %s To Collection %s!", a.Game.DisplayName, selectedCol.DisplayName), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+			time.Sleep(time.Second * 2)
+			return nil, nil
+		})
+
+		return nil, 0, nil
+	}
+
+	return nil, 2, nil
+}
