@@ -22,12 +22,13 @@ func init() {
 	})
 
 	common.SetLogLevel("ERROR")
+	common.InitIncludes()
 
 	config, err := state.LoadConfig()
 	if err != nil {
 		config = &models.Config{
 			ArtDownloadType: shared.ArtDownloadTypeFromString["BOX_ART"],
-			ShowEmpty:       false,
+			HideEmpty:       false,
 			LogLevel:        "ERROR",
 		}
 
@@ -115,9 +116,11 @@ func main() {
 
 		case models.ScreenNames.CollectionOptions:
 			switch code {
-			case 0, 2, 3:
+			case 0, 3:
 				collectionOptions := screen.(ui.CollectionOptionsScreen)
 				screen = ui.InitCollectionList(collectionOptions.SearchFilter)
+			case 2:
+				screen = ui.InitCollectionManagement(screen.(ui.CollectionOptionsScreen).Collection)
 			case 4:
 				updatedCollection := res.(models.Collection)
 				screen = ui.InitCollectionOptions(updatedCollection, screen.(ui.CollectionOptionsScreen).SearchFilter)
@@ -135,7 +138,9 @@ func main() {
 						Path:        selection.Path,
 					}, screen.(ui.GameList).RomDirectory, "")
 				} else {
-					screen = ui.InitActionsScreen(res.(shared.Item), screen.(ui.GameList).RomDirectory,
+					screen = ui.InitActionsScreen(res.(shared.Item),
+						screen.(ui.GameList).RomDirectory,
+						screen.(ui.GameList).PreviousRomDirectory,
 						screen.(ui.GameList).SearchFilter)
 				}
 			case 2:
@@ -188,6 +193,28 @@ func main() {
 						as.PreviousRomDirectory,
 						as.SearchFilter,
 						state.GetAppState().Config.ArtDownloadType)
+				case models.Actions.DeleteArt:
+					existingArtFilename, err := utils.FindExistingArt(as.Game.Filename, as.RomDirectory)
+					if err != nil {
+						logger.Error("failed to find existing arts", zap.Error(err))
+						gaba.ProcessMessage("Unable to delete art!", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+							time.Sleep(3 * time.Second)
+							return nil, nil
+						})
+						break
+					}
+
+					result, err := gaba.ConfirmationMessage("Delete this beautiful art?", []gaba.FooterHelpItem{
+						{ButtonName: "B", HelpText: "I Changed My Mind"},
+						{ButtonName: "A", HelpText: "Trash It!"},
+					},
+						gaba.MessageOptions{
+							ImagePath: existingArtFilename,
+						})
+					if err != nil || result.IsSome() {
+						common.DeleteFile(existingArtFilename)
+						screen = ui.InitActionsScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
+					}
 				case models.Actions.RenameRom:
 					newName, err := gaba.Keyboard(as.Game.DisplayName)
 					if err != nil {
@@ -207,7 +234,7 @@ func main() {
 						} else {
 							as.Game.DisplayName = newName.Unwrap()
 							as.Game.Filename = path
-							screen = ui.InitActionsScreen(as.Game, as.RomDirectory, as.SearchFilter)
+							screen = ui.InitActionsScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 						}
 					}
 
@@ -217,7 +244,7 @@ func main() {
 				default:
 				}
 			default:
-				screen = ui.InitGamesList(as.RomDirectory,
+				screen = ui.InitGamesListWithPreviousDirectory(as.RomDirectory, as.PreviousRomDirectory,
 					as.SearchFilter)
 			}
 
@@ -234,6 +261,7 @@ func main() {
 			default:
 				screen = ui.InitActionsScreen(atc.Game,
 					atc.RomDirectory,
+					atc.PreviousRomDirectory,
 					atc.SearchFilter)
 
 			}
@@ -245,7 +273,7 @@ func main() {
 		case models.ScreenNames.DownloadArt:
 			switch code {
 			default:
-				screen = ui.InitActionsScreenWithPreviousDirectory(screen.(ui.DownloadArtScreen).Game,
+				screen = ui.InitActionsScreen(screen.(ui.DownloadArtScreen).Game,
 					screen.(ui.DownloadArtScreen).RomDirectory,
 					screen.(ui.DownloadArtScreen).PreviousRomDirectory,
 					screen.(ui.DownloadArtScreen).SearchFilter)

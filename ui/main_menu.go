@@ -7,6 +7,7 @@ import (
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
+	"nextui-game-manager/state"
 	"nextui-game-manager/utils"
 	"qlova.tech/sum"
 )
@@ -53,7 +54,7 @@ func (m MainMenu) Draw() (romDirectory interface{}, exitCode int, e error) {
 		})
 	}
 
-	err = fb.CWD(utils.GetRomDirectory(), false)
+	err = fb.CWD(utils.GetRomDirectory(), state.GetAppState().Config.HideEmpty)
 	if err != nil {
 		gaba.ConfirmationMessage("Unable to fetch ROM directories!", []gaba.FooterHelpItem{
 			{ButtonName: "B", HelpText: "Quit"},

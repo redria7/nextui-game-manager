@@ -17,11 +17,7 @@ type ActionsScreen struct {
 	PreviousRomDirectory shared.RomDirectory
 }
 
-func InitActionsScreen(game shared.Item, romDirectory shared.RomDirectory, searchFilter string) ActionsScreen {
-	return InitActionsScreenWithPreviousDirectory(game, romDirectory, shared.RomDirectory{}, searchFilter)
-}
-
-func InitActionsScreenWithPreviousDirectory(game shared.Item, romDirectory shared.RomDirectory,
+func InitActionsScreen(game shared.Item, romDirectory shared.RomDirectory,
 	previousRomDirectory shared.RomDirectory,
 	searchFilter string) ActionsScreen {
 	return ActionsScreen{

@@ -8,7 +8,7 @@ import (
 
 type Config struct {
 	ArtDownloadType sum.Int[shared.ArtDownloadType] `yaml:"art_download_type"`
-	ShowEmpty       bool                            `yaml:"show_empty"`
+	HideEmpty       bool                            `yaml:"hide_empty"`
 	LogLevel        string                          `yaml:"log_level"`
 }
 

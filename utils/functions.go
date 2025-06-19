@@ -123,7 +123,11 @@ func FindExistingArt(selectedFile string, romDirectory shared.RomDirectory) (str
 		}
 	}
 
-	return artFilename, err
+	if artFilename == "" {
+		return "", nil
+	}
+
+	return filepath.Join(artDir, artFilename), err
 }
 
 func FindArt(romDirectory shared.RomDirectory, game shared.Item, downloadType sum.Int[shared.ArtDownloadType]) string {
@@ -670,7 +674,7 @@ func SaveConfig(config *models.Config) error {
 	}
 
 	viper.Set("art_download_type", config.ArtDownloadType)
-	viper.Set("show_empty", config.ShowEmpty)
+	viper.Set("hide_empty", config.HideEmpty)
 	viper.Set("log_level", config.LogLevel)
 
 	return viper.WriteConfigAs("config.yml")

@@ -45,7 +45,7 @@ func (da DownloadArtScreen) Draw() (value interface{}, exitCode int, e error) {
 	if artPath.Result.(string) == "" {
 		gaba.ProcessMessage("No art found!",
 			gaba.ProcessMessageOptions{ShowThemeBackground: true}, func() (interface{}, error) {
-				time.Sleep(time.Millisecond * 1500)
+				time.Sleep(time.Millisecond * 3000)
 				return nil, nil
 			})
 		return shared.Item{}, 404, nil

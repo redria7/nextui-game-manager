@@ -66,10 +66,6 @@ func (gl GameList) Draw() (item interface{}, exitCode int, e error) {
 		roms = utils.FilterList(roms, gl.SearchFilter)
 	}
 
-	if len(roms) == 0 {
-		return shared.Item{}, 404, nil
-	}
-
 	var directoryEntries []gabagool.MenuItem
 	var itemEntries []gabagool.MenuItem
 
@@ -102,13 +98,22 @@ func (gl GameList) Draw() (item interface{}, exitCode int, e error) {
 	allEntries := append(directoryEntries, itemEntries...)
 
 	options := gabagool.DefaultListOptions(title, allEntries)
+	options.SmallTitle = true
+	options.EmptyMessage = "No ROMs Found"
 	options.EnableAction = true
 	options.EnableMultiSelect = true
 	options.FooterHelpItems = []gabagool.FooterHelpItem{
 		{ButtonName: "B", HelpText: "Back"},
 		{ButtonName: "X", HelpText: "Search"},
-		{ButtonName: "Select", HelpText: "Multi"},
-		{ButtonName: "A", HelpText: "Select"},
+		{ButtonName: "Menu", HelpText: "Help"},
+	}
+
+	options.EnableHelp = true
+	options.HelpTitle = "ROMs List Controls"
+	options.HelpText = []string{
+		"• X: Open Options",
+		"• Select: Toggle Multi-Select",
+		"• Start: Confirm Multi-Selection",
 	}
 
 	selection, err := gabagool.List(options)

@@ -55,13 +55,13 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 			}(),
 		},
 		{
-			Item: gabagool.MenuItem{Text: "Show Empty Platforms"},
+			Item: gabagool.MenuItem{Text: "Hide Empty Platforms"},
 			Options: []gabagool.Option{
 				{DisplayName: "True", Value: true},
 				{DisplayName: "False", Value: false},
 			},
 			SelectedOption: func() int {
-				switch appState.Config.ShowEmpty {
+				switch appState.Config.HideEmpty {
 				case true:
 					return 0
 				case false:
@@ -124,8 +124,8 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 				case "SCREENSHOTS":
 					appState.Config.ArtDownloadType = shared.ArtDownloadTypes.SCREENSHOTS
 				}
-			} else if option.Item.Text == "Show Empty Platforms" {
-				appState.Config.ShowEmpty = option.Options[option.SelectedOption].Value.(bool)
+			} else if option.Item.Text == "Hide Empty Platforms" {
+				appState.Config.HideEmpty = option.Options[option.SelectedOption].Value.(bool)
 			} else if option.Item.Text == "Log Level" {
 				logLevelValue := option.Options[option.SelectedOption].Value.(string)
 				appState.Config.LogLevel = logLevelValue

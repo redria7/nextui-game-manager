@@ -53,6 +53,7 @@ func (c CollectionManagement) Draw() (value interface{}, exitCode int, e error) 
 	options.EnableAction = true
 	options.EnableHelp = true
 	options.HelpTitle = "Collection Management Controls"
+	options.EmptyMessage = "This collection is empty.\nAdd some games you silly goose!"
 
 	options.EnableMultiSelect = true
 	options.MultiSelectKey = sdl.K_SPACE
