@@ -124,7 +124,13 @@ func (gl GameList) Draw() (item interface{}, exitCode int, e error) {
 	if selection.IsSome() && selection.Unwrap().ActionTriggered {
 		return nil, 4, nil
 	} else if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
-		return selection.Unwrap().SelectedItem.Metadata.(shared.Item), 0, nil
+		var selectedItems shared.Items
+		rawSelection := selection.Unwrap().SelectedItems
+
+		for _, item := range rawSelection {
+			selectedItems = append(selectedItems, item.Metadata.(shared.Item))
+		}
+		return selectedItems, 0, nil
 	}
 
 	return nil, 2, nil

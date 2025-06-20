@@ -129,17 +129,26 @@ func main() {
 		case models.ScreenNames.GamesList:
 			switch code {
 			case 0:
-				selection := res.(shared.Item)
+				selections := res.(shared.Items)
 
-				if selection.IsDirectory {
-					screen = ui.InitGamesListWithPreviousDirectory(shared.RomDirectory{
-						DisplayName: selection.DisplayName,
-						Tag:         selection.Tag,
-						Path:        selection.Path,
-					}, screen.(ui.GameList).RomDirectory, "")
+				if len(selections) == 0 {
+					break
+				} else if len(selections) == 1 {
+					selection := selections[0]
+					if selection.IsDirectory {
+						screen = ui.InitGamesListWithPreviousDirectory(shared.RomDirectory{
+							DisplayName: selection.DisplayName,
+							Tag:         selection.Tag,
+							Path:        selection.Path,
+						}, screen.(ui.GameList).RomDirectory, "")
+					} else {
+						screen = ui.InitActionsScreen(selection,
+							screen.(ui.GameList).RomDirectory,
+							screen.(ui.GameList).PreviousRomDirectory,
+							screen.(ui.GameList).SearchFilter)
+					}
 				} else {
-					screen = ui.InitActionsScreen(res.(shared.Item),
-						screen.(ui.GameList).RomDirectory,
+					screen = ui.InitBulkOptionsScreen(selections, screen.(ui.GameList).RomDirectory,
 						screen.(ui.GameList).PreviousRomDirectory,
 						screen.(ui.GameList).SearchFilter)
 				}
@@ -237,15 +246,132 @@ func main() {
 							screen = ui.InitActionsScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 						}
 					}
-
 				case models.Actions.CollectionAdd:
 					screen = ui.InitAddToCollectionScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
-
+				case models.Actions.ClearGameTracker:
+					result, err := gaba.ConfirmationMessage(fmt.Sprintf("Clear %s from Game Tracker?", as.Game.DisplayName), []gaba.FooterHelpItem{
+						{ButtonName: "B", HelpText: "I Changed My Mind"},
+						{ButtonName: "A", HelpText: "Do It!"},
+					},
+						gaba.MessageOptions{})
+					if err != nil || result.IsSome() {
+						res := utils.ClearGameTracker(as.Game.Filename, as.RomDirectory)
+						if res {
+							gaba.ProcessMessage("Game Tracker data cleared!",
+								gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+									time.Sleep(3 * time.Second)
+									return nil, nil
+								})
+						} else {
+							gaba.ProcessMessage("Unable to clear Game Tracker data!",
+								gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+									time.Sleep(3 * time.Second)
+									return nil, nil
+								})
+						}
+					}
+				case models.Actions.ArchiveRom:
+					result, err := gaba.ConfirmationMessage(fmt.Sprintf("Archive %s?", as.Game.DisplayName), []gaba.FooterHelpItem{
+						{ButtonName: "B", HelpText: "I Changed My Mind"},
+						{ButtonName: "A", HelpText: "Yes"},
+					},
+						gaba.MessageOptions{})
+					if err != nil || result.IsSome() {
+						err = utils.ArchiveRom(as.Game, as.RomDirectory)
+						if err != nil {
+							gaba.ProcessMessage(fmt.Sprintf("Unable to archive %s!", as.Game.DisplayName), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+								time.Sleep(3 * time.Second)
+								return nil, nil
+							})
+						} else {
+							screen = ui.InitGamesListWithPreviousDirectory(as.RomDirectory, as.PreviousRomDirectory,
+								as.SearchFilter)
+						}
+					}
+				case models.Actions.DeleteRom:
+					result, err := gaba.ConfirmationMessage(fmt.Sprintf("Delete %s?", as.Game.DisplayName), []gaba.FooterHelpItem{
+						{ButtonName: "B", HelpText: "I Changed My Mind"},
+						{ButtonName: "A", HelpText: "Yes"},
+					},
+						gaba.MessageOptions{})
+					if err != nil || result.IsSome() {
+						utils.DeleteRom(as.Game, as.RomDirectory)
+						screen = ui.InitGamesListWithPreviousDirectory(as.RomDirectory, as.PreviousRomDirectory,
+							as.SearchFilter)
+					}
+				case models.Actions.Nuke:
+					result, err := gaba.ConfirmationMessage(fmt.Sprintf("Nuke %s?", as.Game.DisplayName), []gaba.FooterHelpItem{
+						{ButtonName: "B", HelpText: "I Changed My Mind"},
+						{ButtonName: "A", HelpText: "Yes"},
+					},
+						gaba.MessageOptions{})
+					if err != nil || result.IsSome() {
+						utils.Nuke(as.Game, as.RomDirectory)
+						screen = ui.InitGamesListWithPreviousDirectory(as.RomDirectory, as.PreviousRomDirectory,
+							as.SearchFilter)
+					}
 				default:
 				}
 			default:
 				screen = ui.InitGamesListWithPreviousDirectory(as.RomDirectory, as.PreviousRomDirectory,
 					as.SearchFilter)
+			}
+
+		case models.ScreenNames.BulkActions:
+			ba := screen.(ui.BulkOptionsScreen)
+			switch code {
+			case 0:
+				switch models.ActionMap[res.(string)] {
+				case models.Actions.DownloadArt:
+					var artPaths []string
+
+					gaba.ProcessMessage(fmt.Sprintf("Downloading art for %d games...", len(ba.Games)),
+						gaba.ProcessMessageOptions{ShowThemeBackground: true}, func() (interface{}, error) {
+							for _, game := range ba.Games {
+								artPath := utils.FindArt(ba.RomDirectory, game, state.GetAppState().Config.ArtDownloadType)
+
+								if artPath != "" {
+									artPaths = append(artPaths, artPath)
+								}
+							}
+							return nil, nil
+						})
+
+					if len(artPaths) == 0 {
+						gaba.ProcessMessage("No art found!",
+							gaba.ProcessMessageOptions{ShowThemeBackground: true}, func() (interface{}, error) {
+								time.Sleep(time.Millisecond * 2000)
+								return nil, nil
+							})
+					} else if len(ba.Games) > 1 {
+						gaba.ProcessMessage(fmt.Sprintf("Art found for %d/%d games!", len(artPaths), len(ba.Games)),
+							gaba.ProcessMessageOptions{ShowThemeBackground: true}, func() (interface{}, error) {
+								time.Sleep(time.Millisecond * 2000)
+								return nil, nil
+							})
+					}
+				case models.Actions.DeleteArt:
+					for _, game := range ba.Games {
+						utils.DeleteArt(game.Filename, ba.RomDirectory)
+					}
+				case models.Actions.CollectionAdd:
+					// TODO add collection selection code here
+				case models.Actions.ArchiveRom:
+					for _, game := range ba.Games {
+						utils.ArchiveRom(game, ba.RomDirectory)
+					}
+				case models.Actions.DeleteRom:
+					for _, game := range ba.Games {
+						utils.DeleteRom(game, ba.RomDirectory)
+					}
+				case models.Actions.Nuke:
+					for _, game := range ba.Games {
+						utils.Nuke(game, ba.RomDirectory)
+					}
+				}
+			default:
+				screen = ui.InitGamesListWithPreviousDirectory(ba.RomDirectory, ba.PreviousRomDirectory,
+					ba.SearchFilter)
 			}
 
 		case models.ScreenNames.AddToCollection:
@@ -280,7 +406,5 @@ func main() {
 			}
 
 		}
-
 	}
-
 }

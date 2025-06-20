@@ -58,6 +58,16 @@ var ActionKeys = []string{
 	"Nuclear Option",
 }
 
+var BulkActionKeys = []string{
+	"Add to Collection",
+	"Download Art",
+	"Delete Art",
+	"Clear Game Tracker",
+	"Archive ROM",
+	"Delete ROM",
+	"Nuclear Option",
+}
+
 var CollectionActionKeys = []string{
 	"Rename Collection",
 	"Delete Collection",

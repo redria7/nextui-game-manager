@@ -34,6 +34,14 @@ func GetRomDirectory() string {
 	return common.RomDirectory
 }
 
+func GetArchiveRoot() string {
+	if IsDev() {
+		return os.Getenv("ARCHIVE_DIRECTORY")
+	}
+
+	return "/mnt/SDCARD/Roms/.Archive"
+}
+
 func GetCollectionDirectory() string {
 	if IsDev() {
 		_ = MakeDirectoryIfNotExist(os.Getenv("COLLECTION_DIRECTORY"))
@@ -299,7 +307,7 @@ func DeleteArt(filename string, romDirectory shared.RomDirectory) {
 func HasGameTrackerData(romFilename string, romDirectory shared.RomDirectory) bool {
 	logger := common.GetLoggerInstance()
 
-	db, err := sql.Open("sqlite3", gameTrackerDBPath)
+	db, err := sql.Open("sqlite3", GetGameTrackerDBPath())
 	if err != nil {
 		logger.Error("Failed to open game tracker database", zap.Error(err))
 		return false
@@ -311,7 +319,7 @@ func HasGameTrackerData(romFilename string, romDirectory shared.RomDirectory) bo
 		}
 	}(db)
 
-	romPath := filepath.Join(strings.ReplaceAll(romDirectory.Path, common.RomDirectory+"/", ""), romFilename)
+	romPath := filepath.Join(strings.ReplaceAll(romDirectory.Path, GetRomDirectory()+"/", ""), romFilename)
 
 	var romID string
 	err = db.QueryRow("SELECT id FROM rom WHERE file_path = ?", romPath).Scan(&romID)
@@ -380,7 +388,7 @@ func MigrateGameTrackerData(filename string, oldPath string, newPath string) boo
 func ClearGameTracker(romName string, romDirectory shared.RomDirectory) bool {
 	logger := common.GetLoggerInstance()
 
-	db, err := sql.Open("sqlite3", gameTrackerDBPath)
+	db, err := sql.Open("sqlite3", GetGameTrackerDBPath())
 	if err != nil {
 		logger.Error("Failed to open game tracker database", zap.Error(err))
 		return false
@@ -398,7 +406,7 @@ func ClearGameTracker(romName string, romDirectory shared.RomDirectory) bool {
 		return false
 	}
 
-	romPath := filepath.Join(strings.ReplaceAll(romDirectory.Path, common.RomDirectory+"/", ""), romName)
+	romPath := filepath.Join(strings.ReplaceAll(romDirectory.Path, GetRomDirectory()+"/", ""), romName)
 
 	var romID string
 	err = tx.QueryRow("SELECT id FROM rom WHERE file_path = ?", romPath).Scan(&romID)
@@ -441,22 +449,22 @@ func ClearSaveStates() {
 	// TODO - implement
 }
 
-func ArchiveRom(selectedFile string, romDirectory shared.RomDirectory) {
-	const archiveRoot = "/mnt/SDCARD/Roms/.Archive"
+func ArchiveRom(selectedGame shared.Item, romDirectory shared.RomDirectory) error {
+	archiveRoot := GetArchiveRoot()
 
 	logger := common.GetLoggerInstance()
 
-	logger.Debug("Archive Start", zap.String("selected_file", selectedFile), zap.Any("with_ext", selectedFile))
+	logger.Debug("Archive Start", zap.String("selected_file", selectedGame.Filename), zap.Any("with_ext", selectedGame))
 
-	oldPath := filepath.Join(romDirectory.Path, selectedFile)
-	oldPathSubdirectory := strings.ReplaceAll(romDirectory.Path, common.RomDirectory, "")
-	newPath := filepath.Join(archiveRoot, oldPathSubdirectory, selectedFile)
+	oldPath := filepath.Join(romDirectory.Path, selectedGame.Filename)
+	oldPathSubdirectory := strings.ReplaceAll(romDirectory.Path, GetRomDirectory(), "")
+	newPath := filepath.Join(archiveRoot, oldPathSubdirectory, selectedGame.Filename)
 
 	logger.Debug("Archiving Rom", zap.String("oldPath", oldPath), zap.String("newPath", newPath))
 
 	err := MoveFile(oldPath, newPath)
 	if err == nil {
-		existingArtFilename, err := FindExistingArt(selectedFile, romDirectory)
+		existingArtFilename, err := FindExistingArt(selectedGame.Filename, romDirectory)
 		if err != nil {
 			logger.Error("failed to find existing art", zap.Error(err))
 		} else {
@@ -469,20 +477,22 @@ func ArchiveRom(selectedFile string, romDirectory shared.RomDirectory) {
 			}
 		}
 	}
+
+	return err
 }
 
-func DeleteRom(filename string, romDirectory shared.RomDirectory) {
-	romPath := filepath.Join(romDirectory.Path, filename)
+func DeleteRom(game shared.Item, romDirectory shared.RomDirectory) {
+	romPath := filepath.Join(romDirectory.Path, game.Filename)
 	res := common.DeleteFile(romPath)
 
 	if res {
-		DeleteArt(filename, romDirectory)
+		DeleteArt(game.Filename, romDirectory)
 	}
 }
 
-func Nuke(filename string, romDirectory shared.RomDirectory) {
-	ClearGameTracker(filename, romDirectory)
-	DeleteRom(filename, romDirectory)
+func Nuke(game shared.Item, romDirectory shared.RomDirectory) {
+	ClearGameTracker(game.Filename, romDirectory)
+	DeleteRom(game, romDirectory)
 }
 
 func MoveFile(oldPath, newPath string) error {
@@ -565,29 +575,6 @@ func AddCollectionGame(collection models.Collection, game shared.Item) (models.C
 	_ = SaveCollection(collection)
 
 	return collection, nil
-}
-
-func RemoveCollectionGame(collection models.Collection, gameName string) (models.Collection, error) {
-	if len(collection.Games) == 0 {
-		loadCollection, err := ReadCollection(collection)
-		if err != nil {
-			return collection, err
-		}
-		collection = loadCollection
-	}
-
-	var newList []shared.Item
-
-	for _, game := range collection.Games {
-		if !strings.Contains(game.Path, gameName) {
-			newList = append(newList, game)
-		}
-	}
-
-	collection.Games = newList
-	err := SaveCollection(collection)
-
-	return collection, err
 }
 
 func ReadCollection(collection models.Collection) (models.Collection, error) {

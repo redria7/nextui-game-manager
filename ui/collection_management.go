@@ -117,7 +117,6 @@ func (c CollectionManagement) Draw() (value interface{}, exitCode int, e error) 
 			c.Collection.Games = games
 
 			utils.SaveCollection(c.Collection)
-
 		}
 
 		return c.Collection, 0, nil
