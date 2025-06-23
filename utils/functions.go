@@ -291,16 +291,15 @@ func RenameSaveFile(oldFilename string, newFilename string, romDirectory shared.
 func DeleteArt(filename string, romDirectory shared.RomDirectory) {
 	logger := common.GetLoggerInstance()
 
-	art, err := FindExistingArt(filename, romDirectory)
+	artPath, err := FindExistingArt(filename, romDirectory)
 	if err != nil {
 		logger.Error("failed to find existing art", zap.Error(err))
 		return
-	} else if art == "" {
+	} else if artPath == "" {
 		logger.Info("No art. Skipping delete.")
 		return
 	}
 
-	artPath := filepath.Join(romDirectory.Path, ".media", art)
 	common.DeleteFile(artPath)
 }
 
@@ -626,7 +625,7 @@ func SaveCollection(collection models.Collection) error {
 	writer := bufio.NewWriter(file)
 	for _, line := range collection.Games {
 
-		path := strings.ReplaceAll(line.Path, common.SDCardRoot, "")
+		path := strings.ReplaceAll(line.Path, GetRomDirectory()+"/", "")
 
 		if _, err := writer.WriteString(path + "\n"); err != nil {
 			return fmt.Errorf("failed to write line: %w", err)

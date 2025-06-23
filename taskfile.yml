@@ -20,20 +20,13 @@ tasks:
   package:
     cmds:
       - docker create --name extract retro-console-arm64
-#      - docker cp extract:/build/game-manager build/game-manager
-      - docker cp extract:/build/rom-folder build/rom-folder
+      - docker cp extract:/build/game-manager build/game-manager
       - docker cp extract:/usr/lib/aarch64-linux-gnu/libSDL2_gfx-1.0.so.0.0.2 build/lib/libSDL2_gfx-1.0.so.0
-#      - rm -rf "build/Game Manager.pak" || true
-#      - mkdir -p "build/Game Manager.pak"
-#      - mkdir -p "build/Game Manager.pak/resources/lib"
-#      - cp build/game-manager launch.sh README.md LICENSE pak.json "build/Game Manager.pak"
-#      - cp -R build/lib build/Game Manager.pak/resources
-
-      - rm -rf "build/RFDT.pak" || true
-      - mkdir -p "build/RFDT.pak"
-      - mkdir -p "build/RFDT.pak/resources/lib"
-      - cp build/rom-folder launch.sh README.md LICENSE pak.json "build/RFDT.pak"
-      - cp -R build/lib build/RFDT.pak/resources
+      - rm -rf "build/Game Manager.pak" || true
+      - mkdir -p "build/Game Manager.pak"
+      - mkdir -p "build/Game Manager.pak/resources/lib"
+      - cp build/game-manager launch.sh README.md LICENSE pak.json "build/Game Manager.pak"
+      - cp -R build/lib "build/Game Manager.pak/resources"
     silent: true
 
   cleanup:

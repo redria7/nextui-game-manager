@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	_ "github.com/UncleJunVIP/certifiable"
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
@@ -247,7 +248,7 @@ func main() {
 						}
 					}
 				case models.Actions.CollectionAdd:
-					screen = ui.InitAddToCollectionScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
+					screen = ui.InitAddToCollectionScreen([]shared.Item{as.Game}, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 				case models.Actions.ClearGameTracker:
 					result, err := gaba.ConfirmationMessage(fmt.Sprintf("Clear %s from Game Tracker?", as.Game.DisplayName), []gaba.FooterHelpItem{
 						{ButtonName: "B", HelpText: "I Changed My Mind"},
@@ -351,22 +352,62 @@ func main() {
 							})
 					}
 				case models.Actions.DeleteArt:
-					for _, game := range ba.Games {
-						utils.DeleteArt(game.Filename, ba.RomDirectory)
+					confirm, _ := gaba.ConfirmationMessage("Delete art for the selected games?", []gaba.FooterHelpItem{
+						{ButtonName: "B", HelpText: "Cancel"},
+						{ButtonName: "X", HelpText: "Remove"},
+					}, gaba.MessageOptions{
+						ImagePath:     "",
+						ConfirmButton: gaba.ButtonX,
+					})
+
+					if confirm.IsSome() && !confirm.Unwrap().Cancelled {
+						for _, game := range ba.Games {
+							utils.DeleteArt(game.Filename, ba.RomDirectory)
+						}
 					}
 				case models.Actions.CollectionAdd:
-					// TODO add collection selection code here
+					screen = ui.InitAddToCollectionScreen(ba.Games, ba.RomDirectory, ba.PreviousRomDirectory, ba.SearchFilter)
 				case models.Actions.ArchiveRom:
-					for _, game := range ba.Games {
-						utils.ArchiveRom(game, ba.RomDirectory)
+					confirm, _ := gaba.ConfirmationMessage("Archive the selected games?", []gaba.FooterHelpItem{
+						{ButtonName: "B", HelpText: "Cancel"},
+						{ButtonName: "X", HelpText: "Remove"},
+					}, gaba.MessageOptions{
+						ImagePath:     "",
+						ConfirmButton: gaba.ButtonX,
+					})
+
+					if confirm.IsSome() && !confirm.Unwrap().Cancelled {
+						for _, game := range ba.Games {
+							utils.ArchiveRom(game, ba.RomDirectory)
+						}
 					}
 				case models.Actions.DeleteRom:
-					for _, game := range ba.Games {
-						utils.DeleteRom(game, ba.RomDirectory)
+					confirm, _ := gaba.ConfirmationMessage("Delete the selected games?", []gaba.FooterHelpItem{
+						{ButtonName: "B", HelpText: "Cancel"},
+						{ButtonName: "X", HelpText: "Remove"},
+					}, gaba.MessageOptions{
+						ImagePath:     "",
+						ConfirmButton: gaba.ButtonX,
+					})
+
+					if confirm.IsSome() && !confirm.Unwrap().Cancelled {
+						for _, game := range ba.Games {
+							utils.DeleteRom(game, ba.RomDirectory)
+						}
 					}
 				case models.Actions.Nuke:
-					for _, game := range ba.Games {
-						utils.Nuke(game, ba.RomDirectory)
+					confirm, _ := gaba.ConfirmationMessage("Nuke the selected games?", []gaba.FooterHelpItem{
+						{ButtonName: "B", HelpText: "Cancel"},
+						{ButtonName: "X", HelpText: "Remove"},
+					}, gaba.MessageOptions{
+						ImagePath:     "",
+						ConfirmButton: gaba.ButtonX,
+					})
+
+					if confirm.IsSome() && !confirm.Unwrap().Cancelled {
+						for _, game := range ba.Games {
+							utils.Nuke(game, ba.RomDirectory)
+						}
 					}
 				}
 			default:
@@ -378,23 +419,32 @@ func main() {
 			atc := screen.(ui.AddToCollectionScreen)
 			switch code {
 			case 0:
-				screen = ui.InitAddToCollectionScreen(atc.Game,
+				screen = ui.InitAddToCollectionScreen(atc.Games,
 					atc.RomDirectory,
 					atc.PreviousRomDirectory,
 					atc.SearchFilter)
-			case 404:
-				screen = ui.InitCreateCollectionScreen(atc.Game, atc.RomDirectory, atc.PreviousRomDirectory, atc.SearchFilter)
-			default:
-				screen = ui.InitActionsScreen(atc.Game,
-					atc.RomDirectory,
-					atc.PreviousRomDirectory,
-					atc.SearchFilter)
+			case 4, 404:
+				screen = ui.InitCreateCollectionScreen(atc.Games, atc.RomDirectory,
+					atc.PreviousRomDirectory, atc.SearchFilter)
+			case 2:
+				gameCount := len(atc.Games)
+				if gameCount == 1 {
+					screen = ui.InitActionsScreen(atc.Games[0],
+						atc.RomDirectory,
+						atc.PreviousRomDirectory,
+						atc.SearchFilter)
+				} else {
+					screen = ui.InitBulkOptionsScreen(atc.Games,
+						atc.RomDirectory,
+						atc.PreviousRomDirectory,
+						atc.SearchFilter)
+				}
 
 			}
 
 		case models.ScreenNames.CollectionCreate:
 			cc := screen.(ui.CreateCollectionScreen)
-			screen = ui.InitAddToCollectionScreen(cc.Game, cc.RomDirectory, cc.PreviousRomDirectory, cc.SearchFilter)
+			screen = ui.InitAddToCollectionScreen(cc.Games, cc.RomDirectory, cc.PreviousRomDirectory, cc.SearchFilter)
 
 		case models.ScreenNames.DownloadArt:
 			switch code {

@@ -16,16 +16,16 @@ import (
 )
 
 type AddToCollectionScreen struct {
-	Game                 shared.Item
+	Games                []shared.Item
 	RomDirectory         shared.RomDirectory
 	PreviousRomDirectory shared.RomDirectory
 	SearchFilter         string
 }
 
-func InitAddToCollectionScreen(game shared.Item, romDirectory shared.RomDirectory,
+func InitAddToCollectionScreen(games []shared.Item, romDirectory shared.RomDirectory,
 	previousRomDirectory shared.RomDirectory, searchFilter string) AddToCollectionScreen {
 	return AddToCollectionScreen{
-		Game:                 game,
+		Games:                games,
 		RomDirectory:         romDirectory,
 		PreviousRomDirectory: previousRomDirectory,
 		SearchFilter:         searchFilter,
@@ -80,16 +80,19 @@ func (a AddToCollectionScreen) Draw() (collection interface{}, exitCode int, e e
 
 		if err != nil {
 			logger.Error("Error reading collection", zap.Error(err))
-		} else if !slices.ContainsFunc(collection.Games, func(element shared.Item) bool {
-			return element.DisplayName == a.Game.DisplayName
+		} else if len(a.Games) == 1 && !slices.ContainsFunc(collection.Games, func(element shared.Item) bool {
+			return element.DisplayName == a.Games[0].DisplayName
 		}) {
+			collections = append(collections, collection)
+			collectionsMap[item.DisplayName] = collection
+		} else if len(a.Games) > 1 {
 			collections = append(collections, collection)
 			collectionsMap[item.DisplayName] = collection
 		}
 	}
 
-	if len(collections) == 0 {
-		res, err := gaba.ConfirmationMessage(fmt.Sprintf("Every collection contains %s. \n Want to create a new one?", a.Game.DisplayName),
+	if len(a.Games) == 1 && len(collections) == 0 {
+		res, err := gaba.ConfirmationMessage(fmt.Sprintf("Every collection contains %s. \n Want to create a new one?", a.Games[0].DisplayName),
 			[]gaba.FooterHelpItem{{
 				HelpText:   "No Thanks",
 				ButtonName: "B",
@@ -140,13 +143,18 @@ func (a AddToCollectionScreen) Draw() (collection interface{}, exitCode int, e e
 		menuItems = append(menuItems, collection)
 	}
 
-	options := gaba.DefaultListOptions(fmt.Sprintf("Add %s To Collection", a.Game.DisplayName), menuItems)
+	title := fmt.Sprintf("Add %s To Collection", a.Games[0].DisplayName)
+	if len(a.Games) > 1 {
+		title = "Add Games To Collection"
+	}
+
+	options := gaba.DefaultListOptions(title, menuItems)
 	options.SmallTitle = true
 	options.EnableAction = true
 	options.EnableMultiSelect = true
 	options.FooterHelpItems = []gaba.FooterHelpItem{
 		{ButtonName: "B", HelpText: "Back"},
-		{ButtonName: "Y", HelpText: "Create Collection"},
+		{ButtonName: "X", HelpText: "Create Collection"},
 		{ButtonName: "A", HelpText: "Add"},
 	}
 
@@ -157,22 +165,41 @@ func (a AddToCollectionScreen) Draw() (collection interface{}, exitCode int, e e
 
 	if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
 		selectedCol := selection.Unwrap().SelectedItem.Metadata.(models.Collection)
-		_, err := utils.AddCollectionGame(selectedCol, a.Game)
+
+		var err error
+
+		for _, game := range a.Games {
+			_, err = utils.AddCollectionGame(selectedCol, game)
+		}
 
 		if err != nil {
-			gaba.ProcessMessage("Unable to Add Game To Collection!", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+			gameText := a.Games[0].DisplayName
+
+			if len(a.Games) > 1 {
+				gameText = fmt.Sprintf("%d Games", len(a.Games))
+			}
+
+			gaba.ProcessMessage(fmt.Sprintf("Unable to Add %s To Collection!", gameText), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
 				time.Sleep(time.Second * 2)
 				return nil, nil
 			})
 			return nil, 0, err
 		}
 
-		gaba.ProcessMessage(fmt.Sprintf("Added %s To Collection %s!", a.Game.DisplayName, selectedCol.DisplayName), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+		successMessage := fmt.Sprintf("Added %s To Collection %s!", a.Games[0].DisplayName, selectedCol.DisplayName)
+
+		if len(a.Games) > 1 {
+			successMessage = fmt.Sprintf("Added %d Games To Collection %s!", len(a.Games), selectedCol.DisplayName)
+		}
+
+		gaba.ProcessMessage(successMessage, gaba.ProcessMessageOptions{}, func() (interface{}, error) {
 			time.Sleep(time.Second * 2)
 			return nil, nil
 		})
 
 		return nil, 0, nil
+	} else if selection.IsSome() && selection.Unwrap().ActionTriggered {
+		return nil, 4, nil
 	}
 
 	return nil, 2, nil

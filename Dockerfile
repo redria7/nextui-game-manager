@@ -13,7 +13,6 @@ COPY go.mod go.sum* ./
 RUN GOWORK=off go mod download
 
 COPY . .
-RUN #GOWORK=off go build -v -gcflags="all=-N -l" -o pak-store app/pak_store.go
-RUN GOWORK=off go build -v -gcflags="all=-N -l" -o rom-folder app/rom_folder.go
+RUN GOWORK=off go build -v -gcflags="all=-N -l" -o game-manager app/game_manager.go
 
 CMD ["/bin/bash"]

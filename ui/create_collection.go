@@ -13,16 +13,16 @@ import (
 )
 
 type CreateCollectionScreen struct {
-	Game                 shared.Item
+	Games                shared.Items
 	RomDirectory         shared.RomDirectory
 	PreviousRomDirectory shared.RomDirectory
 	SearchFilter         string
 }
 
-func InitCreateCollectionScreen(game shared.Item, romDirectory shared.RomDirectory,
+func InitCreateCollectionScreen(games shared.Items, romDirectory shared.RomDirectory,
 	previousRomDirectory shared.RomDirectory, searchFilter string) CreateCollectionScreen {
 	return CreateCollectionScreen{
-		Game:                 game,
+		Games:                games,
 		RomDirectory:         romDirectory,
 		PreviousRomDirectory: previousRomDirectory,
 		SearchFilter:         searchFilter,
@@ -47,12 +47,22 @@ func (c CreateCollectionScreen) Draw() (collection interface{}, exitCode int, e 
 			return nil, 2, nil
 		}
 
-		utils.AddCollectionGame(models.Collection{
-			DisplayName:    newCollectionName,
-			CollectionFile: filepath.Join(utils.GetCollectionDirectory(), newCollectionName+".txt"),
-		}, c.Game)
+		for _, game := range c.Games {
+			utils.AddCollectionGame(models.Collection{
+				DisplayName:    newCollectionName,
+				CollectionFile: filepath.Join(utils.GetCollectionDirectory(), newCollectionName+".txt"),
+			}, game)
+		}
 
-		gaba.ProcessMessage(fmt.Sprintf("Created %s!\nAlso added %s!", newCollectionName, c.Game.DisplayName),
+		message := fmt.Sprintf("Created %s!", newCollectionName)
+
+		if len(c.Games) > 1 {
+			message = fmt.Sprintf("%s\nAlso added %d Games!", message, len(c.Games))
+		} else {
+			message = fmt.Sprintf("%s\nAlso added %s!", message, c.Games[0].DisplayName)
+		}
+
+		gaba.ProcessMessage(message,
 			gaba.ProcessMessageOptions{}, func() (interface{}, error) {
 				time.Sleep(time.Second * 2)
 				return nil, nil
