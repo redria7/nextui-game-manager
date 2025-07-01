@@ -627,6 +627,10 @@ func SaveCollection(collection models.Collection) error {
 
 		path := strings.ReplaceAll(line.Path, GetRomDirectory()+"/", "")
 
+		if line.IsMultiDiscDirectory {
+			path = filepath.Join(path, line.DisplayName+".m3u")
+		}
+
 		if _, err := writer.WriteString(path + "\n"); err != nil {
 			return fmt.Errorf("failed to write line: %w", err)
 		}
