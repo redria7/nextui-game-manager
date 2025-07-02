@@ -32,10 +32,8 @@ A one-stop pak for all your game management needs.
     - Can configure what type of art you would like to download in the Game Manager Settings
     - The Libretro Thumbnail Project has Box Art, Title Screens, Screenshots and Logos
 - Delete Art (Single and Multiple Selection)
-- Clear Game Tracker Entry
 - Archive ROM (Places ROM and Art if present into a hidden folder)
 - Delete ROM (Deletes ROM file and associated Art)
-- Nuclear Option (Deletes ROM and Art)
 
 ---
 
