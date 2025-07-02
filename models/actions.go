@@ -55,7 +55,7 @@ var ActionKeys = []string{
 	//"Clear Save States",
 	"Archive ROM",
 	"Delete ROM",
-	"Nuclear Option",
+	//"Nuclear Option",
 }
 
 var BulkActionKeys = []string{

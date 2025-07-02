@@ -8,7 +8,7 @@
 A one-stop pak for all your game management needs.
 </h4>
 
-## [Download this in Pak Store!](https://github.com/UncleJunVIP/nextui-pak-store)
+## [Download this in the Pak Store!](https://github.com/UncleJunVIP/nextui-pak-store)
 
 ![GitHub License](https://img.shields.io/github/license/UncleJunVip/nextui-game-manager?style=for-the-badge)
 ![GitHub Release](https://img.shields.io/github/v/release/UncleJunVIP/nextui-game-manager?sort=semver&style=for-the-badge)
@@ -16,36 +16,32 @@ A one-stop pak for all your game management needs.
 ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/UncleJunVIP/nextui-game-manager/total?style=for-the-badge&label=Total%20Downloads)
 
 
-<hr />
-
-<img src=".github/resources/game_tracker_preview.webp" width="auto" alt="Preview">
-
 </div>
 
 ---
 
 # Features
 
-- [x] Renaming ROMs
-    - [x] Renames Art, Save File & Game Tracker Name Automagically
-- [x] Collection Management (Create, Rename, Delete + Add & Remove Games)
-- [x] Download Box Art (from Libretro Thumbnails Project)
-- [x] Delete Box Art
-- [x] Clear Game Tracker Entry
-- [x] Archive ROM (Places ROM and Art if present into a hidden folder)
-- [x] Delete ROM (Deletes ROM file and associated Art)
-- [x] Nuclear Option (Deletes ROM, Art and Game Tracker Entry)
+- Create Collection
+- Rename Collection
+- Delete Collection
+- Add / Remove Games from Collection (Single and Multiple Selection)
+- Rename ROM
+    - Renames Art and Associated Save File
+- Download Art from the Libretro Thumbnail Project (Single and Multiple Selection)
+    - Can configure what type of art you would like to download in the Game Manager Settings
+    - The Libretro Thumbnail Project has Box Art, Title Screens, Screenshots and Logos
+- Delete Art (Single and Multiple Selection)
+- Clear Game Tracker Entry
+- Archive ROM (Places ROM and Art if present into a hidden folder)
+- Delete ROM (Deletes ROM file and associated Art)
+- Nuclear Option (Deletes ROM and Art)
 
 ---
 
-# Future Features
+## How do I install Game Manager?
 
-- [ ] Save File Management
-- [ ] Save State Management
-
----
-
-## How do I setup Game Manager?
+*Preferred Method:* [NextUI Pak Store](https://github.com/UncleJunVIP/nextui-pak-store)
 
 1. Own a TrimUI Brick or Smart Pro and have a SD Card with NextUI configured.
 2. Connect your device to a Wi-Fi network. (This is needed for Artwork Download Support)
@@ -58,7 +54,7 @@ A one-stop pak for all your game management needs.
 
 ---
 
-## Shameless Plug: Want to download ROMs on your device? 
+## Shameless Plug: Want to download ROMs on your device?
 
 Go snag [Mortar](https://github.com/UncleJunVIP/Mortar): a customizable ROM download client.
 

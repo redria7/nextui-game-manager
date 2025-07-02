@@ -83,7 +83,7 @@ func (c CollectionOptionsScreen) Draw() (screenReturn interface{}, exitCode int,
 
 			if res.IsSome() && !res.Unwrap().Cancelled {
 				utils.DeleteCollection(c.Collection)
-				return nil, 3, nil
+				return nil, 0, nil
 			}
 
 		}

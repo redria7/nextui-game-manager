@@ -21,6 +21,7 @@ github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.1 h1:8nn+rsCvTq9axyEh382S0PFLBeaFwNsT43IrPWzctRU=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.1/go.mod h1:viRWSEhtMZqz1rhwmOVKkWl6SwmVowfL9O2YR5gI2PE=
 github.com/UncleJunVIP/gabagool v0.0.44/go.mod h1:EPPgmkQllHgR2jY8DcmwhL9+d+Viw752HOug4IusHxI=
+github.com/UncleJunVIP/gabagool v0.0.47/go.mod h1:EPPgmkQllHgR2jY8DcmwhL9+d+Viw752HOug4IusHxI=
 github.com/census-instrumentation/opencensus-proto v0.4.1 h1:iKLQ0xPNFxR/2hzXZMrBo8f1j86j5WHzznCCQxV/b8g=
 github.com/census-instrumentation/opencensus-proto v0.4.1/go.mod h1:4T9NM4+4Vw91VeyqjLS6ao50K5bOcLKN6Q42XnYaRYw=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=

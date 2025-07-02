@@ -2,36 +2,33 @@ name: Package Game Manager
 
 on:
   release:
-    types: [published]
+    types: [ published ]
   workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
 
 jobs:
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04-arm
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Zig
-        uses: goto-bus-stop/setup-zig@v2
-
-      - name: Setup Go
-        uses: actions/setup-go@v4
+      - name: Install Task
+        uses: arduino/setup-task@v2
         with:
-          go-version: '1.24.1'
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build
-        run: CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC="zig cc -target aarch64-linux" CXX="zig c++ -target aarch64-linux" go build -o game-manager --tags extended .
-
-      - name: Build Package Folder
-        run: |
-          mkdir "Game Manager.pak"
-          cp -R game-manager launch.sh README.md LICENSE config.yml pak.json resources/bin resources/certs resources/data "Game Manager.pak"
+      - name: Build and Package
+        run: task build package
 
       - uses: actions/upload-artifact@v4
         with:
-          name: 'Game Manager.pak'
-          path: 'Game Manager.pak'
+          name: Game.Manager.pak
+          path: "build/Game Manager.pak"
           if-no-files-found: error
           retention-days: 3
           overwrite: true

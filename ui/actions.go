@@ -40,18 +40,12 @@ func (a ActionsScreen) Draw() (action interface{}, exitCode int, e error) {
 		logger.Error("failed to find existing arts", zap.Error(err))
 	}
 
-	hasGameTrackerData := utils.HasGameTrackerData(a.Game.Filename, a.RomDirectory)
-
 	actions := models.ActionKeys
 
 	if existingArtFilename == "" {
 		actions = utils.InsertIntoSlice(actions, 1, "Download Art")
 	} else {
 		actions = utils.InsertIntoSlice(actions, 1, "Delete Art")
-	}
-
-	if hasGameTrackerData {
-		actions = utils.InsertIntoSlice(actions, 2, "Clear Game Tracker")
 	}
 
 	var actionEntries []gabagool.MenuItem

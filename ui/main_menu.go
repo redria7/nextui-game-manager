@@ -12,8 +12,16 @@ import (
 	"qlova.tech/sum"
 )
 
-type MainMenu struct {
-}
+const (
+	collectionsDisplayName = "Collections"
+	collectionsTag         = "Collections"
+	settingsExitCode       = 4
+	selectExitCode         = 0
+	quitExitCode           = 2
+	errorExitCode          = -1
+)
+
+type MainMenu struct{}
 
 func InitMainMenu() MainMenu {
 	return MainMenu{}
@@ -23,64 +31,124 @@ func (m MainMenu) Name() sum.Int[models.ScreenName] {
 	return models.ScreenNames.MainMenu
 }
 
-func (m MainMenu) Draw() (romDirectory interface{}, exitCode int, e error) {
+func (m MainMenu) Draw() (interface{}, int, error) {
 	logger := common.GetLoggerInstance()
 
+	menuItems, err := buildMenuItems(logger)
+	if err != nil {
+		return nil, errorExitCode, err
+	}
+
+	return handleMenuSelection(menuItems)
+}
+
+func buildMenuItems(logger *zap.Logger) ([]gaba.MenuItem, error) {
+	var menuItems []gaba.MenuItem
+
+	if collectionsItem := buildCollectionsMenuItem(logger); collectionsItem != nil {
+		menuItems = append(menuItems, *collectionsItem)
+	}
+
+	romItems, err := buildRomDirectoryMenuItems(logger)
+	if err != nil {
+		return nil, err
+	}
+
+	menuItems = append(menuItems, romItems...)
+	return menuItems, nil
+}
+
+func buildCollectionsMenuItem(logger *zap.Logger) *gaba.MenuItem {
 	fb := filebrowser.NewFileBrowser(logger)
 
+	if err := fb.CWD(utils.GetCollectionDirectory(), false); err != nil {
+		logger.Info("Unable to fetch collection directories, skipping", zap.Error(err))
+		return nil
+	}
+
+	if len(fb.Items) == 0 {
+		return nil
+	}
+
+	collections := createCollectionsRomDirectory()
+	return &gaba.MenuItem{
+		Text:     collectionsDisplayName,
+		Selected: false,
+		Focused:  false,
+		Metadata: collections,
+	}
+}
+
+func createCollectionsRomDirectory() shared.RomDirectory {
+	return shared.RomDirectory{
+		DisplayName: collectionsDisplayName,
+		Tag:         collectionsTag,
+		Path:        common.CollectionDirectory,
+	}
+}
+
+func buildRomDirectoryMenuItems(logger *zap.Logger) ([]gaba.MenuItem, error) {
+	fb := filebrowser.NewFileBrowser(logger)
+
+	if err := fb.CWD(utils.GetRomDirectory(), state.GetAppState().Config.HideEmpty); err != nil {
+		showRomDirectoryError()
+		common.LogStandardFatal("Error fetching ROM directories", err)
+		return nil, err
+	}
+
 	var menuItems []gaba.MenuItem
-	romDirectoryMap := make(map[string]shared.RomDirectory)
-	var romDirectories shared.RomDirectories
-
-	err := fb.CWD(utils.GetCollectionDirectory(), false)
-	if err != nil {
-		logger.Info("Unable to fetch Collection directories! Continuing without them", zap.Error(err))
-	}
-
-	if len(fb.Items) > 0 {
-		collections := shared.RomDirectory{
-			DisplayName: "Collections",
-			Tag:         "Collections",
-			Path:        common.CollectionDirectory,
-		}
-		romDirectories = append(romDirectories, collections)
-		romDirectoryMap["Collections"] = collections
-
-		menuItems = append(menuItems, gaba.MenuItem{
-			Text:     "Collections",
-			Selected: false,
-			Focused:  false,
-			Metadata: collections,
-		})
-	}
-
-	err = fb.CWD(utils.GetRomDirectory(), state.GetAppState().Config.HideEmpty)
-	if err != nil {
-		gaba.ConfirmationMessage("Unable to fetch ROM directories!", []gaba.FooterHelpItem{
-			{ButtonName: "B", HelpText: "Quit"},
-		}, gaba.MessageOptions{})
-		common.LogStandardFatal("Error loading fetching ROM directories", err)
-	}
-
 	for _, item := range fb.Items {
 		if item.IsDirectory {
-			romDirectory := shared.RomDirectory{
-				DisplayName: item.DisplayName,
-				Tag:         item.Tag,
-				Path:        item.Path,
-			}
-			romDirectories = append(romDirectories, romDirectory)
-			romDirectoryMap[item.DisplayName] = romDirectory
-
-			menuItems = append(menuItems, gaba.MenuItem{
-				Text:     romDirectory.DisplayName,
-				Selected: false,
-				Focused:  false,
-				Metadata: romDirectory,
-			})
+			romDirectory := createRomDirectoryFromItem(item)
+			menuItem := createMenuItemFromRomDirectory(romDirectory)
+			menuItems = append(menuItems, menuItem)
 		}
 	}
 
+	return menuItems, nil
+}
+
+func createRomDirectoryFromItem(item shared.Item) shared.RomDirectory {
+	return shared.RomDirectory{
+		DisplayName: item.DisplayName,
+		Tag:         item.Tag,
+		Path:        item.Path,
+	}
+}
+
+func createMenuItemFromRomDirectory(romDirectory shared.RomDirectory) gaba.MenuItem {
+	return gaba.MenuItem{
+		Text:     romDirectory.DisplayName,
+		Selected: false,
+		Focused:  false,
+		Metadata: romDirectory,
+	}
+}
+
+func showRomDirectoryError() {
+	gaba.ConfirmationMessage("Unable to fetch ROM directories!", []gaba.FooterHelpItem{
+		{ButtonName: "B", HelpText: "Quit"},
+	}, gaba.MessageOptions{})
+}
+
+func handleMenuSelection(menuItems []gaba.MenuItem) (interface{}, int, error) {
+	options := createListOptions(menuItems)
+	selection, err := gaba.List(options)
+
+	if err != nil {
+		return nil, errorExitCode, err
+	}
+
+	if selection.IsSome() && selection.Unwrap().ActionTriggered {
+		return nil, settingsExitCode, nil
+	} else if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
+		return selection.Unwrap().SelectedItem.Metadata.(shared.RomDirectory), selectExitCode, nil
+	}
+
+	return nil, quitExitCode, nil
+}
+
+func createListOptions(menuItems []gaba.MenuItem) gaba.ListOptions {
 	options := gaba.DefaultListOptions("Game Manager", menuItems)
 	options.EnableAction = true
 	options.FooterHelpItems = []gaba.FooterHelpItem{
@@ -88,17 +156,5 @@ func (m MainMenu) Draw() (romDirectory interface{}, exitCode int, e error) {
 		{ButtonName: "X", HelpText: "Settings"},
 		{ButtonName: "A", HelpText: "Select"},
 	}
-
-	selection, err := gaba.List(options)
-	if err != nil {
-		return nil, -1, err
-	}
-
-	if selection.IsSome() && selection.Unwrap().ActionTriggered {
-		return nil, 4, nil
-	} else if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
-		return selection.Unwrap().SelectedItem.Metadata.(shared.RomDirectory), 0, nil
-	}
-
-	return nil, 2, nil
+	return options
 }

@@ -39,7 +39,7 @@ func (a AddToCollectionScreen) Name() sum.Int[models.ScreenName] {
 func (a AddToCollectionScreen) Draw() (collection interface{}, exitCode int, e error) {
 	logger := common.GetLoggerInstance()
 
-	fb := filebrowser.NewFileBrowser(common.GetLoggerInstance())
+	fb := filebrowser.NewFileBrowser(logger)
 	err := fb.CWD(utils.GetCollectionDirectory(), false)
 	if err != nil {
 		gaba.ProcessMessage("Unable to Load Collections!", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
@@ -77,15 +77,12 @@ func (a AddToCollectionScreen) Draw() (collection interface{}, exitCode int, e e
 
 		var err error
 		collection, err = utils.ReadCollection(collection)
-
 		if err != nil {
 			logger.Error("Error reading collection", zap.Error(err))
-		} else if len(a.Games) == 1 && !slices.ContainsFunc(collection.Games, func(element shared.Item) bool {
-			return element.DisplayName == a.Games[0].DisplayName
-		}) {
-			collections = append(collections, collection)
-			collectionsMap[item.DisplayName] = collection
-		} else if len(a.Games) > 1 {
+			continue
+		}
+
+		if !utils.GameExistsInCollection(collection.Games, a.Games[0]) {
 			collections = append(collections, collection)
 			collectionsMap[item.DisplayName] = collection
 		}

@@ -15,12 +15,16 @@ import (
 	"os"
 	"path/filepath"
 	"qlova.tech/sum"
+	"slices"
 	"strings"
 )
 
-const gameTrackerDBPath = "/mnt/SDCARD/.userdata/shared/game_logs.sqlite"
-
-const saveFileDirectory = "/mnt/SDCARD/Saves/"
+const (
+	gameTrackerDBPath = "/mnt/SDCARD/.userdata/shared/game_logs.sqlite"
+	saveFileDirectory = "/mnt/SDCARD/Saves/"
+	defaultDirPerm    = 0755
+	defaultFilePerm   = 0644
+)
 
 func IsDev() bool {
 	return os.Getenv("ENVIRONMENT") == "DEV"
@@ -30,7 +34,6 @@ func GetRomDirectory() string {
 	if IsDev() {
 		return os.Getenv("ROM_DIRECTORY")
 	}
-
 	return common.RomDirectory
 }
 
@@ -38,25 +41,23 @@ func GetArchiveRoot() string {
 	if IsDev() {
 		return os.Getenv("ARCHIVE_DIRECTORY")
 	}
-
 	return "/mnt/SDCARD/Roms/.Archive"
 }
 
 func GetCollectionDirectory() string {
+	dir := common.CollectionDirectory
 	if IsDev() {
-		_ = MakeDirectoryIfNotExist(os.Getenv("COLLECTION_DIRECTORY"))
-		return os.Getenv("COLLECTION_DIRECTORY")
+		dir = os.Getenv("COLLECTION_DIRECTORY")
 	}
 
-	_ = MakeDirectoryIfNotExist(common.CollectionDirectory)
-	return common.CollectionDirectory
+	_ = ensureDirectoryExists(dir)
+	return dir
 }
 
 func GetSaveFileDirectory() string {
 	if IsDev() {
 		return os.Getenv("SAVE_FILE_DIRECTORY")
 	}
-
 	return saveFileDirectory
 }
 
@@ -64,228 +65,161 @@ func GetGameTrackerDBPath() string {
 	if IsDev() {
 		return os.Getenv("GAME_TRACKER_DB_PATH")
 	}
-
 	return gameTrackerDBPath
 }
 
 func GetFileList(dirPath string) ([]os.DirEntry, error) {
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read directory: %w", err)
+		return nil, fmt.Errorf("failed to read directory %s: %w", dirPath, err)
 	}
-
 	return entries, nil
 }
 
-func FilterList(itemList []shared.Item, keywords ...string) []shared.Item {
-	var filteredItemList []shared.Item
-
-	for _, item := range itemList {
-		for _, keyword := range keywords {
-			if strings.Contains(strings.ToLower(item.Filename), strings.ToLower(keyword)) {
-				filteredItemList = append(filteredItemList, item)
-				break
-			}
-		}
+func ensureDirectoryExists(dirPath string) error {
+	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+		return os.MkdirAll(dirPath, defaultDirPerm)
 	}
-
-	return filteredItemList
+	return nil
 }
 
-func InsertIntoSlice(s []string, index int, values ...string) []string {
+func MoveFile(sourcePath, destinationPath string) error {
+	logger := common.GetLoggerInstance()
+
+	if err := ensureDirectoryExists(filepath.Dir(destinationPath)); err != nil {
+		logger.Error("Failed to create destination directory", zap.Error(err))
+		return fmt.Errorf("failed to create destination directory: %w", err)
+	}
+
+	if err := os.Rename(sourcePath, destinationPath); err != nil {
+		logger.Error("Failed to move file", zap.String("from", sourcePath), zap.String("to", destinationPath), zap.Error(err))
+		return fmt.Errorf("failed to move file from %s to %s: %w", sourcePath, destinationPath, err)
+	}
+
+	return nil
+}
+
+func FilterList(itemList []shared.Item, keywords ...string) []shared.Item {
+	if len(keywords) == 0 {
+		return itemList
+	}
+
+	var filteredItems []shared.Item
+	for _, item := range itemList {
+		if matchesAnyKeyword(item.Filename, keywords) {
+			filteredItems = append(filteredItems, item)
+		}
+	}
+	return filteredItems
+}
+
+func matchesAnyKeyword(filename string, keywords []string) bool {
+	lowerFilename := strings.ToLower(filename)
+	for _, keyword := range keywords {
+		if strings.Contains(lowerFilename, strings.ToLower(keyword)) {
+			return true
+		}
+	}
+	return false
+}
+
+func InsertIntoSlice(slice []string, index int, values ...string) []string {
 	if index < 0 {
 		index = 0
 	}
-	if index > len(s) {
-		index = len(s)
+	if index > len(slice) {
+		index = len(slice)
 	}
 
-	return append(s[:index], append(values, s[index:]...)...)
+	return append(slice[:index], append(values, slice[index:]...)...)
 }
 
 func FindExistingArt(selectedFile string, romDirectory shared.RomDirectory) (string, error) {
 	logger := common.GetLoggerInstance()
 
 	mediaDir := filepath.Join(romDirectory.Path, ".media")
-
-	if _, err := os.Stat(mediaDir); os.IsNotExist(err) {
-		logger.Info("No media directory found", zap.String("current_directory", romDirectory.Path))
+	if !directoryExists(mediaDir) {
+		logger.Info("No media directory found", zap.String("directory", romDirectory.Path))
 		return "", nil
 	}
 
-	artDir := filepath.Join(romDirectory.Path, ".media")
-	artList, err := GetFileList(artDir)
+	artList, err := GetFileList(mediaDir)
 	if err != nil {
-		logger.Error("failed to list arts", zap.Error(err))
-		return "", err
+		return "", fmt.Errorf("failed to list art files: %w", err)
 	}
 
-	artFilename := ""
-
-	artFilenameNoExtension := strings.ReplaceAll(selectedFile, filepath.Ext(selectedFile), "")
-
+	targetName := removeFileExtension(selectedFile)
 	for _, art := range artList {
-		if strings.ReplaceAll(art.Name(), filepath.Ext(art.Name()), "") == artFilenameNoExtension {
-			artFilename = art.Name()
-			break
+		if removeFileExtension(art.Name()) == targetName {
+			return filepath.Join(mediaDir, art.Name()), nil
 		}
 	}
 
-	if artFilename == "" {
-		return "", nil
-	}
-
-	return filepath.Join(artDir, artFilename), err
+	return "", nil
 }
 
 func FindArt(romDirectory shared.RomDirectory, game shared.Item, downloadType sum.Int[shared.ArtDownloadType]) string {
 	logger := common.GetLoggerInstance()
 
-	artDirectory := ""
-
-	if IsDev() {
-		romDirectory := strings.ReplaceAll(romDirectory.Path, common.RomDirectory, GetRomDirectory())
-		artDirectory = filepath.Join(romDirectory, ".media")
-	} else {
-		artDirectory = filepath.Join(romDirectory.Path, ".media")
-	}
-
-	tag := strings.ReplaceAll(romDirectory.Tag, "(", "")
-	tag = strings.ReplaceAll(tag, ")", "")
-
+	artDirectory := buildArtDirectory(romDirectory)
 	client := common.NewThumbnailClient(downloadType)
-	section := client.BuildThumbnailSection(tag)
+	section := client.BuildThumbnailSection(cleanTag(romDirectory.Tag))
 
 	artList, err := client.ListDirectory(section.HostSubdirectory)
-
 	if err != nil {
-		logger.Info("Unable to fetch artlist", zap.Error(err))
+		logger.Info("Unable to fetch art list", zap.Error(err))
 		return ""
 	}
 
-	noExtension := strings.TrimSuffix(game.Filename, filepath.Ext(game.Filename))
+	matchedArt := findMatchingArt(artList, game.Filename)
+	if matchedArt.Filename == "" {
+		return ""
+	}
 
-	var matched shared.Item
+	lastSavedArtPath, err := client.DownloadArt(section.HostSubdirectory, artDirectory, matchedArt.Filename, game.Filename)
+	if err != nil {
+		return ""
+	}
 
-	// naive search first
+	src, err := imaging.Open(lastSavedArtPath)
+	if err != nil {
+		logger.Error("Unable to open last saved art", zap.Error(err))
+		return ""
+	}
+
+	dst := imaging.Resize(src, 500, 0, imaging.Lanczos)
+
+	err = imaging.Save(dst, lastSavedArtPath)
+	if err != nil {
+		logger.Error("Unable to save resized last saved art", zap.Error(err))
+		return ""
+	}
+
+	return lastSavedArtPath
+}
+
+func buildArtDirectory(romDirectory shared.RomDirectory) string {
+	if IsDev() {
+		adjustedPath := strings.ReplaceAll(romDirectory.Path, common.RomDirectory, GetRomDirectory())
+		return filepath.Join(adjustedPath, ".media")
+	}
+	return filepath.Join(romDirectory.Path, ".media")
+}
+
+func cleanTag(tag string) string {
+	cleaned := strings.ReplaceAll(tag, "(", "")
+	return strings.ReplaceAll(cleaned, ")", "")
+}
+
+func findMatchingArt(artList []shared.Item, filename string) shared.Item {
+	targetName := strings.ToLower(removeFileExtension(filename))
+
 	for _, art := range artList {
-		if strings.Contains(strings.ToLower(art.Filename), strings.ToLower(noExtension)) {
-			matched = art
-			break
+		if strings.Contains(strings.ToLower(art.Filename), targetName) {
+			return art
 		}
 	}
-
-	if matched.Filename != "" {
-		lastSavedArtPath, err := client.DownloadArt(section.HostSubdirectory, artDirectory, matched.Filename, game.Filename)
-		if err != nil {
-			return ""
-		}
-
-		src, err := imaging.Open(lastSavedArtPath)
-		if err != nil {
-			logger.Error("Unable to open last saved art", zap.Error(err))
-			return ""
-		}
-
-		dst := imaging.Resize(src, 500, 0, imaging.Lanczos)
-
-		err = imaging.Save(dst, lastSavedArtPath)
-		if err != nil {
-			logger.Error("Unable to save resized last saved art", zap.Error(err))
-			return ""
-		}
-
-		return lastSavedArtPath
-	}
-
-	return ""
-}
-
-func RenameRom(game shared.Item, newFilename string, romDirectory shared.RomDirectory) (string, error) {
-	logger := common.GetLoggerInstance()
-
-	oldPath := filepath.Join(romDirectory.Path, game.Filename)
-	oldExt := filepath.Ext(game.Filename)
-	newPath := filepath.Join(romDirectory.Path, newFilename+oldExt)
-
-	logger.Debug("Renaming Rom", zap.String("oldPath", oldPath), zap.String("newPath", newPath))
-
-	err := MoveFile(oldPath, newPath)
-	if err != nil {
-		logger.Error("failed to move file", zap.Error(err))
-		return "", err
-	}
-
-	gameTrackerOldPath := strings.ReplaceAll(oldPath, common.RomDirectory+"/", "")
-	gameTrackerNewPath := strings.ReplaceAll(newPath, common.RomDirectory+"/", "")
-
-	logger.Debug("Updating Game Tracker for Rename",
-		zap.String("old_path", oldPath), zap.String("new_path", newPath))
-
-	MigrateGameTrackerData(newFilename, gameTrackerOldPath, gameTrackerNewPath)
-
-	RenameSaveFile(strings.ReplaceAll(game.Filename, filepath.Ext(game.Filename), ""), newFilename, romDirectory)
-
-	existingArtFilename, err := FindExistingArt(game.Filename, romDirectory)
-	if err != nil {
-		logger.Error("failed to find existing art", zap.Error(err))
-		return "", err
-	} else if existingArtFilename != "" {
-		oldArtPath := filepath.Join(romDirectory.Path, ".media", existingArtFilename)
-		oldArtExt := filepath.Ext(existingArtFilename)
-		newArtPath := filepath.Join(romDirectory.Path, ".media", newFilename+oldArtExt)
-
-		if _, err := os.Stat(oldArtPath); os.IsNotExist(err) {
-			logger.Info("No media exists. Skipping...")
-			return "", err
-		} else {
-			err := MoveFile(oldArtPath, newArtPath)
-			if err != nil {
-				logger.Error("failed to rename existing art", zap.Error(err))
-				return "", err
-			}
-		}
-	}
-	return newFilename + oldExt, nil
-}
-
-func RenameSaveFile(oldFilename string, newFilename string, romDirectory shared.RomDirectory) {
-	logger := common.GetLoggerInstance()
-
-	unwrappedTag := strings.ReplaceAll(romDirectory.Tag, "(", "")
-	unwrappedTag = strings.ReplaceAll(unwrappedTag, ")", "")
-
-	saveFileDirectoryWithTag := filepath.Join(saveFileDirectory, unwrappedTag)
-
-	fb := filebrowser.NewFileBrowser(logger)
-
-	err := fb.CWD(saveFileDirectoryWithTag, true)
-	if err != nil {
-		logger.Error("failed to change directory", zap.Error(err))
-		return
-	}
-
-	var foundSaveFile shared.Item
-
-	for _, item := range fb.Items {
-		if strings.Contains(strings.ToLower(item.Filename), strings.ToLower(oldFilename)) {
-			foundSaveFile = item
-		}
-	}
-
-	if foundSaveFile.Filename == "" {
-		logger.Info("No save file found. Skipping...")
-		return
-	}
-
-	oldExt := strings.ReplaceAll(foundSaveFile.Filename, oldFilename, "")
-	newPath := filepath.Join(saveFileDirectory, unwrappedTag, newFilename+oldExt)
-
-	err = MoveFile(foundSaveFile.Path, newPath)
-	if err != nil {
-		logger.Error("failed to rename save file", zap.Error(err))
-		return
-	}
+	return shared.Item{}
 }
 
 func DeleteArt(filename string, romDirectory shared.RomDirectory) {
@@ -293,198 +227,124 @@ func DeleteArt(filename string, romDirectory shared.RomDirectory) {
 
 	artPath, err := FindExistingArt(filename, romDirectory)
 	if err != nil {
-		logger.Error("failed to find existing art", zap.Error(err))
+		logger.Error("Failed to find existing art", zap.Error(err))
 		return
-	} else if artPath == "" {
-		logger.Info("No art. Skipping delete.")
+	}
+
+	if artPath == "" {
+		logger.Info("No art found to delete")
 		return
 	}
 
 	common.DeleteFile(artPath)
 }
 
-func HasGameTrackerData(romFilename string, romDirectory shared.RomDirectory) bool {
+func RenameRom(game shared.Item, newFilename string, romDirectory shared.RomDirectory) (string, error) {
 	logger := common.GetLoggerInstance()
 
-	db, err := sql.Open("sqlite3", GetGameTrackerDBPath())
-	if err != nil {
-		logger.Error("Failed to open game tracker database", zap.Error(err))
-		return false
-	}
-	defer func(db *sql.DB) {
-		err := db.Close()
-		if err != nil {
-			logger.Error("Failed to close game tracker database", zap.Error(err))
-		}
-	}(db)
+	oldPath := filepath.Join(romDirectory.Path, game.Filename)
+	newPath := buildNewRomPath(romDirectory.Path, newFilename, game.Filename)
 
-	romPath := filepath.Join(strings.ReplaceAll(romDirectory.Path, GetRomDirectory()+"/", ""), romFilename)
+	logger.Debug("Renaming ROM", zap.String("from", oldPath), zap.String("to", newPath))
 
-	var romID string
-	err = db.QueryRow("SELECT id FROM rom WHERE file_path = ?", romPath).Scan(&romID)
-	if err != nil {
-		logger.Error("Failed to find ROM ID", zap.Error(err))
-		return false
+	if err := MoveFile(oldPath, newPath); err != nil {
+		return "", fmt.Errorf("failed to rename ROM file: %w", err)
 	}
 
-	return romID != ""
+	updateGameTrackerForRename(game.Filename, newFilename, romDirectory, logger)
+	renameSaveFile(game.Filename, newFilename, romDirectory)
+	// renameCollectionEntries(game, game.Filename, romDirectory) TODO need to finish this functionality
+	renameArtFile(game.Filename, newFilename, romDirectory, logger)
+
+	return filepath.Base(newPath), nil
 }
 
-func MigrateGameTrackerData(filename string, oldPath string, newPath string) bool {
-	logger := common.GetLoggerInstance()
-
-	db, err := sql.Open("sqlite3", gameTrackerDBPath)
-	if err != nil {
-		logger.Error("Failed to open game tracker database", zap.Error(err))
-		return false
-	}
-	defer func(db *sql.DB) {
-		err := db.Close()
-		if err != nil {
-			logger.Error("Failed to close game tracker database", zap.Error(err))
-		}
-	}(db)
-
-	logger.Debug("Migrating game tracker data", zap.String("filename", filename),
-		zap.String("oldPath", oldPath), zap.String("newPath", newPath))
-
-	tx, err := db.Begin()
-	if err != nil {
-		logger.Error("Failed to begin transaction", zap.Error(err))
-		return false
-	}
-
-	var romID string
-	err = tx.QueryRow("SELECT id FROM rom WHERE file_path = ?", oldPath).Scan(&romID)
-	if err != nil {
-		_ = tx.Rollback()
-		logger.Error("Failed to find ROM ID", zap.Error(err))
-		return false
-	}
-
-	if romID == "" {
-		logger.Warn("No ROM ID found", zap.String("old_path", oldPath))
-		return false
-	}
-
-	_, err = tx.Exec("UPDATE rom SET name = ?, file_path = ? WHERE id = ?", filename, newPath, romID)
-	if err != nil {
-		_ = tx.Rollback()
-		logger.Error("Failed to update game tracker Rom name", zap.Error(err))
-		return false
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		logger.Error("Failed to commit transaction", zap.Error(err))
-		return false
-	}
-
-	logger.Info("Game tracker Rom Name updated successfully")
-	return true
+func buildNewRomPath(romDirectoryPath, newFilename, oldFilename string) string {
+	ext := filepath.Ext(oldFilename)
+	return filepath.Join(romDirectoryPath, newFilename+ext)
 }
 
-func ClearGameTracker(romName string, romDirectory shared.RomDirectory) bool {
-	logger := common.GetLoggerInstance()
+func updateGameTrackerForRename(oldFilename, newFilename string, romDirectory shared.RomDirectory, logger *zap.Logger) {
+	oldPath := buildGameTrackerPath(romDirectory.Path, oldFilename)
+	newPath := buildGameTrackerPath(romDirectory.Path, newFilename+filepath.Ext(oldFilename))
 
-	db, err := sql.Open("sqlite3", GetGameTrackerDBPath())
-	if err != nil {
-		logger.Error("Failed to open game tracker database", zap.Error(err))
-		return false
-	}
-	defer func(db *sql.DB) {
-		err := db.Close()
-		if err != nil {
-			logger.Error("Failed to close game tracker database", zap.Error(err))
-		}
-	}(db)
-
-	tx, err := db.Begin()
-	if err != nil {
-		logger.Error("Failed to begin transaction", zap.Error(err))
-		return false
-	}
-
-	romPath := filepath.Join(strings.ReplaceAll(romDirectory.Path, GetRomDirectory()+"/", ""), romName)
-
-	var romID string
-	err = tx.QueryRow("SELECT id FROM rom WHERE file_path = ?", romPath).Scan(&romID)
-	if err != nil {
-		_ = tx.Rollback()
-		logger.Error("Failed to find ROM ID", zap.Error(err))
-		return false
-	}
-
-	if romID == "" {
-		logger.Warn("No ROM ID found", zap.String("fullpath", romPath), zap.String("name", romName))
-		return false
-	}
-
-	_, err = tx.Exec("DELETE FROM play_activity WHERE rom_id = ?", romID)
-	if err != nil {
-		_ = tx.Rollback()
-		logger.Error("Failed to delete play activity", zap.Error(err))
-		return false
-	}
-
-	_, err = tx.Exec("DELETE FROM rom WHERE id = ?", romID)
-	if err != nil {
-		_ = tx.Rollback()
-		logger.Error("Failed to delete rom", zap.Error(err))
-		return false
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		logger.Error("Failed to commit transaction", zap.Error(err))
-		return false
-	}
-
-	logger.Info("Game tracker data cleared successfully")
-	return true
+	logger.Debug("Updating game tracker for rename", zap.String("old", oldPath), zap.String("new", newPath))
+	MigrateGameTrackerData(newFilename, oldPath, newPath)
 }
 
-func ClearSaveStates() {
-	// TODO - implement
+func buildGameTrackerPath(romDirectoryPath, filename string) string {
+	fullPath := filepath.Join(romDirectoryPath, filename)
+	return strings.ReplaceAll(fullPath, common.RomDirectory+"/", "")
+}
+
+func renameArtFile(oldFilename, newFilename string, romDirectory shared.RomDirectory, logger *zap.Logger) {
+	existingArtPath, err := FindExistingArt(oldFilename, romDirectory)
+	if err != nil {
+		logger.Error("Failed to find existing art", zap.Error(err))
+		return
+	}
+
+	if existingArtPath == "" {
+		return
+	}
+
+	if !fileExists(existingArtPath) {
+		logger.Info("Art file does not exist, skipping rename")
+		return
+	}
+
+	newArtPath := buildNewArtPath(existingArtPath, newFilename)
+	if err := MoveFile(existingArtPath, newArtPath); err != nil {
+		logger.Error("Failed to rename art file", zap.Error(err))
+	}
+}
+
+func buildNewArtPath(oldArtPath, newFilename string) string {
+	dir := filepath.Dir(oldArtPath)
+	ext := filepath.Ext(oldArtPath)
+	return filepath.Join(dir, newFilename+ext)
 }
 
 func ArchiveRom(selectedGame shared.Item, romDirectory shared.RomDirectory) error {
-	archiveRoot := GetArchiveRoot()
-
 	logger := common.GetLoggerInstance()
 
-	logger.Debug("Archive Start", zap.String("selected_file", selectedGame.Filename), zap.Any("with_ext", selectedGame))
+	sourcePath := filepath.Join(romDirectory.Path, selectedGame.Filename)
+	destinationPath := buildArchivePath(selectedGame.Filename, romDirectory)
 
-	oldPath := filepath.Join(romDirectory.Path, selectedGame.Filename)
-	oldPathSubdirectory := strings.ReplaceAll(romDirectory.Path, GetRomDirectory(), "")
-	newPath := filepath.Join(archiveRoot, oldPathSubdirectory, selectedGame.Filename)
+	logger.Debug("Archiving ROM", zap.String("from", sourcePath), zap.String("to", destinationPath))
 
-	logger.Debug("Archiving Rom", zap.String("oldPath", oldPath), zap.String("newPath", newPath))
-
-	err := MoveFile(oldPath, newPath)
-	if err == nil {
-		existingArtFilename, err := FindExistingArt(selectedGame.Filename, romDirectory)
-		if err != nil {
-			logger.Error("failed to find existing art", zap.Error(err))
-		} else {
-			oldArtPath := filepath.Join(romDirectory.Path, ".media", existingArtFilename)
-			newArtPath := filepath.Join(archiveRoot, oldPathSubdirectory, ".media", existingArtFilename)
-
-			err := MoveFile(oldArtPath, newArtPath)
-			if err != nil {
-				logger.Error("failed to archive existing art", zap.Error(err))
-			}
-		}
+	if err := MoveFile(sourcePath, destinationPath); err != nil {
+		return fmt.Errorf("failed to archive ROM: %w", err)
 	}
 
-	return err
+	archiveArtFile(selectedGame.Filename, romDirectory, logger)
+	return nil
+}
+
+func buildArchivePath(filename string, romDirectory shared.RomDirectory) string {
+	archiveRoot := GetArchiveRoot()
+	subdirectory := strings.ReplaceAll(romDirectory.Path, GetRomDirectory(), "")
+	return filepath.Join(archiveRoot, subdirectory, filename)
+}
+
+func archiveArtFile(filename string, romDirectory shared.RomDirectory, logger *zap.Logger) {
+	artPath, err := FindExistingArt(filename, romDirectory)
+	if err != nil || artPath == "" {
+		return
+	}
+
+	archiveRoot := GetArchiveRoot()
+	subdirectory := strings.ReplaceAll(romDirectory.Path, GetRomDirectory(), "")
+	destinationPath := filepath.Join(archiveRoot, subdirectory, ".media", filepath.Base(artPath))
+
+	if err := MoveFile(artPath, destinationPath); err != nil {
+		logger.Error("Failed to archive art file", zap.Error(err))
+	}
 }
 
 func DeleteRom(game shared.Item, romDirectory shared.RomDirectory) {
 	romPath := filepath.Join(romDirectory.Path, game.Filename)
-	res := common.DeleteFile(romPath)
-
-	if res {
+	if common.DeleteFile(romPath) {
 		DeleteArt(game.Filename, romDirectory)
 	}
 }
@@ -494,51 +354,247 @@ func Nuke(game shared.Item, romDirectory shared.RomDirectory) {
 	DeleteRom(game, romDirectory)
 }
 
-func MoveFile(oldPath, newPath string) error {
-	logger := common.GetLoggerInstance()
-
-	dir := filepath.Dir(newPath)
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-		logger.Error("Failed to create destination directory", zap.Error(err))
-		return err
-	}
-
-	err := os.Rename(oldPath, newPath)
+func HasGameTrackerData(romFilename string, romDirectory shared.RomDirectory) bool {
+	db, err := openGameTrackerDB()
 	if err != nil {
-		logger.Error("Failed to move file", zap.Error(err))
-		return err
+		return false
 	}
+	defer closeDB(db)
 
-	return nil
+	romPath := buildGameTrackerPath(romDirectory.Path, romFilename)
+
+	var romID string
+	err = db.QueryRow("SELECT id FROM rom WHERE file_path = ?", romPath).Scan(&romID)
+	return err == nil && romID != ""
 }
 
-func MakeDirectoryIfNotExist(dirPath string) error {
-	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-		err := os.MkdirAll(dirPath, 0755)
-		if err != nil {
-			return fmt.Errorf("failed to create directory %s: %w", dirPath, err)
+func MigrateGameTrackerData(filename, oldPath, newPath string) bool {
+	logger := common.GetLoggerInstance()
+
+	db, err := openGameTrackerDB()
+	if err != nil {
+		return false
+	}
+	defer closeDB(db)
+
+	logger.Debug("Migrating game tracker data",
+		zap.String("filename", filename),
+		zap.String("oldPath", oldPath),
+		zap.String("newPath", newPath))
+
+	return executeGameTrackerMigration(db, filename, oldPath, newPath, logger)
+}
+
+func executeGameTrackerMigration(db *sql.DB, filename, oldPath, newPath string, logger *zap.Logger) bool {
+	tx, err := db.Begin()
+	if err != nil {
+		logger.Error("Failed to begin transaction", zap.Error(err))
+		return false
+	}
+	defer tx.Rollback()
+
+	romID, err := findRomID(tx, oldPath)
+	if err != nil || romID == "" {
+		logger.Error("Failed to find ROM ID", zap.String("path", oldPath), zap.Error(err))
+		return false
+	}
+
+	if err := updateRomData(tx, filename, newPath, romID); err != nil {
+		logger.Error("Failed to update ROM data", zap.Error(err))
+		return false
+	}
+
+	if err := tx.Commit(); err != nil {
+		logger.Error("Failed to commit transaction", zap.Error(err))
+		return false
+	}
+
+	logger.Info("Game tracker ROM data updated successfully")
+	return true
+}
+
+func ClearGameTracker(romName string, romDirectory shared.RomDirectory) bool {
+	logger := common.GetLoggerInstance()
+
+	db, err := openGameTrackerDB()
+	if err != nil {
+		return false
+	}
+	defer closeDB(db)
+
+	romPath := buildGameTrackerPath(romDirectory.Path, romName)
+	return executeGameTrackerClear(db, romPath, logger)
+}
+
+func executeGameTrackerClear(db *sql.DB, romPath string, logger *zap.Logger) bool {
+	tx, err := db.Begin()
+	if err != nil {
+		logger.Error("Failed to begin transaction", zap.Error(err))
+		return false
+	}
+	defer tx.Rollback()
+
+	romID, err := findRomID(tx, romPath)
+	if err != nil || romID == "" {
+		logger.Warn("No ROM found to clear", zap.String("path", romPath))
+		return false
+	}
+
+	if err := deleteGameTrackerData(tx, romID); err != nil {
+		logger.Error("Failed to delete game tracker data", zap.Error(err))
+		return false
+	}
+
+	if err := tx.Commit(); err != nil {
+		logger.Error("Failed to commit transaction", zap.Error(err))
+		return false
+	}
+
+	logger.Info("Game tracker data cleared successfully")
+	return true
+}
+
+func openGameTrackerDB() (*sql.DB, error) {
+	logger := common.GetLoggerInstance()
+
+	db, err := sql.Open("sqlite3", GetGameTrackerDBPath())
+	if err != nil {
+		logger.Error("Failed to open game tracker database", zap.Error(err))
+		return nil, err
+	}
+	return db, nil
+}
+
+func closeDB(db *sql.DB) {
+	if err := db.Close(); err != nil {
+		logger := common.GetLoggerInstance()
+		logger.Error("Failed to close database", zap.Error(err))
+	}
+}
+
+func findRomID(tx *sql.Tx, romPath string) (string, error) {
+	var romID string
+	err := tx.QueryRow("SELECT id FROM rom WHERE file_path = ?", romPath).Scan(&romID)
+	return romID, err
+}
+
+func updateRomData(tx *sql.Tx, filename, newPath, romID string) error {
+	_, err := tx.Exec("UPDATE rom SET name = ?, file_path = ? WHERE id = ?", filename, newPath, romID)
+	return err
+}
+
+func deleteGameTrackerData(tx *sql.Tx, romID string) error {
+	if _, err := tx.Exec("DELETE FROM play_activity WHERE rom_id = ?", romID); err != nil {
+		return err
+	}
+	_, err := tx.Exec("DELETE FROM rom WHERE id = ?", romID)
+	return err
+}
+
+func renameSaveFile(oldFilename, newFilename string, romDirectory shared.RomDirectory) {
+	logger := common.GetLoggerInstance()
+
+	saveDir := buildSaveDirectory(romDirectory)
+	fb := filebrowser.NewFileBrowser(logger)
+
+	if err := fb.CWD(saveDir, true); err != nil {
+		logger.Error("Failed to access save directory", zap.String("dir", saveDir), zap.Error(err))
+		return
+	}
+
+	saveFile := findSaveFile(fb.Items, oldFilename)
+	if saveFile.Filename == "" {
+		logger.Info("No save file found to rename")
+		return
+	}
+
+	newSavePath := buildNewSavePath(saveDir, oldFilename, newFilename, saveFile.Filename)
+	if err := MoveFile(saveFile.Path, newSavePath); err != nil {
+		logger.Error("Failed to rename save file", zap.Error(err))
+	}
+}
+
+func buildSaveDirectory(romDirectory shared.RomDirectory) string {
+	tag := cleanTag(romDirectory.Tag)
+	return filepath.Join(GetSaveFileDirectory(), tag)
+}
+
+func findSaveFile(items []shared.Item, targetFilename string) shared.Item {
+	lowerTarget := strings.ToLower(targetFilename)
+	for _, item := range items {
+		if strings.Contains(strings.ToLower(item.Filename), lowerTarget) {
+			return item
 		}
 	}
-	return nil
+	return shared.Item{}
+}
+
+func buildNewSavePath(saveDir, oldFilename, newFilename, saveFilename string) string {
+	ext := strings.ReplaceAll(saveFilename, removeFileExtension(oldFilename), "")
+	return filepath.Join(saveDir, newFilename+ext)
+}
+
+func renameCollectionEntries(game shared.Item, oldDisplayName string, romDirectory shared.RomDirectory) {
+	logger := common.GetLoggerInstance()
+
+	collections := findCollectionsContainingGame(game, logger)
+	for _, collection := range collections {
+		updateCollectionGamePath(collection, oldDisplayName, game, romDirectory)
+		SaveCollection(collection)
+	}
+}
+
+func findCollectionsContainingGame(game shared.Item, logger *zap.Logger) []models.Collection {
+	fb := filebrowser.NewFileBrowser(logger)
+	if err := fb.CWD(GetCollectionDirectory(), false); err != nil {
+		return nil
+	}
+
+	var collections []models.Collection
+	for _, item := range fb.Items {
+		collection := models.Collection{
+			DisplayName:    item.DisplayName,
+			CollectionFile: item.Path,
+		}
+
+		if loadedCollection, err := ReadCollection(collection); err == nil {
+			if containsGame(loadedCollection.Games, game) {
+				collections = append(collections, loadedCollection)
+			}
+		}
+	}
+
+	return collections
+}
+
+func containsGame(games []shared.Item, targetGame shared.Item) bool {
+	return slices.ContainsFunc(games, func(game shared.Item) bool {
+		return game.DisplayName == targetGame.DisplayName
+	})
+}
+
+func updateCollectionGamePath(collection models.Collection, oldDisplayName string, game shared.Item, romDirectory shared.RomDirectory) {
+	romDirectoryStub := strings.ReplaceAll(romDirectory.Path, GetRomDirectory(), "")
+
+	for i, item := range collection.Games {
+		if item.DisplayName == oldDisplayName {
+			collection.Games[i].Path = filepath.Join(romDirectoryStub, game.Filename)
+		}
+	}
 }
 
 func RenameCollection(collection models.Collection, name string) (models.Collection, error) {
 	logger := common.GetLoggerInstance()
 
-	newFileName := name + ".txt"
+	newPath := filepath.Join(filepath.Dir(collection.CollectionFile), name+".txt")
 
-	filepath.Dir(collection.CollectionFile)
-	newPath := filepath.Join(filepath.Dir(collection.CollectionFile), newFileName)
-
-	err := os.Rename(collection.CollectionFile, newPath)
-	if err != nil {
-		logger.Error("Failed to move file", zap.Error(err))
-		return models.Collection{}, err
+	if err := os.Rename(collection.CollectionFile, newPath); err != nil {
+		logger.Error("Failed to rename collection file", zap.Error(err))
+		return models.Collection{}, fmt.Errorf("failed to rename collection: %w", err)
 	}
 
 	collection.DisplayName = name
 	collection.CollectionFile = newPath
-
 	return collection, nil
 }
 
@@ -549,31 +605,32 @@ func DeleteCollection(collection models.Collection) {
 func AddCollectionGame(collection models.Collection, game shared.Item) (models.Collection, error) {
 	logger := common.GetLoggerInstance()
 
-	if len(collection.Games) == 0 {
-		if _, err := os.Stat(collection.CollectionFile); !os.IsNotExist(err) {
-			logger.Debug("Collection file already exists. Loading...")
+	if len(collection.Games) == 0 && fileExists(collection.CollectionFile) {
+		logger.Debug("Loading existing collection")
 
-			loadCollection, err := ReadCollection(collection)
-
-			if err != nil {
-				return collection, err
-			}
-			collection = loadCollection
+		if loadedCollection, err := ReadCollection(collection); err == nil {
+			collection = loadedCollection
+		} else {
+			return collection, fmt.Errorf("failed to load existing collection: %w", err)
 		}
 	}
 
-	for _, existingGame := range collection.Games {
-		if existingGame.Path == game.Path {
-			logger.Debug("Game already exists in collection", zap.String("path", game.Path))
-			return collection, nil
-		}
+	if GameExistsInCollection(collection.Games, game) {
+		logger.Debug("Game already exists in collection", zap.String("path", game.Path))
+		return collection, nil
 	}
 
 	collection.Games = append(collection.Games, game)
+	return collection, SaveCollection(collection)
+}
 
-	_ = SaveCollection(collection)
-
-	return collection, nil
+func GameExistsInCollection(games []shared.Item, targetGame shared.Item) bool {
+	for _, game := range games {
+		if strings.Contains(strings.ToLower(game.Path), strings.ToLower(targetGame.DisplayName)) {
+			return true
+		}
+	}
+	return false
 }
 
 func ReadCollection(collection models.Collection) (models.Collection, error) {
@@ -581,19 +638,22 @@ func ReadCollection(collection models.Collection) (models.Collection, error) {
 
 	file, err := os.Open(collection.CollectionFile)
 	if err != nil {
-		logger.Error("failed to open collection", zap.Error(err))
-		return collection, err
+		logger.Error("Failed to open collection file", zap.String("file", collection.CollectionFile), zap.Error(err))
+		return collection, fmt.Errorf("failed to open collection file: %w", err)
 	}
 	defer file.Close()
 
+	var games []shared.Item
 	scanner := bufio.NewScanner(file)
 
-	var games []shared.Item
-
 	for scanner.Scan() {
-		line := scanner.Text()
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+
 		displayName := filepath.Base(line)
-		displayName, _ = filebrowser.ItemNameCleaner(displayName, false)
+
 		games = append(games, shared.Item{
 			DisplayName: displayName,
 			Path:        line,
@@ -601,71 +661,99 @@ func ReadCollection(collection models.Collection) (models.Collection, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		logger.Error("failed to read collection", zap.Error(err))
-		return collection, err
+		logger.Error("Failed to read collection file", zap.Error(err))
+		return collection, fmt.Errorf("failed to read collection: %w", err)
 	}
 
 	collection.Games = games
-
 	return collection, nil
 }
 
 func SaveCollection(collection models.Collection) error {
-	dir := filepath.Dir(collection.CollectionFile)
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-		return fmt.Errorf("failed to create directory: %w", err)
+	if err := ensureDirectoryExists(filepath.Dir(collection.CollectionFile)); err != nil {
+		return fmt.Errorf("failed to create collection directory: %w", err)
 	}
 
-	file, err := os.OpenFile(collection.CollectionFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	file, err := os.OpenFile(collection.CollectionFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, defaultFilePerm)
 	if err != nil {
-		return fmt.Errorf("failed to open file: %w", err)
+		return fmt.Errorf("failed to open collection file: %w", err)
 	}
 	defer file.Close()
 
 	writer := bufio.NewWriter(file)
-	for _, line := range collection.Games {
+	defer writer.Flush()
 
-		path := strings.ReplaceAll(line.Path, GetRomDirectory()+"/", "")
-
-		if line.IsMultiDiscDirectory {
-			path = filepath.Join(path, line.DisplayName+".m3u")
-		}
-
+	for _, game := range collection.Games {
+		path := normalizeGamePath(game)
 		if _, err := writer.WriteString(path + "\n"); err != nil {
-			return fmt.Errorf("failed to write line: %w", err)
+			return fmt.Errorf("failed to write collection entry: %w", err)
 		}
-	}
-
-	if err := writer.Flush(); err != nil {
-		return fmt.Errorf("failed to flush buffer: %w", err)
 	}
 
 	return nil
 }
 
-func SaveConfig(config *models.Config) error {
-	if _, err := os.Stat("config.yml"); os.IsNotExist(err) {
-		logger := common.GetLoggerInstance()
-		logger.Info("Config file does not exist, creating a blank one")
+func normalizeGamePath(game shared.Item) string {
+	path := strings.ReplaceAll(game.Path, GetRomDirectory()+"/", "/Roms/")
 
-		file, err := os.Create("config.yml")
-		if err != nil {
-			return fmt.Errorf("error creating config file: %w", err)
-		}
-		file.Close()
+	if game.IsMultiDiscDirectory {
+		path = filepath.Join(path, game.DisplayName+".m3u")
 	}
 
+	return path
+}
+
+func SaveConfig(config *models.Config) error {
+	configFile := "config.yml"
+
+	if !fileExists(configFile) {
+		if err := createEmptyConfigFile(configFile); err != nil {
+			return fmt.Errorf("failed to create config file: %w", err)
+		}
+	}
+
+	if err := setupViper(); err != nil {
+		return fmt.Errorf("failed to setup viper: %w", err)
+	}
+
+	setConfigValues(config)
+	return viper.WriteConfigAs(configFile)
+}
+
+func createEmptyConfigFile(filename string) error {
+	logger := common.GetLoggerInstance()
+	logger.Info("Creating new config file", zap.String("file", filename))
+
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	return file.Close()
+}
+
+func setupViper() error {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yml")
 	viper.AddConfigPath(".")
+	return viper.ReadInConfig()
+}
 
-	if err := viper.ReadInConfig(); err != nil {
-		return fmt.Errorf("error reading config file: %w", err)
-	}
-
+func setConfigValues(config *models.Config) {
 	viper.Set("art_download_type", config.ArtDownloadType)
 	viper.Set("hide_empty", config.HideEmpty)
 	viper.Set("log_level", config.LogLevel)
+}
 
-	return viper.WriteConfigAs("config.yml")
+func removeFileExtension(filename string) string {
+	return strings.TrimSuffix(filename, filepath.Ext(filename))
+}
+
+func directoryExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return !os.IsNotExist(err)
 }
