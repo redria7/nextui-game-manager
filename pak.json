@@ -1,6 +1,6 @@
 {
   "name": "Game Manager",
-  "version": "v2.0.0",
+  "version": "v2.0.1",
   "type": "TOOL",
   "description": "A one-stop pak for all your game management needs.",
   "author": "K-Wall",
@@ -10,6 +10,7 @@
     "BRICK": ".github/resources/banner.png"
   },
   "changelog": {
+    "v2.0.1": "Small fix in UI library for artifacts that appeared when no bg.png is present.",
     "v2.0.0": "Huge UI refresh along with long requested bugfixes."
   },
   "platforms": [
