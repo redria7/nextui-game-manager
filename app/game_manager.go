@@ -35,26 +35,15 @@ const (
 )
 
 func init() {
-	initializeSDL()
-	initializeLogging()
-	initializeConfig()
-	ensureCollectionDirectory()
-}
-
-func initializeSDL() {
 	gaba.InitSDL(gaba.GabagoolOptions{
 		WindowTitle:    "Game Manager",
 		ShowBackground: true,
 	})
-}
 
-func initializeLogging() {
 	common.SetLogLevel(defaultLogLevel)
 	common.InitIncludes()
-}
 
-func initializeConfig() {
-	config, err := loadOrCreateDefaultConfig()
+	config, err := loadConfig()
 	if err != nil {
 		log.Fatal("Unable to initialize configuration", zap.Error(err))
 	}
@@ -64,41 +53,31 @@ func initializeConfig() {
 
 	logger := common.GetLoggerInstance()
 	logger.Debug("Configuration loaded", zap.Object("config", config))
-}
 
-func loadOrCreateDefaultConfig() (*models.Config, error) {
-	config, err := state.LoadConfig()
-	if err != nil {
-		config = createDefaultConfig()
-		if saveErr := utils.SaveConfig(config); saveErr != nil {
-			return nil, fmt.Errorf("failed to save default config: %w", saveErr)
-		}
-	}
-	return config, nil
-}
-
-func createDefaultConfig() *models.Config {
-	return &models.Config{
-		ArtDownloadType: shared.ArtDownloadTypeFromString["BOX_ART"],
-		HideEmpty:       false,
-		LogLevel:        defaultLogLevel,
-	}
-}
-
-func ensureCollectionDirectory() {
 	collectionDir := utils.GetCollectionDirectory()
 	if _, err := os.Stat(collectionDir); os.IsNotExist(err) {
 		if mkdirErr := os.MkdirAll(collectionDir, defaultDirPerm); mkdirErr != nil {
-			showFatalError("Unable to create Collections directory!")
+			gaba.ConfirmationMessage("Unable to create Collections directory!", []gaba.FooterHelpItem{
+				{ButtonName: "B", HelpText: "Quit"},
+			}, gaba.MessageOptions{})
 			log.Fatal("Unable to create collection directory", zap.Error(mkdirErr))
 		}
 	}
 }
 
-func showFatalError(message string) {
-	gaba.ConfirmationMessage(message, []gaba.FooterHelpItem{
-		{ButtonName: "B", HelpText: "Quit"},
-	}, gaba.MessageOptions{})
+func loadConfig() (*models.Config, error) {
+	config, err := state.LoadConfig()
+	if err != nil {
+		config = &models.Config{
+			ArtDownloadType: shared.ArtDownloadTypeFromString["BOX_ART"],
+			HideEmpty:       false,
+			LogLevel:        defaultLogLevel,
+		}
+		if saveErr := utils.SaveConfig(config); saveErr != nil {
+			return nil, fmt.Errorf("failed to save default config: %w", saveErr)
+		}
+	}
+	return config, nil
 }
 
 func main() {

@@ -707,20 +707,27 @@ func SaveConfig(config *models.Config) error {
 	configFile := "config.yml"
 
 	if !fileExists(configFile) {
-		if err := createEmptyConfigFile(configFile); err != nil {
+		if err := CreateEmptyConfigFile(configFile); err != nil {
 			return fmt.Errorf("failed to create config file: %w", err)
 		}
 	}
 
-	if err := setupViper(); err != nil {
+	viper.SetConfigName("config")
+	viper.SetConfigType("yml")
+	viper.AddConfigPath(".")
+
+	if err := viper.ReadInConfig(); err != nil {
 		return fmt.Errorf("failed to setup viper: %w", err)
 	}
 
-	setConfigValues(config)
+	viper.Set("art_download_type", config.ArtDownloadType)
+	viper.Set("hide_empty", config.HideEmpty)
+	viper.Set("log_level", config.LogLevel)
+
 	return viper.WriteConfigAs(configFile)
 }
 
-func createEmptyConfigFile(filename string) error {
+func CreateEmptyConfigFile(filename string) error {
 	logger := common.GetLoggerInstance()
 	logger.Info("Creating new config file", zap.String("file", filename))
 
@@ -729,19 +736,6 @@ func createEmptyConfigFile(filename string) error {
 		return err
 	}
 	return file.Close()
-}
-
-func setupViper() error {
-	viper.SetConfigName("config")
-	viper.SetConfigType("yml")
-	viper.AddConfigPath(".")
-	return viper.ReadInConfig()
-}
-
-func setConfigValues(config *models.Config) {
-	viper.Set("art_download_type", config.ArtDownloadType)
-	viper.Set("hide_empty", config.HideEmpty)
-	viper.Set("log_level", config.LogLevel)
 }
 
 func removeFileExtension(filename string) string {
