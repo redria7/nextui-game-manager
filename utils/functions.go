@@ -57,7 +57,7 @@ func GetCollectionDirectory() string {
 		dir = os.Getenv("COLLECTION_DIRECTORY")
 	}
 
-	_ = ensureDirectoryExists(dir)
+	_ = EnsureDirectoryExists(dir)
 	return dir
 }
 
@@ -105,7 +105,7 @@ func GetArchiveFileList() ([]string, error) {
 	return archiveFolders, nil
 }
 
-func ensureDirectoryExists(dirPath string) error {
+func EnsureDirectoryExists(dirPath string) error {
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		return os.MkdirAll(dirPath, defaultDirPerm)
 	}
@@ -115,7 +115,7 @@ func ensureDirectoryExists(dirPath string) error {
 func MoveFile(sourcePath, destinationPath string) error {
 	logger := common.GetLoggerInstance()
 
-	if err := ensureDirectoryExists(filepath.Dir(destinationPath)); err != nil {
+	if err := EnsureDirectoryExists(filepath.Dir(destinationPath)); err != nil {
 		logger.Error("Failed to create destination directory", zap.Error(err))
 		return fmt.Errorf("failed to create destination directory: %w", err)
 	}
@@ -736,7 +736,7 @@ func ReadCollection(collection models.Collection) (models.Collection, error) {
 }
 
 func SaveCollection(collection models.Collection) error {
-	if err := ensureDirectoryExists(filepath.Dir(collection.CollectionFile)); err != nil {
+	if err := EnsureDirectoryExists(filepath.Dir(collection.CollectionFile)); err != nil {
 		return fmt.Errorf("failed to create collection directory: %w", err)
 	}
 

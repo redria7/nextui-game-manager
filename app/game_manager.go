@@ -562,7 +562,7 @@ func handleCreateArchiveTransition(currentScreen models.Screen, result interface
 	cas := currentScreen.(ui.CreateArchiveScreen)
 
 	if code == ExitCodeSuccess {
-		utils.ensureDirectoryExists(utils.GetArchiveMediaRoot(result.(string)))
+		_ = utils.EnsureDirectoryExists(utils.GetArchiveMediaRoot(result.(string)))
 	}
 
 	return ui.InitManageArchivesScreen(cas.Game, cas.RomDirectory, cas.PreviousRomDirectory, cas.SearchFilter)
