@@ -8,21 +8,21 @@ import (
 	"strings"
 )
 
-type CreateArchive struct {
+type CreateArchiveScreen struct {
 	RomDirectory shared.RomDirectory
 }
 
-func InitCreateArchive(romDirectory shared.RomDirectory) CreateArchive {
-	return CreateArchive{
+func InitCreateArchiveScreen(romDirectory shared.RomDirectory) CreateArchiveScreen {
+	return CreateArchiveScreen{
 		RomDirectory: romDirectory,
 	}
 }
 
-func (cas CreateArchive) Name() sum.Int[models.ScreenName] {
+func (cas CreateArchiveScreen) Name() sum.Int[models.ScreenName] {
 	return models.ScreenNames.CreateArchive
 }
 
-func (cas CreateArchive) Draw() (value interface{}, exitCode int, e error) {
+func (cas CreateArchiveScreen) Draw() (value interface{}, exitCode int, e error) {
 	query, err := gabagool.Keyboard("")
 	if err != nil {
 		return nil, -1, err

@@ -14,12 +14,6 @@ import (
 	"nextui-game-manager/utils"
 	"os"
 	"time"
-
-	_ "github.com/UncleJunVIP/certifiable"
-	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
-	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
-	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
-	"go.uber.org/zap"
 	"qlova.tech/sum"
 	"time"
 )
@@ -395,7 +389,7 @@ func handleClearGameTrackerAction(as ui.ActionsScreen) models.Screen {
 	return ui.InitActionsScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 }
 
-func handleArchiveRomAction(as ui.ManageArchivesScreen, archiveFolder String) models.Screen {
+func handleArchiveRomAction(as ui.ManageArchivesScreen, archiveFolder string) models.Screen {
 	message := fmt.Sprintf("Archive %s into %s?", as.Game.DisplayName, archiveFolder)
 	if !confirmAction(message) {
 		return ui.InitActionsScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
@@ -569,7 +563,7 @@ func handleCreateArchiveTransition(currentScreen models.Screen, result interface
 	cas := currentScreen.(ui.CreateArchiveScreen)
 
 	if code == ExitCodeSuccess {
-		_ = ensureDirectoryExists(GetArchiveMediaRoot(result))
+		_ := utils.ensureDirectoryExists(utils.GetArchiveMediaRoot(result))
 	}
 
 	return ui.InitManageArchivesScreen(cas.Game, cas.RomDirectory, cas.PreviousRomDirectory, cas.SearchFilter)
