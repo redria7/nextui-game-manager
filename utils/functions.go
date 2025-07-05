@@ -87,6 +87,8 @@ func GetFileList(dirPath string) ([]os.DirEntry, error) {
 }
 
 func GetArchiveFileList() ([]string, error) {
+	logger := common.GetLoggerInstance()
+	
 	entries, err := GetFileList(GetRomDirectory())
 	if err != nil {
 		return nil, err
