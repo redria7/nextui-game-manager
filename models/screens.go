@@ -13,6 +13,8 @@ type ScreenName struct {
 	AddToCollection,
 	Confirm,
 	DownloadArt,
+	ManageArchives,
+	CreateArchive,
 
 	CollectionsList,
 	CollectionOptions,

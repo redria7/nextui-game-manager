@@ -13,6 +13,13 @@ import (
 	"nextui-game-manager/ui"
 	"nextui-game-manager/utils"
 	"os"
+	"time"
+
+	_ "github.com/UncleJunVIP/certifiable"
+	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
+	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
+	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
+	"go.uber.org/zap"
 	"qlova.tech/sum"
 	"time"
 )
@@ -151,6 +158,10 @@ func handleScreenTransition(currentScreen models.Screen, result interface{}, cod
 		return handleCollectionCreateTransition(currentScreen)
 	case models.ScreenNames.DownloadArt:
 		return handleDownloadArtTransition(currentScreen)
+	case models.ScreenNames.ManageArchives:
+		return handleManageArchivesTransition(currentScreen, result, code)
+	case models.ScreenNames.CreateArchive:
+		return handleCreateArchiveTransition(currentScreen, result, code)
 	default:
 		return ui.InitMainMenu()
 	}
@@ -317,7 +328,7 @@ func executeGameAction(as ui.ActionsScreen, action sum.Int[models.Action]) model
 	case models.Actions.ClearGameTracker:
 		return handleClearGameTrackerAction(as)
 	case models.Actions.ArchiveRom:
-		return handleArchiveRomAction(as)
+		return ui.InitManageArchivesScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 	case models.Actions.DeleteRom:
 		return handleDeleteRomAction(as)
 	case models.Actions.Nuke:
@@ -384,13 +395,13 @@ func handleClearGameTrackerAction(as ui.ActionsScreen) models.Screen {
 	return ui.InitActionsScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 }
 
-func handleArchiveRomAction(as ui.ActionsScreen) models.Screen {
-	message := fmt.Sprintf("Archive %s?", as.Game.DisplayName)
+func handleArchiveRomAction(as ui.ManageArchivesScreen, archiveFolder String) models.Screen {
+	message := fmt.Sprintf("Archive %s into %s?", as.Game.DisplayName, archiveFolder)
 	if !confirmAction(message) {
 		return ui.InitActionsScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 	}
 
-	if err := utils.ArchiveRom(as.Game, as.RomDirectory); err != nil {
+	if err := utils.ArchiveRom(as.Game, as.RomDirectory, archiveFolder); err != nil {
 		showTimedMessage(fmt.Sprintf("Unable to archive %s!", as.Game.DisplayName), longMessageDelay)
 		return ui.InitActionsScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 	}
@@ -489,10 +500,11 @@ func handleBulkDeleteArt(ba ui.BulkOptionsScreen) {
 	}
 }
 
+// todo: add bulk handling of archive customization
 func handleBulkArchive(ba ui.BulkOptionsScreen) {
 	if confirmBulkAction("Archive the selected games?") {
 		for _, game := range ba.Games {
-			utils.ArchiveRom(game, ba.RomDirectory)
+			utils.ArchiveRom(game, ba.RomDirectory, ".Archive")
 		}
 	}
 }
@@ -538,6 +550,29 @@ func navigateBackFromAddToCollection(atc ui.AddToCollectionScreen) models.Screen
 func handleCollectionCreateTransition(currentScreen models.Screen) models.Screen {
 	cc := currentScreen.(ui.CreateCollectionScreen)
 	return ui.InitAddToCollectionScreen(cc.Games, cc.RomDirectory, cc.PreviousRomDirectory, cc.SearchFilter)
+}
+
+func handleManageArchivesTransition(currentScreen models.Screen, result interface{}, code int) models.Screen {
+	mas := currentScreen.(ui.ManageArchivesScreen)
+
+	switch code {
+	case ExitCodeSuccess:
+		return handleArchiveRomAction(mas, result)
+	case ExitCodeAction:
+		return ui.CreateArchiveScreen(mas.Game, mas.RomDirectory, mas.PreviousRomDirectory, mas.SearchFilter)
+	default:
+		return ui.InitActionsScreen(mas.Game, mas.RomDirectory, mas.PreviousRomDirectory, mas.SearchFilter)
+	}
+}
+
+func handleCreateArchiveTransition(currentScreen models.Screen, result interface{}, code int) models.Screen {
+	cas := currentScreen.(ui.CreateArchiveScreen)
+
+	if code == ExitCodeSuccess {
+		_ = ensureDirectoryExists(GetArchiveMediaRoot(result))
+	}
+
+	return ui.InitManageArchivesScreen(cas.Game, cas.RomDirectory, cas.PreviousRomDirectory, cas.SearchFilter)
 }
 
 func handleDownloadArtTransition(currentScreen models.Screen) models.Screen {

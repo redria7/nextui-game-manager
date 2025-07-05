@@ -37,11 +37,18 @@ func GetRomDirectory() string {
 	return common.RomDirectory
 }
 
-func GetArchiveRoot() string {
+func GetArchiveRoot(archiveName string) string {
 	if IsDev() {
 		return os.Getenv("ARCHIVE_DIRECTORY")
 	}
-	return "/mnt/SDCARD/Roms/.Archive"
+	return fmt.Sprintf("/mnt/SDCARD/Roms/.%s", archiveName)
+}
+
+func GetArchiveMediaRoot(archiveName string) string {
+	if IsDev() {
+		return os.Getenv("ARCHIVE_DIRECTORY")
+	}
+	return fmt.Sprintf("%s/.media", GetArchiveRoot(archiveName))
 }
 
 func GetCollectionDirectory() string {
@@ -74,6 +81,28 @@ func GetFileList(dirPath string) ([]os.DirEntry, error) {
 		return nil, fmt.Errorf("failed to read directory %s: %w", dirPath, err)
 	}
 	return entries, nil
+}
+
+func GetArchiveFileList() ([]os.DirEntry, error) {
+	entries, err := GetFileList(GetRomDirectory())
+	if err != nil {
+		return nil, err
+	}
+
+	var archiveFolders []os.DirEntry
+	for _, folder := range entries {
+		folderName := folder.Name()
+		if directoryExists(folderName) {
+			if strings.HasPrefix(folderName, ".") {
+				archiveFolders = append(archiveFolders, folder)
+			}
+		}
+	}
+
+	if archiveFolders == nil {
+		archiveFolders = append(archiveFolders, ".Archive")
+	}
+	return archiveFolders, nil
 }
 
 func ensureDirectoryExists(dirPath string) error {
@@ -305,11 +334,11 @@ func buildNewArtPath(oldArtPath, newFilename string) string {
 	return filepath.Join(dir, newFilename+ext)
 }
 
-func ArchiveRom(selectedGame shared.Item, romDirectory shared.RomDirectory) error {
+func ArchiveRom(selectedGame shared.Item, romDirectory shared.RomDirectory, archiveName string) error {
 	logger := common.GetLoggerInstance()
 
 	sourcePath := filepath.Join(romDirectory.Path, selectedGame.Filename)
-	destinationPath := buildArchivePath(selectedGame.Filename, romDirectory)
+	destinationPath := buildArchivePath(selectedGame.Filename, romDirectory, archiveName)
 
 	logger.Debug("Archiving ROM", zap.String("from", sourcePath), zap.String("to", destinationPath))
 
@@ -317,28 +346,65 @@ func ArchiveRom(selectedGame shared.Item, romDirectory shared.RomDirectory) erro
 		return fmt.Errorf("failed to archive ROM: %w", err)
 	}
 
-	archiveArtFile(selectedGame.Filename, romDirectory, logger)
+	archiveArtFile(selectedGame.Filename, romDirectory, archiveName, logger)
 	return nil
 }
 
-func buildArchivePath(filename string, romDirectory shared.RomDirectory) string {
-	archiveRoot := GetArchiveRoot()
+func RestoreRom(selectedGame shared.Item, romDirectory shared.RomDirectory, archiveName string) error {
+	logger := common.GetLoggerInstance()
+
+	sourcePath := filepath.Join(romDirectory.Path, selectedGame.Filename)
+	destinationPath := buildRestorePath(selectedGame.Filename, romDirectory, archiveName)
+
+	logger.Debug("Restoring ROM", zap.String("from", sourcePath), zap.String("to", destinationPath))
+
+	if err := MoveFile(sourcePath, destinationPath); err != nil {
+		return fmt.Errorf("failed to restore ROM: %w", err)
+	}
+
+	restoreArtFile(selectedGame.Filename, romDirectory, archiveName, logger)
+	return nil
+}
+
+func buildArchivePath(filename string, romDirectory shared.RomDirectory, archiveName string) string {
+	archiveRoot := GetArchiveRoot(archiveName)
 	subdirectory := strings.ReplaceAll(romDirectory.Path, GetRomDirectory(), "")
 	return filepath.Join(archiveRoot, subdirectory, filename)
 }
 
-func archiveArtFile(filename string, romDirectory shared.RomDirectory, logger *zap.Logger) {
+func buildRestorePath(filename string, romDirectory shared.RomDirectory, archiveName string) string {
+	archiveRoot := GetArchiveRoot(archiveName)
+	subdirectory := strings.ReplaceAll(romDirectory.Path, archiveRoot, "")
+	return filepath.Join(GetRomDirectory(), subdirectory, filename)
+}
+
+func archiveArtFile(filename string, romDirectory shared.RomDirectory, archiveName string, logger *zap.Logger) {
 	artPath, err := FindExistingArt(filename, romDirectory)
 	if err != nil || artPath == "" {
 		return
 	}
 
-	archiveRoot := GetArchiveRoot()
+	archiveRoot := GetArchiveRoot(archiveName)
 	subdirectory := strings.ReplaceAll(romDirectory.Path, GetRomDirectory(), "")
 	destinationPath := filepath.Join(archiveRoot, subdirectory, ".media", filepath.Base(artPath))
 
 	if err := MoveFile(artPath, destinationPath); err != nil {
 		logger.Error("Failed to archive art file", zap.Error(err))
+	}
+}
+
+func restoreArtFile(filename string, romDirectory shared.RomDirectory, archiveName string, logger *zap.Logger) {
+	artPath, err := FindExistingArt(filename, romDirectory)
+	if err != nil || artPath == "" {
+		return
+	}
+
+	archiveRoot := GetArchiveRoot(archiveName)
+	subdirectory := strings.ReplaceAll(romDirectory.Path, archiveRoot, "")
+	destinationPath := filepath.Join(GetRomDirectory(), subdirectory, ".media", filepath.Base(artPath))
+
+	if err := MoveFile(artPath, destinationPath); err != nil {
+		logger.Error("Failed to restore art file", zap.Error(err))
 	}
 }
 
