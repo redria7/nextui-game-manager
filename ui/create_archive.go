@@ -9,12 +9,19 @@ import (
 )
 
 type CreateArchiveScreen struct {
-	RomDirectory shared.RomDirectory
+	Game                 shared.Item
+	RomDirectory         shared.RomDirectory
+	PreviousRomDirectory shared.RomDirectory
+	SearchFilter         string
 }
 
-func InitCreateArchiveScreen(romDirectory shared.RomDirectory) CreateArchiveScreen {
+func InitCreateArchiveScreen(game shared.Item, romDirectory shared.RomDirectory,
+	previousRomDirectory shared.RomDirectory, searchFilter string) CreateArchiveScreen {
 	return CreateArchiveScreen{
-		RomDirectory: romDirectory,
+		Game:                 game,
+		RomDirectory:         romDirectory,
+		PreviousRomDirectory: previousRomDirectory,
+		SearchFilter:         searchFilter,
 	}
 }
 

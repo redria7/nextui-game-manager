@@ -15,7 +15,6 @@ import (
 	"os"
 	"time"
 	"qlova.tech/sum"
-	"time"
 )
 
 const (
@@ -551,7 +550,7 @@ func handleManageArchivesTransition(currentScreen models.Screen, result interfac
 
 	switch code {
 	case ExitCodeSuccess:
-		return handleArchiveRomAction(mas, result)
+		return handleArchiveRomAction(mas, result.(string))
 	case ExitCodeAction:
 		return ui.CreateArchiveScreen(mas.Game, mas.RomDirectory, mas.PreviousRomDirectory, mas.SearchFilter)
 	default:
@@ -563,7 +562,7 @@ func handleCreateArchiveTransition(currentScreen models.Screen, result interface
 	cas := currentScreen.(ui.CreateArchiveScreen)
 
 	if code == ExitCodeSuccess {
-		_ := utils.ensureDirectoryExists(utils.GetArchiveMediaRoot(result))
+		_ = utils.ensureDirectoryExists(utils.GetArchiveMediaRoot(result.(string)))
 	}
 
 	return ui.InitManageArchivesScreen(cas.Game, cas.RomDirectory, cas.PreviousRomDirectory, cas.SearchFilter)
