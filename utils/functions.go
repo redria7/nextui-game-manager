@@ -88,24 +88,32 @@ func GetFileList(dirPath string) ([]os.DirEntry, error) {
 
 func GetArchiveFileList() ([]string, error) {
 	logger := common.GetLoggerInstance()
-	
+
 	entries, err := GetFileList(GetRomDirectory())
 	if err != nil {
 		return nil, err
 	}
+	logger.Info("Traversing tree:")
 
 	var archiveFolders []string
 	for _, folder := range entries {
 		folderName := folder.Name()
 		logger.Info("Directory found:", zap.String("directory", folderName))
 		if directoryExists(folderName) {
+			logger.Info("Directory exists:", zap.String("directory", folderName))
 			if strings.HasPrefix(folderName, ".") {
+				logger.Info("Directory hidden:", zap.String("directory", folderName))
 				archiveFolders = append(archiveFolders, folderName)
 			}
 		}
 	}
-
+	logger.Info("Traversing slice:")
+	for _, folder := range archiveFolders {
+		logger.Info("slice entry:", zap.String("directory", folder))
+	}
+	logger.Info("slice done:")
 	if archiveFolders == nil {
+		logger.Info("slice nil:")
 		archiveFolders = append(archiveFolders, ".Archive")
 	}
 	return archiveFolders, nil
