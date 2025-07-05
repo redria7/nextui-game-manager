@@ -41,6 +41,9 @@ func GetArchiveRoot(archiveName string) string {
 	if IsDev() {
 		return os.Getenv("ARCHIVE_DIRECTORY")
 	}
+	if strings.HasPrefix(archiveName, ".") {
+		return fmt.Sprintf("/mnt/SDCARD/Roms/%s", archiveName)
+	}
 	return fmt.Sprintf("/mnt/SDCARD/Roms/.%s", archiveName)
 }
 
@@ -92,6 +95,7 @@ func GetArchiveFileList() ([]string, error) {
 	var archiveFolders []string
 	for _, folder := range entries {
 		folderName := folder.Name()
+		logger.Info("Directory found:", zap.String("directory", folderName))
 		if directoryExists(folderName) {
 			if strings.HasPrefix(folderName, ".") {
 				archiveFolders = append(archiveFolders, folderName)
