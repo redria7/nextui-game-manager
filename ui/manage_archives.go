@@ -3,14 +3,11 @@ package ui
 import (
 	"github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
-	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
 	"nextui-game-manager/utils"
-	"path/filepath"
 	"qlova.tech/sum"
-	"strings"
 )
 
 type ManageArchivesScreen struct {
@@ -76,7 +73,7 @@ func (mas ManageArchivesScreen) Draw() (item interface{}, exitCode int, e error)
 		"• B: Exit",
 	}
 
-	selection, err := gaba.List(options)
+	selection, err := gabagool.List(options)
 	if err != nil {
 		return nil, -1, err
 	}

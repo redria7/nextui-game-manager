@@ -5,13 +5,14 @@ import (
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"nextui-game-manager/models"
 	"qlova.tech/sum"
+	"strings"
 )
 
 type CreateArchive struct {
 	RomDirectory shared.RomDirectory
 }
 
-func InitCreateArchive(romDirectory shared.RomDirectory) Search {
+func InitCreateArchive(romDirectory shared.RomDirectory) CreateArchive {
 	return CreateArchive{
 		RomDirectory: romDirectory,
 	}
@@ -28,7 +29,11 @@ func (cas CreateArchive) Draw() (value interface{}, exitCode int, e error) {
 	}
 
 	if query.IsSome() {
-		return query.Unwrap(), 0, nil
+		newArchive := query.Unwrap()
+		if strings.HasPrefix(newArchive, ".") {
+			return newArchive, 0, nil
+		}
+		return "." + newArchive, 0, nil
 	}
 
 	return nil, 2, nil
