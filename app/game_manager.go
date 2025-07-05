@@ -552,7 +552,7 @@ func handleManageArchivesTransition(currentScreen models.Screen, result interfac
 	case ExitCodeSuccess:
 		return handleArchiveRomAction(mas, result.(string))
 	case ExitCodeAction:
-		return ui.CreateArchiveScreen(mas.Game, mas.RomDirectory, mas.PreviousRomDirectory, mas.SearchFilter)
+		return ui.InitCreateArchiveScreen(mas.Game, mas.RomDirectory, mas.PreviousRomDirectory, mas.SearchFilter)
 	default:
 		return ui.InitActionsScreen(mas.Game, mas.RomDirectory, mas.PreviousRomDirectory, mas.SearchFilter)
 	}
@@ -562,7 +562,7 @@ func handleCreateArchiveTransition(currentScreen models.Screen, result interface
 	cas := currentScreen.(ui.CreateArchiveScreen)
 
 	if code == ExitCodeSuccess {
-		_ = utils.ensureDirectoryExists(utils.GetArchiveMediaRoot(result.(string)))
+		utils.ensureDirectoryExists(utils.GetArchiveMediaRoot(result.(string)))
 	}
 
 	return ui.InitManageArchivesScreen(cas.Game, cas.RomDirectory, cas.PreviousRomDirectory, cas.SearchFilter)
