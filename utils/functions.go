@@ -83,18 +83,18 @@ func GetFileList(dirPath string) ([]os.DirEntry, error) {
 	return entries, nil
 }
 
-func GetArchiveFileList() ([]os.DirEntry, error) {
+func GetArchiveFileList() ([]string, error) {
 	entries, err := GetFileList(GetRomDirectory())
 	if err != nil {
 		return nil, err
 	}
 
-	var archiveFolders []os.DirEntry
+	var archiveFolders []string
 	for _, folder := range entries {
 		folderName := folder.Name()
 		if directoryExists(folderName) {
 			if strings.HasPrefix(folderName, ".") {
-				archiveFolders = append(archiveFolders, folder)
+				archiveFolders = append(archiveFolders, folderName)
 			}
 		}
 	}

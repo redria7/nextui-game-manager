@@ -49,7 +49,7 @@ func (mas ManageArchivesScreen) Draw() (item interface{}, exitCode int, e error)
 	var archiveFolderEntries []gabagool.MenuItem
 	for _, item := range archiveFolders {
 		archiveFolderEntries = append(archiveFolderEntries, gabagool.MenuItem{
-			Text:               item.Name(),
+			Text:               item,
 			Selected:           false,
 			Focused:            false,
 			Metadata:           item,
