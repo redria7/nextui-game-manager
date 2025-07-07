@@ -152,8 +152,8 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 					DisplayName: rawSelection[0].DisplayName,
 					Tag:         rawSelection[0].Tag,
 					Path:        rawSelection[0].Path,
-				return newRomDirectory, 0, nil
 				}
+				return newRomDirectory, 0, nil
 			}
 		}
 
