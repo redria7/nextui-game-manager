@@ -38,7 +38,7 @@ func (aos ArchiveOptionsScreen) Draw() (screenReturn interface{}, exitCode int, 
 		})
 	}
 
-	options := gabagool.DefaultListOptions(fmt.Sprintf("%s Options", aos.Collection.DisplayName), actions)
+	options := gabagool.DefaultListOptions(fmt.Sprintf("%s Options", aos.Archive.DisplayName), actions)
 	options.EnableAction = true
 	options.FooterHelpItems = []gabagool.FooterHelpItem{
 		{ButtonName: "B", HelpText: "Back"},
@@ -56,31 +56,34 @@ func (aos ArchiveOptionsScreen) Draw() (screenReturn interface{}, exitCode int, 
 
 		switch action {
 		case models.Actions.ArchiveRename:
-			oldArchive = utils.CleanArchiveName(aos.Archive.DisplayName)
-			newArchive, err := gabagool.Keyboard(oldArchive)
+			oldArchive := utils.CleanArchiveName(aos.Archive.DisplayName)
+			res, err := gabagool.Keyboard(oldArchive)
 
 			if err != nil {
 				return nil, 1, err
 			}
 
-			if newArchive.IsSome() && newArchive != oldArchive {
-				newArchive = utils.PrepArchiveName(newArchive)
-				newArchivePath := utils.GetArchiveRoot(newArchive)
+			if res.IsSome() {
+				newArchive := res.Unwrap()
+				if newArchive != oldArchive {
+					newArchive = utils.PrepArchiveName(newArchive)
+					newArchivePath := utils.GetArchiveRoot(newArchive)
 
-				err := utils.MoveFile(aos.Archive.Path, newArchivePath)
+					err := utils.MoveFile(aos.Archive.Path, newArchivePath)
 
-				if err != nil {
-					logger.Error("Failed to rename archive", zap.Error(err))
-					utils.ShowTimedMessage("Failed to rename archive", time.Sleep(time.Second * 2))
-					return nil, 1, err
+					if err != nil {
+						logger.Error("Failed to rename archive", zap.Error(err))
+						utils.ShowTimedMessage("Failed to rename archive", time.Sleep(time.Second * 2))
+						return nil, 1, err
+					}
+
+					archiveDirectory = shared.RomDirectory{
+						DisplayName: newArchive,
+						Path: 		 newArchivePath,
+					}
+
+					return archiveDirectory, 4, nil
 				}
-
-				archiveDirectory = shared.RomDirectory{
-					DisplayName: newArchive,
-					Path: 		 newArchivePath,
-				}
-
-				return archiveDirectory, 4, nil
 			}
 
 			return nil, 4, nil

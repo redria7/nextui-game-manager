@@ -4,6 +4,7 @@ import (
 	"fmt"
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
+	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"github.com/veandco/go-sdl2/sdl"
 	"go.uber.org/zap"
@@ -19,7 +20,10 @@ type ArchiveManagementScreen struct {
 
 func InitArchiveManagement(archive string) ArchiveManagementScreen {
 	return ArchiveManagementScreen{
-		Archive: archive,
+		Archive: shared.RomDirectory{
+				DisplayName: archive,
+				Path:        utils.GetArchiveRoot(archive),
+			},
 	}
 }
 

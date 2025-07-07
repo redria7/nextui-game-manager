@@ -140,7 +140,6 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 
 		return nil, 4, nil
 	} else if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
-		var selectedItems shared.Items
 		rawSelection := selection.Unwrap().SelectedItems
 		
 		firstItem := rawSelection[0].Metadata.(shared.Item)

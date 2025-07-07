@@ -233,7 +233,7 @@ func handleArchiveGamesListTransition(currentScreen models.Screen, result interf
 			return ui.InitArchiveGamesListScreen(agl.Archive, agl.RomDirectory, "")
 		}
 
-		return ui.InitArchiveListScreen()
+		return ui.InitArchiveManagementScreen(aos.Archive.DisplayName)
 	case ExitCodeAction, ExitCodeError:
 		searchFilter := result.(string)
 
@@ -249,9 +249,9 @@ func handleArchiveGamesListTransition(currentScreen models.Screen, result interf
 		}
 
 		showTimedMessage(fmt.Sprintf("%s is empty!", agl.RomDirectory.DisplayName), longMessageDelay)
-		return ui.InitArchiveListScreen()
+		return ui.InitArchiveManagementScreen(aos.Archive.DisplayName)
 	default:
-		return ui.InitArchiveListScreen()
+		return ui.InitArchiveManagementScreen(aos.Archive.DisplayName)
 	}
 }
 
@@ -267,7 +267,7 @@ func handleArchiveOptionsTransition(currentScreen models.Screen, result interfac
 	case ExitCodeSuccess:
 		return ui.InitArchiveListScreen()
 	default:
-		return ui.InitArchiveManagementScreen(aos.Archive)
+		return ui.InitArchiveManagementScreen(aos.Archive.DisplayName)
 	}
 }
 
