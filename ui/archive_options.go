@@ -74,7 +74,7 @@ func (aos ArchiveOptionsScreen) Draw() (screenReturn interface{}, exitCode int, 
 
 					if err != nil {
 						logger.Error("Failed to rename archive", zap.Error(err))
-						utils.ShowTimedMessage("Failed to rename archive", time.Sleep(time.Second * 2))
+						utils.ShowTimedMessage("Failed to rename archive", time.Second * 2)
 						return nil, 1, err
 					}
 
@@ -103,12 +103,12 @@ func (aos ArchiveOptionsScreen) Draw() (screenReturn interface{}, exitCode int, 
 
 				if err != nil {
 					logger.Error("Failed to delete archive", zap.Error(err))
-					utils.ShowTimedMessage("Failed to delete archive", time.Sleep(time.Second * 2))
+					utils.ShowTimedMessage("Failed to delete archive", time.Second * 2)
 					return nil, 1, err
 				}
 
 				if res != "" {
-					utils.ShowTimedMessage(fmt.Sprintf("Cannot delete while file exists in archive\n%s", res), time.Sleep(time.Second * 2))
+					utils.ShowTimedMessage(fmt.Sprintf("Cannot delete while file exists in archive\n%s", res), time.Second * 2)
 				}
 
 				return nil, 0, nil

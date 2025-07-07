@@ -1,17 +1,14 @@
 package ui
 
 import (
-	"fmt"
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
-	"github.com/veandco/go-sdl2/sdl"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
 	"nextui-game-manager/utils"
 	"qlova.tech/sum"
-	"slices"
 )
 
 type ArchiveManagementScreen struct {
