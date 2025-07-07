@@ -845,7 +845,7 @@ func CleanArchiveName(archive string) string {
 	return strings.TrimPrefix(archive, ".")
 }
 
-func DeleteArchive(archive shared.RomDirectory) string, error {
+func DeleteArchive(archive shared.RomDirectory) (string, error) {
 	res, err := deleteArchiveRecursive(archive.Path, 0)
 	
 	if err != nil {
@@ -866,7 +866,7 @@ func DeleteArchive(archive shared.RomDirectory) string, error {
 	return nil, nil
 }
 
-func deleteArchiveRecursive(currentDirectory string, currentDepth int) string, error {
+func deleteArchiveRecursive(currentDirectory string, currentDepth int) (string, error) {
 	if currentDepth > 10 {
 		return "Max Depth Exceeded", nil
 	}
