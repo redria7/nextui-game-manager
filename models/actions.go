@@ -11,6 +11,8 @@ type Action struct {
 	ClearGameTracker,
 	ClearSaveStates,
 	ArchiveRom,
+	ArchiveRename,
+	ArchiveDelete,
 	DeleteRom,
 	Nuke,
 
