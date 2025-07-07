@@ -26,7 +26,7 @@ func InitArchiveGamesList(archive string, romDirectory shared.RomDirectory, sear
 
 func InitArchiveGamesListScreenWithPreviousDirectory(archive string, romDirectory shared.RomDirectory, previousRomDirectory shared.RomDirectory, searchFilter string) ArchiveGamesListScreen {
 	return ArchiveGamesListScreen{
-		Archive:			  archive
+		Archive:			  archive,
 		RomDirectory:         romDirectory,
 		PreviousRomDirectory: previousRomDirectory,
 		SearchFilter:         searchFilter,
