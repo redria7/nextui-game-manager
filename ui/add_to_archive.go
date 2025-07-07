@@ -4,7 +4,6 @@ import (
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
-	"go.uber.org/zap"
 	"nextui-game-manager/models"
 	"nextui-game-manager/utils"
 	"qlova.tech/sum"
@@ -35,7 +34,6 @@ func (atas AddToArchiveScreen) Name() sum.Int[models.ScreenName] {
 
 // Adds selected rom(s) to an archive option. New archives can be created through the action button
 func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) {
-	logger := common.GetLoggerInstance()
 	title := fmt.Sprintf("Move %s To Archive", atas.Game.DisplayName)
 	
 	archiveFolders, err := utils.GetArchiveFileList()

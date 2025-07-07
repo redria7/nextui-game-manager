@@ -9,6 +9,7 @@ import (
 	"nextui-game-manager/models"
 	"nextui-game-manager/utils"
 	"qlova.tech/sum"
+	"time"
 )
 
 type ArchiveOptionsScreen struct {
@@ -77,7 +78,7 @@ func (aos ArchiveOptionsScreen) Draw() (screenReturn interface{}, exitCode int, 
 						return nil, 1, err
 					}
 
-					archiveDirectory = shared.RomDirectory{
+					archiveDirectory := shared.RomDirectory{
 						DisplayName: newArchive,
 						Path: 		 newArchivePath,
 					}

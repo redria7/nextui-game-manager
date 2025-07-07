@@ -60,7 +60,7 @@ func buildMenuItems(logger *zap.Logger) ([]gaba.MenuItem, error) {
 		return nil, err
 	}
 
-	menuItems = append(menuItems, archivesItem, romItems...)
+	menuItems = append(menuItems, romItems...)
 	return menuItems, nil
 }
 
