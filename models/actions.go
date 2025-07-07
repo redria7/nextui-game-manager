@@ -73,6 +73,11 @@ var CollectionActionKeys = []string{
 	"Delete Collection",
 }
 
+var ArchiveActionKeys = []string{
+	"Rename Archive",
+	"Delete Archive",
+}
+
 var ActionNames = map[sum.Int[Action]]string{}
 
 func init() {

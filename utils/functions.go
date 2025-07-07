@@ -7,6 +7,7 @@ import (
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
+	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"github.com/disintegration/imaging"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/viper"
@@ -47,13 +48,6 @@ func GetArchiveRoot(archiveName string) string {
 	return fmt.Sprintf("/mnt/SDCARD/Roms/.%s", archiveName)
 }
 
-func GetArchiveMediaRoot(archiveName string) string {
-	if IsDev() {
-		return os.Getenv("ARCHIVE_DIRECTORY")
-	}
-	return fmt.Sprintf("%s/.media", GetArchiveRoot(archiveName))
-}
-
 func GetCollectionDirectory() string {
 	dir := common.CollectionDirectory
 	if IsDev() {
@@ -86,7 +80,7 @@ func GetFileList(dirPath string) ([]os.DirEntry, error) {
 	return entries, nil
 }
 
-func GetArchiveFileList() ([]string, error) {
+func GetArchiveFileListBasic() ([]string, error) {
 	entries, err := GetFileList(GetRomDirectory())
 	if err != nil {
 		return nil, err
@@ -100,6 +94,16 @@ func GetArchiveFileList() ([]string, error) {
 				archiveFolders = append(archiveFolders, folderName)
 			}
 		}
+	}
+
+	return archiveFolders, nil
+}
+
+func GetArchiveFileList() ([]string, error) {
+	archiveFolders, err := GetArchiveFileListBasic()
+
+	if err != nil {
+		return nil, err
 	}
 
 	if archiveFolders == nil {
@@ -825,4 +829,78 @@ func directoryExists(path string) bool {
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return !os.IsNotExist(err)
+}
+
+func PrepArchiveName(archive string) string {
+	if !strings.HasPrefix(archive, ".") {
+		return "." + archive
+	}
+	return archive
+}
+
+func CleanArchiveName(archive string) string {
+	if !strings.HasPrefix(archive, ".") {
+		return archive
+	}
+	return strings.TrimPrefix(archive, ".")
+}
+
+func DeleteArchive(archive shared.RomDirectory) string, error {
+	res, err := deleteArchiveRecursive(archive.Path, 0)
+	
+	if err != nil {
+		logger.Error("Failed to traverse archive", zap.Error(err))
+		return res, err
+	}
+
+	if res != nil {
+		return res, nil
+	}
+
+	removeErr = os.RemoveAll(archive.Path)
+
+	if removeErr != nil {
+		return nil, removeErr
+	}
+
+	return nil, nil
+}
+
+func deleteArchiveRecursive(currentDirectory string, currentDepth int) string, error {
+	if currentDepth > 10 {
+		return "Max Depth Exceeded", nil
+	}
+
+	entries, err := GetFileList(currentDirectory)
+
+	if err != nil {
+		logger.Error("Failed to traverse archive", zap.Error(err))
+		return nil, err
+	}
+
+	for _, file := range entries {
+		if !file.IsDir() {
+			return file.Name(), nil
+		}
+
+		res, recurseErr := deleteArchiveRecursive(filepath.Join(currentDirectory, file.Name()), currentDepth + 1)
+
+		if recurseErr != nil {
+			return nil, recurseErr
+		}
+		
+		if res != nil {
+			return res, nil
+		}
+	}
+
+	return nil, nil
+}
+
+
+func ShowTimedMessage(message string, delay time.Duration) {
+	gaba.ProcessMessage(message, gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+		time.Sleep(delay)
+		return nil, nil
+	})
 }

@@ -151,10 +151,18 @@ func handleScreenTransition(currentScreen models.Screen, result interface{}, cod
 		return handleCollectionCreateTransition(currentScreen)
 	case models.ScreenNames.DownloadArt:
 		return handleDownloadArtTransition(currentScreen)
-	case models.ScreenNames.ManageArchives:
-		return handleManageArchivesTransition(currentScreen, result, code)
-	case models.ScreenNames.CreateArchive:
-		return handleCreateArchiveTransition(currentScreen, result, code)
+	case models.ScreenNames.AddToArchive:
+		return handleAddToArchiveTransition(currentScreen, result, code)
+	case models.ScreenNames.ArchiveCreate:
+		return handleArchiveCreateTransition(currentScreen, result, code)
+	case models.ScreenNames.ArchiveList:
+		return handleArchiveListTransition(currentScreen, result, code)
+	case models.ScreenNames.ArchiveGameList:
+		return handleArchiveGamesListTransition(currentScreen, result, code)
+	case models.ScreenNames.ArchiveManagement:
+		return handleArchiveManagementTransition(currentScreen, result, code)
+	case models.ScreenNames.ArchiveOptions:
+		return handleArchiveOptionsTransition(currentScreen, result, code)
 	default:
 		return ui.InitMainMenu()
 	}
@@ -166,6 +174,9 @@ func handleMainMenuTransition(result interface{}, code int) models.Screen {
 		romDir := result.(shared.RomDirectory)
 		if romDir.DisplayName == "Collections" {
 			return ui.InitCollectionList("")
+		}
+		if romDir.DisplayName == "Archives" {
+			return ui.InitArchiveListScreen("")
 		}
 		return ui.InitGamesList(romDir, "")
 	case ExitCodeError, ExitCodeCancel:
@@ -183,6 +194,87 @@ func handleCollectionsListTransition(result interface{}, code int) models.Screen
 	case ExitCodeSuccess:
 		collection := result.(models.Collection)
 		return ui.InitCollectionManagement(collection)
+	default:
+		return ui.InitMainMenu()
+	}
+}
+
+func handleArchiveManagementTransition(currentScreen models.Screen, result interface{}, code int) models.Screen {
+	ams := currentScreen.(ui.ArchiveManagementScreen)
+
+	switch code {
+	case ExitCodeSuccess:
+		return ui.InitArchiveGamesListScreen(ams.Archive, result.(shared.RomDirectory), "")
+	case ExitCodeAction:
+		return ui.InitArchiveOptionsScreen(ams.Archive)
+	default:
+		return ui.InitArchiveListScreen()
+	}
+}
+
+func handleArchiveGamesListTransition(currentScreen models.Screen, result interface{}, code int) models.Screen {
+	agl := currentScreen.(ui.ArchiveGamesListScreen)
+
+	switch code {
+	case ExitCodeSuccess:
+		newRomDirectory := result.(shared.RomDirectory)
+
+		if newRomDirectory != nil {
+			return ui.InitGamesListWithPreviousDirectory(agl.Archive, newRomDirectory, agl.RomDirectory, "")
+		}
+		
+		return ui.InitArchiveGamesListScreen(agl.Archive, agl.RomDirectory, searchFilter)
+	case ExitCodeCancel:
+		if agl.PreviousRomDirectory.Path != "" {
+			return ui.InitArchiveGamesListScreen(agl.Archive, agl.PreviousRomDirectory, "")
+		}
+
+		if agl.SearchFilter != "" {
+			return ui.InitArchiveGamesListScreen(agl.Archive, agl.RomDirectory, "")
+		}
+
+		return ui.InitArchiveListScreen()
+	case ExitCodeAction, ExitCodeError:
+		searchFilter := result.(string)
+
+		if searchFilter != nil {
+			return ui.InitArchiveGamesListScreen(agl.Archive, agl.RomDirectory, searchFilter)
+		}
+		
+		return ui.InitArchiveGamesListScreen(agl.Archive, agl.RomDirectory, "")
+	case ExitCodeEmpty:
+		if agl.SearchFilter != "" {
+			showTimedMessage(fmt.Sprintf("No results found for %s!", agl.SearchFilter), shortMessageDelay)
+			return ui.InitArchiveGamesListScreen(agl.Archive, agl.RomDirectory, "")
+		}
+
+		showTimedMessage(fmt.Sprintf("%s is empty!", agl.RomDirectory.DisplayName), longMessageDelay)
+		return ui.InitArchiveListScreen()
+	default:
+		return ui.InitArchiveListScreen()
+	}
+}
+
+func handleArchiveOptionsTransition(currentScreen models.Screen, result interface{}, code int) models.Screen {
+	aos := currentScreen.(ui.ArchiveOptionsScreen)
+
+	switch code {
+	case ExitCodeError, ExitCodeAction:
+		if result != nil {
+			return ui.InitArchiveOptionsScreen(result.(shared.RomDirectory))
+		}
+		return ui.InitArchiveOptionsScreen(aos.Archive)
+	case ExitCodeSuccess:
+		return ui.InitArchiveListScreen()
+	default:
+		return ui.InitArchiveManagementScreen(aos.Archive)
+	}
+}
+
+func handleArchiveListTransition(result interface{}, code int) models.Screen {
+	switch code {
+	case ExitCodeSuccess:
+		return ui.InitArchiveManagementScreen(result.(string))
 	default:
 		return ui.InitMainMenu()
 	}
@@ -321,7 +413,7 @@ func executeGameAction(as ui.ActionsScreen, action sum.Int[models.Action]) model
 	case models.Actions.ClearGameTracker:
 		return handleClearGameTrackerAction(as)
 	case models.Actions.ArchiveRom:
-		return ui.InitManageArchivesScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
+		return ui.InitAddToArchiveScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 	case models.Actions.DeleteRom:
 		return handleDeleteRomAction(as)
 	case models.Actions.Nuke:
@@ -386,20 +478,6 @@ func handleClearGameTrackerAction(as ui.ActionsScreen) models.Screen {
 	}
 
 	return ui.InitActionsScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
-}
-
-func handleArchiveRomAction(as ui.ManageArchivesScreen, archiveFolder string) models.Screen {
-	message := fmt.Sprintf("Archive %s into %s?", as.Game.DisplayName, archiveFolder)
-	if !confirmAction(message) {
-		return ui.InitActionsScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
-	}
-
-	if err := utils.ArchiveRom(as.Game, as.RomDirectory, archiveFolder); err != nil {
-		showTimedMessage(fmt.Sprintf("Unable to archive %s!", as.Game.DisplayName), longMessageDelay)
-		return ui.InitActionsScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
-	}
-
-	return ui.InitGamesListWithPreviousDirectory(as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 }
 
 func handleDeleteRomAction(as ui.ActionsScreen) models.Screen {
@@ -545,27 +623,24 @@ func handleCollectionCreateTransition(currentScreen models.Screen) models.Screen
 	return ui.InitAddToCollectionScreen(cc.Games, cc.RomDirectory, cc.PreviousRomDirectory, cc.SearchFilter)
 }
 
-func handleManageArchivesTransition(currentScreen models.Screen, result interface{}, code int) models.Screen {
-	mas := currentScreen.(ui.ManageArchivesScreen)
+func handleAddToArchiveTransition(currentScreen models.Screen, result interface{}, code int) models.Screen {
+	atas := currentScreen.(ui.AddToArchiveScreen)
 
 	switch code {
 	case ExitCodeSuccess:
-		return handleArchiveRomAction(mas, result.(string))
+		return ui.InitGamesListWithPreviousDirectory(atas.RomDirectory, atas.PreviousRomDirectory, atas.SearchFilter)
+	case ExitCodeEmpty:
+		return ui.InitAddToArchiveScreen(atas.Game, atas.RomDirectory, atas.PreviousRomDirectory, atas.SearchFilter)
 	case ExitCodeAction:
-		return ui.InitCreateArchiveScreen(mas.Game, mas.RomDirectory, mas.PreviousRomDirectory, mas.SearchFilter)
+		return ui.InitArchiveCreateScreen(atas.Game, atas.RomDirectory, atas.PreviousRomDirectory, atas.SearchFilter)
 	default:
-		return ui.InitActionsScreen(mas.Game, mas.RomDirectory, mas.PreviousRomDirectory, mas.SearchFilter)
+		return ui.InitActionsScreen(atas.Game, atas.RomDirectory, atas.PreviousRomDirectory, atas.SearchFilter)
 	}
 }
 
-func handleCreateArchiveTransition(currentScreen models.Screen, result interface{}, code int) models.Screen {
-	cas := currentScreen.(ui.CreateArchiveScreen)
-
-	if code == ExitCodeSuccess {
-		_ = utils.EnsureDirectoryExists(utils.GetArchiveMediaRoot(result.(string)))
-	}
-
-	return ui.InitManageArchivesScreen(cas.Game, cas.RomDirectory, cas.PreviousRomDirectory, cas.SearchFilter)
+func handleArchiveCreateTransition(currentScreen models.Screen, result interface{}, code int) models.Screen {
+	acs := currentScreen.(ui.ArchiveCreateScreen)
+	return ui.AddToArchiveScreen(acs.Game, acs.RomDirectory, acs.PreviousRomDirectory, acs.SearchFilter)
 }
 
 func handleDownloadArtTransition(currentScreen models.Screen) models.Screen {
