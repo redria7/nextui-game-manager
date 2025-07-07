@@ -900,7 +900,6 @@ func deleteArchiveRecursive(currentDirectory string, currentDepth int) (string, 
 	return "", nil
 }
 
-
 func ShowTimedMessage(message string, delay time.Duration) {
 	gaba.ProcessMessage(message, gaba.ProcessMessageOptions{}, func() (interface{}, error) {
 		time.Sleep(delay)

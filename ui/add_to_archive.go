@@ -8,6 +8,8 @@ import (
 	"nextui-game-manager/models"
 	"nextui-game-manager/utils"
 	"qlova.tech/sum"
+	"fmt"
+	"time"
 )
 
 type AddToArchiveScreen struct {
@@ -95,4 +97,13 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 	}
 
 	return nil, 2, nil
+}
+
+func confirmAction(message string) bool {
+	result, err := gaba.ConfirmationMessage(message, []gaba.FooterHelpItem{
+		{ButtonName: "B", HelpText: "I Changed My Mind"},
+		{ButtonName: "A", HelpText: "Yes"},
+	}, gaba.MessageOptions{})
+
+	return err != nil || result.IsSome()
 }

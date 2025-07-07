@@ -48,7 +48,7 @@ func (acs ArchiveCreateScreen) Draw() (value interface{}, exitCode int, e error)
 
 		newArchiveName = utils.PrepArchiveName(newArchiveName)
 		
-		dirErr := utils.EnsureDirectoryExists(utils.GetArchiveRoot(result.(string)))
+		dirErr := utils.EnsureDirectoryExists(utils.GetArchiveRoot(newArchiveName))
 
 		message := fmt.Sprintf("Created %s!", newArchiveName)
 
@@ -56,7 +56,7 @@ func (acs ArchiveCreateScreen) Draw() (value interface{}, exitCode int, e error)
 			message = fmt.Sprintf("Creation of %s failed.\nTry a different name.", newArchiveName)
 		}
 
-		utils.ShowTimedMessage(message, time.Sleep(time.Second * 2))
+		utils.ShowTimedMessage(message, time.Second * 2)
 
 		return nil, 0, nil
 	}
