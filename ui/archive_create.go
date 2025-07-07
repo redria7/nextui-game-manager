@@ -18,10 +18,10 @@ type ArchiveCreateScreen struct {
 	SearchFilter         string
 }
 
-func InitArchiveCreateScreen(games shared.Item, romDirectory shared.RomDirectory,
+func InitArchiveCreateScreen(gamesList []shared.Item, romDirectory shared.RomDirectory,
 	previousRomDirectory shared.RomDirectory, searchFilter string) ArchiveCreateScreen {
 	return ArchiveCreateScreen{
-		Games:                games,
+		Games:                gamesList,
 		RomDirectory:         romDirectory,
 		PreviousRomDirectory: previousRomDirectory,
 		SearchFilter:         searchFilter,

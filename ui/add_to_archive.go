@@ -17,10 +17,10 @@ type AddToArchiveScreen struct {
 	SearchFilter         string
 }
 
-func InitAddToArchiveScreen(games shared.Item, romDirectory shared.RomDirectory,
+func InitAddToArchiveScreen(gamesList []shared.Item, romDirectory shared.RomDirectory,
 	previousRomDirectory shared.RomDirectory, searchFilter string) AddToArchiveScreen {
 	return AddToArchiveScreen{
-		Games:                games,
+		Games:                gamesList,
 		RomDirectory:         romDirectory,
 		PreviousRomDirectory: previousRomDirectory,
 		SearchFilter:         searchFilter,
@@ -78,7 +78,7 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 	if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
 		archiveFolder := selection.Unwrap().SelectedItem.Text
 		
-		message := fmt.Sprintf("Archive %s into %s?", atas.Game[0].DisplayName, archiveFolder)
+		message := fmt.Sprintf("Archive %s into %s?", atas.Games[0].DisplayName, archiveFolder)
 		if bulk {
 			message := fmt.Sprintf("Archive %d games into %s?", len(atas.Games), archiveFolder)
 		}
@@ -97,7 +97,7 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 			}
 		}
 
-		successMessage := fmt.Sprintf("Added %s To Archive %s!", atas.Game[0].DisplayName, archiveFolder)
+		successMessage := fmt.Sprintf("Added %s To Archive %s!", atas.Games[0].DisplayName, archiveFolder)
 		if bulk {
 			successMessage := fmt.Sprintf("Added %d Games To Archive %s!", len(atas.Games), archiveFolder)
 		}

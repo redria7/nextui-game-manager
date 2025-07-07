@@ -413,7 +413,7 @@ func executeGameAction(as ui.ActionsScreen, action sum.Int[models.Action]) model
 	case models.Actions.ClearGameTracker:
 		return handleClearGameTrackerAction(as)
 	case models.Actions.ArchiveRom:
-		return ui.InitAddToArchiveScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
+		return ui.InitAddToArchiveScreen([]shared.Item{as.Game}, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 	case models.Actions.DeleteRom:
 		return handleDeleteRomAction(as)
 	case models.Actions.Nuke:
@@ -513,23 +513,23 @@ func handleBulkActionsTransition(currentScreen models.Screen, result interface{}
 		return ui.InitAddToCollectionScreen(ba.Games, ba.RomDirectory, ba.PreviousRomDirectory, ba.SearchFilter)
 	}
 
-	executeBulkAction(ba, action)
-	return ui.InitGamesListWithPreviousDirectory(ba.RomDirectory, ba.PreviousRomDirectory, ba.SearchFilter)
+	return executeBulkAction(ba, action)
 }
 
-func executeBulkAction(ba ui.BulkOptionsScreen, action sum.Int[models.Action]) {
+func executeBulkAction(ba ui.BulkOptionsScreen, action sum.Int[models.Action]) models.Screen {
 	switch action {
 	case models.Actions.DownloadArt:
 		handleBulkDownloadArt(ba)
 	case models.Actions.DeleteArt:
 		handleBulkDeleteArt(ba)
 	case models.Actions.ArchiveRom:
-		handleBulkArchive(ba)
+		return ui.InitAddToArchiveScreen(ba.Games, ba.RomDirectory, ba.PreviousRomDirectory, ba.SearchFilter)
 	case models.Actions.DeleteRom:
 		handleBulkDelete(ba)
 	case models.Actions.Nuke:
 		handleBulkNuke(ba)
 	}
+	return ui.InitGamesListWithPreviousDirectory(ba.RomDirectory, ba.PreviousRomDirectory, ba.SearchFilter)
 }
 
 func handleBulkDownloadArt(ba ui.BulkOptionsScreen) {
