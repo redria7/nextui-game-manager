@@ -83,7 +83,7 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 
 		if err := utils.ArchiveRom(atas.Game, atas.RomDirectory, archiveFolder); err != nil {
 			gaba.ProcessMessage(fmt.Sprintf("Unable to archive %s!", atas.Game.DisplayName), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-				time.Sleep(longMessageDelay)
+				time.Sleep(3 * time.Second)
 				return nil, nil
 			})
 			return nil, 404, err

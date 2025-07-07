@@ -24,7 +24,7 @@ func InitArchiveManagement(archive string) ArchiveManagementScreen {
 }
 
 func (am ArchiveManagementScreen) Name() sum.Int[models.ScreenName] {
-	return models.ScreenNames.ArchiveManagementScreen
+	return models.ScreenNames.ArchiveManagement
 }
 
 // Displays console folders in the selected archive folder and allows for archive deletion if all folders are empty

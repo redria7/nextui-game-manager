@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"qlova.tech/sum"
 	"strings"
+	"fmt"
 )
 
 type ArchiveGamesListScreen struct {
@@ -34,13 +35,13 @@ func InitArchiveGamesListScreenWithPreviousDirectory(archive string, romDirector
 }
 
 func (agl ArchiveGamesListScreen) Name() sum.Int[models.ScreenName] {
-	return models.ScreenNames.ArchiveGamesListScreen
+	return models.ScreenNames.ArchiveGamesList
 }
 
 // Lists ROMs in the current archive/directory path and allows for restoration
 func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e error) {
 	logger := common.GetLoggerInstance()
-	title := Archive + " : " + agl.RomDirectory.DisplayName
+	title := agl.Archive + " : " + agl.RomDirectory.DisplayName
 
 	fb := filebrowser.NewFileBrowser(logger)
 
@@ -141,17 +142,19 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 		var selectedItems shared.Items
 		rawSelection := selection.Unwrap().SelectedItems
 		
-		confirmMessage := fmt.Sprintf("Restore %s from archive %s?", rawSelection[0].DisplayName, agl.Archive)
-		successMessage := fmt.Sprintf("Restored %s from archive %s!", rawSelection[0].DisplayName, agl.Archive)
+		firstItem = rawSelection[0].Metadata.(shared.Item)
+
+		confirmMessage := fmt.Sprintf("Restore %s from archive %s?", firstItem.DisplayName, agl.Archive)
+		successMessage := fmt.Sprintf("Restored %s from archive %s!", firstItem.DisplayName, agl.Archive)
 		if len(rawSelection) > 1 {
 			confirmMessage = fmt.Sprintf("Restore %d from archive %s?", len(rawSelection), agl.Archive)
 			successMessage = fmt.Sprintf("Restored %d games from archive %s!", len(rawSelection), agl.Archive)
 		} else {
-			if rawSelection[0].IsDirectory {
+			if firstItem.IsDirectory {
 				newRomDirectory := shared.RomDirectory{
-					DisplayName: rawSelection[0].DisplayName,
-					Tag:         rawSelection[0].Tag,
-					Path:        rawSelection[0].Path,
+					DisplayName: firstItem.DisplayName,
+					Tag:         firstItem.Tag,
+					Path:        firstItem.Path,
 				}
 				return newRomDirectory, 0, nil
 			}
@@ -161,7 +164,8 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 			return nil, 404, nil
 		}
 
-		for _, item := range rawSelection {
+		for _, selection := range rawSelection {
+			item := selection.Metadata.(shared.Item)
 			err := utils.RestoreRom(item, agl.RomDirectory, agl.Archive)
 			if err != nil {
 				gaba.ProcessMessage(fmt.Sprintf("Unable to restore %s!", item.DisplayName), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
