@@ -853,17 +853,17 @@ func DeleteArchive(archive shared.RomDirectory) (string, error) {
 		return res, err
 	}
 
-	if res != nil {
+	if res != "" {
 		return res, nil
 	}
 
 	removeErr = os.RemoveAll(archive.Path)
 
 	if removeErr != nil {
-		return nil, removeErr
+		return "", removeErr
 	}
 
-	return nil, nil
+	return "", nil
 }
 
 func deleteArchiveRecursive(currentDirectory string, currentDepth int) (string, error) {
@@ -875,7 +875,7 @@ func deleteArchiveRecursive(currentDirectory string, currentDepth int) (string, 
 
 	if err != nil {
 		logger.Error("Failed to traverse archive", zap.Error(err))
-		return nil, err
+		return "", err
 	}
 
 	for _, file := range entries {
@@ -886,15 +886,15 @@ func deleteArchiveRecursive(currentDirectory string, currentDepth int) (string, 
 		res, recurseErr := deleteArchiveRecursive(filepath.Join(currentDirectory, file.Name()), currentDepth + 1)
 
 		if recurseErr != nil {
-			return nil, recurseErr
+			return "", recurseErr
 		}
 		
-		if res != nil {
+		if res != "" {
 			return res, nil
 		}
 	}
 
-	return nil, nil
+	return "", nil
 }
 
 

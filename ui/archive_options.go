@@ -103,7 +103,7 @@ func (aos ArchiveOptionsScreen) Draw() (screenReturn interface{}, exitCode int, 
 					return nil, 1, err
 				}
 
-				if res != nil {
+				if res != "" {
 					utils.ShowTimedMessage(fmt.Sprintf("Cannot delete while file exists in archive\n%s", res), time.Sleep(time.Second * 2))
 				}
 
