@@ -18,6 +18,7 @@ import (
 	"qlova.tech/sum"
 	"slices"
 	"strings"
+	"time"
 )
 
 const (
@@ -846,6 +847,7 @@ func CleanArchiveName(archive string) string {
 }
 
 func DeleteArchive(archive shared.RomDirectory) (string, error) {
+	logger := common.GetLoggerInstance()
 	res, err := deleteArchiveRecursive(archive.Path, 0)
 	
 	if err != nil {
@@ -857,7 +859,7 @@ func DeleteArchive(archive shared.RomDirectory) (string, error) {
 		return res, nil
 	}
 
-	removeErr = os.RemoveAll(archive.Path)
+	removeErr := os.RemoveAll(archive.Path)
 
 	if removeErr != nil {
 		return "", removeErr
@@ -867,6 +869,7 @@ func DeleteArchive(archive shared.RomDirectory) (string, error) {
 }
 
 func deleteArchiveRecursive(currentDirectory string, currentDepth int) (string, error) {
+	logger := common.GetLoggerInstance()
 	if currentDepth > 10 {
 		return "Max Depth Exceeded", nil
 	}
