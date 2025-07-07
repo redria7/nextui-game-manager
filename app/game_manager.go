@@ -233,7 +233,7 @@ func handleArchiveGamesListTransition(currentScreen models.Screen, result interf
 			return ui.InitArchiveGamesListScreen(agl.Archive, agl.RomDirectory, "")
 		}
 
-		return ui.InitArchiveManagementScreen(aos.Archive.DisplayName)
+		return ui.InitArchiveManagementScreen(agl.Archive.DisplayName)
 	case ExitCodeAction, ExitCodeError:
 		searchFilter := result.(string)
 
@@ -249,9 +249,9 @@ func handleArchiveGamesListTransition(currentScreen models.Screen, result interf
 		}
 
 		showTimedMessage(fmt.Sprintf("%s is empty!", agl.RomDirectory.DisplayName), longMessageDelay)
-		return ui.InitArchiveManagementScreen(agl.Archive.DisplayName)
+		return ui.InitArchiveManagementScreen(agl.Archive)
 	default:
-		return ui.InitArchiveManagementScreen(agl.Archive.DisplayName)
+		return ui.InitArchiveManagementScreen(agl.Archive)
 	}
 }
 
@@ -640,7 +640,7 @@ func handleAddToArchiveTransition(currentScreen models.Screen, result interface{
 
 func handleArchiveCreateTransition(currentScreen models.Screen, result interface{}, code int) models.Screen {
 	acs := currentScreen.(ui.ArchiveCreateScreen)
-	return ui.AddToArchiveScreen(acs.Game, acs.RomDirectory, acs.PreviousRomDirectory, acs.SearchFilter)
+	return ui.InitAddToArchiveScreen(acs.Game, acs.RomDirectory, acs.PreviousRomDirectory, acs.SearchFilter)
 }
 
 func handleDownloadArtTransition(currentScreen models.Screen) models.Screen {
