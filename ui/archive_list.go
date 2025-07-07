@@ -24,7 +24,6 @@ func (als ArchiveListScreen) Name() sum.Int[models.ScreenName] {
 
 // Lists available archive folders
 func (als ArchiveListScreen) Draw() (item interface{}, exitCode int, e error) {
-	logger := common.GetLoggerInstance()
 	title := "Archives"
 	
 	archiveFolders, err := utils.GetArchiveFileListBasic()
@@ -64,8 +63,8 @@ func (als ArchiveListScreen) Draw() (item interface{}, exitCode int, e error) {
 	}
 
 	if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
-		archive = selection.Unwrap().SelectedItem.Metadata.(string)
-		archiveDirectory = shared.RomDirectory{
+		archive := selection.Unwrap().SelectedItem.Metadata.(string)
+		archiveDirectory := shared.RomDirectory{
 			DisplayName: archive,
 			Path: 		 utils.GetArchiveRoot(archive),
 		}
