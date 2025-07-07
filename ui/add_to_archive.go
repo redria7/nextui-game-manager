@@ -86,6 +86,13 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 			return nil, 404, err
 		}
 
+		successMessage := fmt.Sprintf("Added %s To Archive %s!", atas.Game.DisplayName, archiveFolder)
+
+		gaba.ProcessMessage(successMessage, gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+			time.Sleep(time.Second * 2)
+			return nil, nil
+		})
+
 		return nil, 0, nil
 	} 
 	

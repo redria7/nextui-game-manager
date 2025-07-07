@@ -274,7 +274,7 @@ func handleArchiveOptionsTransition(currentScreen models.Screen, result interfac
 func handleArchiveListTransition(result interface{}, code int) models.Screen {
 	switch code {
 	case ExitCodeSuccess:
-		return ui.InitArchiveManagementScreen(result.(string))
+		return ui.InitArchiveManagementScreen(result.(shared.RomDirectory).DisplayName)
 	default:
 		return ui.InitMainMenu()
 	}
