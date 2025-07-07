@@ -233,7 +233,7 @@ func handleArchiveGamesListTransition(currentScreen models.Screen, result interf
 			return ui.InitArchiveGamesListScreen(agl.Archive, agl.RomDirectory, "")
 		}
 
-		return ui.InitArchiveManagementScreen(agl.Archive.DisplayName)
+		return ui.InitArchiveManagementScreen(agl.Archive)
 	case ExitCodeAction, ExitCodeError:
 		searchFilter := result.(string)
 
