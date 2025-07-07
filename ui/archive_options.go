@@ -16,7 +16,7 @@ type ArchiveOptionsScreen struct {
 	Archive   shared.RomDirectory
 }
 
-func InitArchiveOptions(archive shared.RomDirectory) ArchiveOptionsScreen {
+func InitArchiveOptionsScreen(archive shared.RomDirectory) ArchiveOptionsScreen {
 	return ArchiveOptionsScreen{
 		Archive:   archive,
 	}

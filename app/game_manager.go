@@ -219,11 +219,11 @@ func handleArchiveGamesListTransition(currentScreen models.Screen, result interf
 	case ExitCodeSuccess:
 		newRomDirectory := result.(shared.RomDirectory)
 
-		if newRomDirectory != nil {
-			return ui.InitGamesListWithPreviousDirectory(agl.Archive, newRomDirectory, agl.RomDirectory, "")
+		if newRomDirectory.Path != "" {
+			return ui.InitArchiveGamesListScreenWithPreviousDirectory(agl.Archive, newRomDirectory, agl.RomDirectory, "")
 		}
 		
-		return ui.InitArchiveGamesListScreen(agl.Archive, agl.RomDirectory, searchFilter)
+		return ui.InitArchiveGamesListScreen(agl.Archive, agl.RomDirectory, "")
 	case ExitCodeCancel:
 		if agl.PreviousRomDirectory.Path != "" {
 			return ui.InitArchiveGamesListScreen(agl.Archive, agl.PreviousRomDirectory, "")
@@ -237,7 +237,7 @@ func handleArchiveGamesListTransition(currentScreen models.Screen, result interf
 	case ExitCodeAction, ExitCodeError:
 		searchFilter := result.(string)
 
-		if searchFilter != nil {
+		if searchFilter != "" {
 			return ui.InitArchiveGamesListScreen(agl.Archive, agl.RomDirectory, searchFilter)
 		}
 		

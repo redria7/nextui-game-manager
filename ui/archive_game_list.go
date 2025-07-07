@@ -22,7 +22,7 @@ type ArchiveGamesListScreen struct {
 	PreviousRomDirectory shared.RomDirectory
 }
 
-func InitArchiveGamesList(archive string, romDirectory shared.RomDirectory, searchFilter string) ArchiveGamesListScreen {
+func InitArchiveGamesListScreen(archive string, romDirectory shared.RomDirectory, searchFilter string) ArchiveGamesListScreen {
 	return InitArchiveGamesListScreenWithPreviousDirectory(archive, romDirectory, shared.RomDirectory{}, searchFilter)
 }
 
@@ -177,7 +177,7 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 					time.Sleep(time.Second * 2)
 					return nil, nil
 				})
-				return nil, 0, err
+				return shared.RomDirectory{}, 0, err
 			}
 		}
 
@@ -186,7 +186,7 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 			return nil, nil
 		})
 
-		return nil, 0, nil
+		return shared.RomDirectory{}, 0, nil
 	}
 
 	return nil, 2, nil
