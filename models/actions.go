@@ -69,7 +69,7 @@ var BulkActionKeys = []string{
 	"Download Art",
 	"Delete Art",
 	//"Clear Game Tracker",
-	//"Archive ROM",
+	"Archive ROM",
 	//"Delete ROM",
 	//"Nuclear Option",
 }

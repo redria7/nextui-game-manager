@@ -11,16 +11,16 @@ import (
 )
 
 type AddToArchiveScreen struct {
-	Game                 shared.Item
+	Games                []shared.Item
 	RomDirectory         shared.RomDirectory
 	PreviousRomDirectory shared.RomDirectory
 	SearchFilter         string
 }
 
-func InitAddToArchiveScreen(game shared.Item, romDirectory shared.RomDirectory,
+func InitAddToArchiveScreen(games shared.Item, romDirectory shared.RomDirectory,
 	previousRomDirectory shared.RomDirectory, searchFilter string) AddToArchiveScreen {
 	return AddToArchiveScreen{
-		Game:                 game,
+		Games:                games,
 		RomDirectory:         romDirectory,
 		PreviousRomDirectory: previousRomDirectory,
 		SearchFilter:         searchFilter,
@@ -33,7 +33,12 @@ func (atas AddToArchiveScreen) Name() sum.Int[models.ScreenName] {
 
 // Adds selected rom(s) to an archive option. New archives can be created through the action button
 func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) {
-	title := fmt.Sprintf("Move %s To Archive", atas.Game.DisplayName)
+	bulk := len(atas.Games) > 1
+	
+	title := fmt.Sprintf("Move %s To Archive", atas.Games[0].DisplayName)
+	if bulk {
+		title = fmt.Sprintf("Move %d Games To Archive", len(atas.Games))
+	}
 	
 	archiveFolders, err := utils.GetArchiveFileList()
 	if err != nil {
@@ -72,21 +77,30 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 
 	if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
 		archiveFolder := selection.Unwrap().SelectedItem.Text
+		
+		message := fmt.Sprintf("Archive %s into %s?", atas.Game[0].DisplayName, archiveFolder)
+		if bulk {
+			message := fmt.Sprintf("Archive %d games into %s?", len(atas.Games), archiveFolder)
+		}
 
-		message := fmt.Sprintf("Archive %s into %s?", atas.Game.DisplayName, archiveFolder)
 		if !confirmAction(message) {
 			return nil, 404, nil
 		}
-
-		if err := utils.ArchiveRom(atas.Game, atas.RomDirectory, archiveFolder); err != nil {
-			gaba.ProcessMessage(fmt.Sprintf("Unable to archive %s!", atas.Game.DisplayName), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-				time.Sleep(3 * time.Second)
-				return nil, nil
-			})
-			return nil, 404, err
+		
+		for _, game := range atas.Games {
+			if err := utils.ArchiveRom(game, atas.RomDirectory, archiveFolder); err != nil {
+				gaba.ProcessMessage(fmt.Sprintf("Unable to archive %s!", game.DisplayName), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+					time.Sleep(3 * time.Second)
+					return nil, nil
+				})
+				return nil, 404, err
+			}
 		}
 
-		successMessage := fmt.Sprintf("Added %s To Archive %s!", atas.Game.DisplayName, archiveFolder)
+		successMessage := fmt.Sprintf("Added %s To Archive %s!", atas.Game[0].DisplayName, archiveFolder)
+		if bulk {
+			successMessage := fmt.Sprintf("Added %d Games To Archive %s!", len(atas.Games), archiveFolder)
+		}
 
 		gaba.ProcessMessage(successMessage, gaba.ProcessMessageOptions{}, func() (interface{}, error) {
 			time.Sleep(time.Second * 2)

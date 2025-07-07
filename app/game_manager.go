@@ -571,15 +571,6 @@ func handleBulkDeleteArt(ba ui.BulkOptionsScreen) {
 	}
 }
 
-// todo: add bulk handling of archive customization
-func handleBulkArchive(ba ui.BulkOptionsScreen) {
-	if confirmBulkAction("Archive the selected games?") {
-		for _, game := range ba.Games {
-			utils.ArchiveRom(game, ba.RomDirectory, ".Archive")
-		}
-	}
-}
-
 func handleBulkDelete(ba ui.BulkOptionsScreen) {
 	if confirmBulkAction("Delete the selected games?") {
 		for _, game := range ba.Games {
@@ -630,17 +621,20 @@ func handleAddToArchiveTransition(currentScreen models.Screen, result interface{
 	case ExitCodeSuccess:
 		return ui.InitGamesListWithPreviousDirectory(atas.RomDirectory, atas.PreviousRomDirectory, atas.SearchFilter)
 	case ExitCodeEmpty:
-		return ui.InitAddToArchiveScreen(atas.Game, atas.RomDirectory, atas.PreviousRomDirectory, atas.SearchFilter)
+		return ui.InitAddToArchiveScreen(atas.Games, atas.RomDirectory, atas.PreviousRomDirectory, atas.SearchFilter)
 	case ExitCodeAction:
-		return ui.InitArchiveCreateScreen(atas.Game, atas.RomDirectory, atas.PreviousRomDirectory, atas.SearchFilter)
+		return ui.InitArchiveCreateScreen(atas.Games, atas.RomDirectory, atas.PreviousRomDirectory, atas.SearchFilter)
 	default:
-		return ui.InitActionsScreen(atas.Game, atas.RomDirectory, atas.PreviousRomDirectory, atas.SearchFilter)
+		if len(atas.Games) > 1 {
+			return ui.InitBulkOptionsScreen(atas.Games, atas.RomDirectory, atas.PreviousRomDirectory, atas.SearchFilter)
+		}
+		return ui.InitActionsScreen(atas.Games, atas.RomDirectory, atas.PreviousRomDirectory, atas.SearchFilter)
 	}
 }
 
 func handleArchiveCreateTransition(currentScreen models.Screen, result interface{}, code int) models.Screen {
 	acs := currentScreen.(ui.ArchiveCreateScreen)
-	return ui.InitAddToArchiveScreen(acs.Game, acs.RomDirectory, acs.PreviousRomDirectory, acs.SearchFilter)
+	return ui.InitAddToArchiveScreen(acs.Games, acs.RomDirectory, acs.PreviousRomDirectory, acs.SearchFilter)
 }
 
 func handleDownloadArtTransition(currentScreen models.Screen) models.Screen {
