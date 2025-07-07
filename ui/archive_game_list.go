@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"github.com/UncleJunVIP/gabagool/pkg/gabagool"
+	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
@@ -70,8 +70,8 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 		roms = utils.FilterList(roms, agl.SearchFilter)
 	}
 
-	var directoryEntries []gabagool.MenuItem
-	var itemEntries []gabagool.MenuItem
+	var directoryEntries []gaba.MenuItem
+	var itemEntries []gaba.MenuItem
 
 	for _, item := range roms {
 		if strings.HasPrefix(item.Filename, ".") { // Skip hidden files
@@ -82,7 +82,7 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 
 		if item.IsDirectory {
 			itemName = "/" + itemName
-			directoryEntries = append(directoryEntries, gabagool.MenuItem{
+			directoryEntries = append(directoryEntries, gaba.MenuItem{
 				Text:               itemName,
 				Selected:           false,
 				Focused:            false,
@@ -90,7 +90,7 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 				NotMultiSelectable: true,
 			})
 		} else {
-			itemEntries = append(itemEntries, gabagool.MenuItem{
+			itemEntries = append(itemEntries, gaba.MenuItem{
 				Text:     itemName,
 				Selected: false,
 				Focused:  false,
@@ -101,12 +101,12 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 
 	allEntries := append(directoryEntries, itemEntries...)
 
-	options := gabagool.DefaultListOptions(title, allEntries)
+	options := gaba.DefaultListOptions(title, allEntries)
 	options.SmallTitle = true
 	options.EmptyMessage = "No ROMs Found"
 	options.EnableAction = true
 	options.EnableMultiSelect = true
-	options.FooterHelpItems = []gabagool.FooterHelpItem{
+	options.FooterHelpItems = []gaba.FooterHelpItem{
 		{ButtonName: "B", HelpText: "Back"},
 		{ButtonName: "X", HelpText: "Search"},
 		{ButtonName: "Menu", HelpText: "Help"},
@@ -121,13 +121,13 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 		"• Start: Confirm Multi-Selection",
 	}
 
-	selection, err := gabagool.List(options)
+	selection, err := gaba.List(options)
 	if err != nil {
 		return nil, -1, err
 	}
 
 	if selection.IsSome() && selection.Unwrap().ActionTriggered {
-		query, err := gabagool.Keyboard("")
+		query, err := gaba.Keyboard("")
 		
 		if err != nil {
 			return nil, 1, err
@@ -142,7 +142,7 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 		var selectedItems shared.Items
 		rawSelection := selection.Unwrap().SelectedItems
 		
-		firstItem = rawSelection[0].Metadata.(shared.Item)
+		firstItem := rawSelection[0].Metadata.(shared.Item)
 
 		confirmMessage := fmt.Sprintf("Restore %s from archive %s?", firstItem.DisplayName, agl.Archive)
 		successMessage := fmt.Sprintf("Restored %s from archive %s!", firstItem.DisplayName, agl.Archive)
@@ -160,8 +160,13 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 			}
 		}
 
-		if !confirmAction(message) {
-			return nil, 404, nil
+		result, err := gaba.ConfirmationMessage(confirmMessage, []gaba.FooterHelpItem{
+			{ButtonName: "B", HelpText: "I Changed My Mind"},
+			{ButtonName: "A", HelpText: "Yes"},
+		}, gaba.MessageOptions{})
+
+		if err != nil || !result.IsSome() {
+			return nil, 404, err
 		}
 
 		for _, selection := range rawSelection {
