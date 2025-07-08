@@ -628,7 +628,7 @@ func handleAddToArchiveTransition(currentScreen models.Screen, result interface{
 		if len(atas.Games) > 1 {
 			return ui.InitBulkOptionsScreen(atas.Games, atas.RomDirectory, atas.PreviousRomDirectory, atas.SearchFilter)
 		}
-		return ui.InitActionsScreen(atas.Games, atas.RomDirectory, atas.PreviousRomDirectory, atas.SearchFilter)
+		return ui.InitActionsScreen(atas.Games[0], atas.RomDirectory, atas.PreviousRomDirectory, atas.SearchFilter)
 	}
 }
 
