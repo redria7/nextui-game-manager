@@ -15,12 +15,9 @@ type ArchiveManagementScreen struct {
 	Archive   shared.RomDirectory
 }
 
-func InitArchiveManagementScreen(archive string) ArchiveManagementScreen {
+func InitArchiveManagementScreen(archive shared.RomDirectory) ArchiveManagementScreen {
 	return ArchiveManagementScreen{
-		Archive: shared.RomDirectory{
-				DisplayName: archive,
-				Path:        utils.GetArchiveRoot(archive),
-			},
+		Archive: archive,
 	}
 }
 

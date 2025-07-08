@@ -204,7 +204,7 @@ func handleArchiveManagementTransition(currentScreen models.Screen, result inter
 
 	switch code {
 	case ExitCodeSuccess:
-		return ui.InitArchiveGamesListScreen(ams.Archive.DisplayName, result.(shared.RomDirectory), "")
+		return ui.InitArchiveGamesListScreen(ams.Archive, result.(shared.RomDirectory), "")
 	case ExitCodeAction:
 		return ui.InitArchiveOptionsScreen(ams.Archive)
 	default:
@@ -267,14 +267,14 @@ func handleArchiveOptionsTransition(currentScreen models.Screen, result interfac
 	case ExitCodeSuccess:
 		return ui.InitArchiveListScreen()
 	default:
-		return ui.InitArchiveManagementScreen(aos.Archive.DisplayName)
+		return ui.InitArchiveManagementScreen(aos.Archive)
 	}
 }
 
 func handleArchiveListTransition(result interface{}, code int) models.Screen {
 	switch code {
 	case ExitCodeSuccess:
-		return ui.InitArchiveManagementScreen(result.(shared.RomDirectory).DisplayName)
+		return ui.InitArchiveManagementScreen(result.(shared.RomDirectory))
 	default:
 		return ui.InitMainMenu()
 	}

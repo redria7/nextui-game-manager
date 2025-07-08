@@ -16,17 +16,17 @@ import (
 )
 
 type ArchiveGamesListScreen struct {
-	Archive 			 string
+	Archive 			 shared.RomDirectory
 	RomDirectory         shared.RomDirectory
 	SearchFilter         string
 	PreviousRomDirectory shared.RomDirectory
 }
 
-func InitArchiveGamesListScreen(archive string, romDirectory shared.RomDirectory, searchFilter string) ArchiveGamesListScreen {
+func InitArchiveGamesListScreen(archive shared.RomDirectory, romDirectory shared.RomDirectory, searchFilter string) ArchiveGamesListScreen {
 	return InitArchiveGamesListScreenWithPreviousDirectory(archive, romDirectory, shared.RomDirectory{}, searchFilter)
 }
 
-func InitArchiveGamesListScreenWithPreviousDirectory(archive string, romDirectory shared.RomDirectory, previousRomDirectory shared.RomDirectory, searchFilter string) ArchiveGamesListScreen {
+func InitArchiveGamesListScreenWithPreviousDirectory(archive shared.RomDirectory, romDirectory shared.RomDirectory, previousRomDirectory shared.RomDirectory, searchFilter string) ArchiveGamesListScreen {
 	return ArchiveGamesListScreen{
 		Archive:			  archive,
 		RomDirectory:         romDirectory,
@@ -42,7 +42,7 @@ func (agl ArchiveGamesListScreen) Name() sum.Int[models.ScreenName] {
 // Lists ROMs in the current archive/directory path and allows for restoration
 func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e error) {
 	logger := common.GetLoggerInstance()
-	title := agl.Archive + " : " + agl.RomDirectory.DisplayName
+	title := agl.Archive.DisplayName + " : " + agl.RomDirectory.DisplayName
 
 	fb := filebrowser.NewFileBrowser(logger)
 
@@ -144,11 +144,11 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 		
 		firstItem := rawSelection[0].Metadata.(shared.Item)
 
-		confirmMessage := fmt.Sprintf("Restore %s from archive %s?", firstItem.DisplayName, agl.Archive)
-		successMessage := fmt.Sprintf("Restored %s from archive %s!", firstItem.DisplayName, agl.Archive)
+		confirmMessage := fmt.Sprintf("Restore %s from archive %s?", firstItem.DisplayName, agl.Archive.DisplayName)
+		successMessage := fmt.Sprintf("Restored %s from archive %s!", firstItem.DisplayName, agl.Archive.DisplayName)
 		if len(rawSelection) > 1 {
-			confirmMessage = fmt.Sprintf("Restore %d from archive %s?", len(rawSelection), agl.Archive)
-			successMessage = fmt.Sprintf("Restored %d games from archive %s!", len(rawSelection), agl.Archive)
+			confirmMessage = fmt.Sprintf("Restore %d from archive %s?", len(rawSelection), agl.Archive.DisplayName)
+			successMessage = fmt.Sprintf("Restored %d games from archive %s!", len(rawSelection), agl.Archive.DisplayName)
 		} else {
 			if firstItem.IsDirectory {
 				newRomDirectory := shared.RomDirectory{
