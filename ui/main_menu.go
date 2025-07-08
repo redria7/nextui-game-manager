@@ -15,6 +15,8 @@ import (
 const (
 	collectionsDisplayName = "Collections"
 	collectionsTag         = "Collections"
+	archivesDisplayName    = "Archives"
+	archivesTag            = "Archives"
 	settingsExitCode       = 4
 	selectExitCode         = 0
 	quitExitCode           = 2
@@ -47,6 +49,10 @@ func buildMenuItems(logger *zap.Logger) ([]gaba.MenuItem, error) {
 
 	if collectionsItem := buildCollectionsMenuItem(logger); collectionsItem != nil {
 		menuItems = append(menuItems, *collectionsItem)
+	}
+
+	if archivesItem := buildArchivesMenuItem(logger); archivesItem != nil {
+		menuItems = append(menuItems, *archivesItem)
 	}
 
 	romItems, err := buildRomDirectoryMenuItems(logger)
@@ -84,6 +90,34 @@ func createCollectionsRomDirectory() shared.RomDirectory {
 		DisplayName: collectionsDisplayName,
 		Tag:         collectionsTag,
 		Path:        common.CollectionDirectory,
+	}
+}
+
+func buildArchivesMenuItem(logger *zap.Logger) *gaba.MenuItem {
+	archiveFolders, err := utils.GetArchiveFileListBasic()
+	
+	if err != nil {
+		return nil
+	}
+
+	if archiveFolders == nil {
+		return nil
+	}
+
+	archives := createArchivesRomDirectory()
+	return &gaba.MenuItem{
+		Text:     archivesDisplayName,
+		Selected: false,
+		Focused:  false,
+		Metadata: archives,
+	}
+}
+
+func createArchivesRomDirectory() shared.RomDirectory {
+	return shared.RomDirectory{
+		DisplayName: archivesDisplayName,
+		Tag:         archivesTag,
+		Path:        utils.GetRomDirectory(),
 	}
 }
 
