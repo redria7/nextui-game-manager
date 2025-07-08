@@ -166,7 +166,7 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 		}, gaba.MessageOptions{})
 
 		if err != nil || !result.IsSome() {
-			return nil, 404, err
+			return "", 4, err
 		}
 
 		for _, selection := range rawSelection {
