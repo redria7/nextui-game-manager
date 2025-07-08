@@ -1,0 +1,65 @@
+package ui
+
+import (
+	"fmt"
+	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
+	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
+	"nextui-game-manager/models"
+	"nextui-game-manager/utils"
+	"qlova.tech/sum"
+	"strings"
+	"time"
+)
+
+type ArchiveCreateScreen struct {
+	Games                []shared.Item
+	RomDirectory         shared.RomDirectory
+	PreviousRomDirectory shared.RomDirectory
+	SearchFilter         string
+}
+
+func InitArchiveCreateScreen(gamesList []shared.Item, romDirectory shared.RomDirectory,
+	previousRomDirectory shared.RomDirectory, searchFilter string) ArchiveCreateScreen {
+	return ArchiveCreateScreen{
+		Games:                gamesList,
+		RomDirectory:         romDirectory,
+		PreviousRomDirectory: previousRomDirectory,
+		SearchFilter:         searchFilter,
+	}
+}
+
+func (acs ArchiveCreateScreen) Name() sum.Int[models.ScreenName] {
+	return models.ScreenNames.ArchiveCreate
+}
+
+// Creates a new archive folder from keyboard input
+func (acs ArchiveCreateScreen) Draw() (value interface{}, exitCode int, e error) {
+	res, err := gaba.Keyboard("")
+	if err != nil {
+		return nil, -1, err
+	}
+
+	if res.IsSome() {
+		newArchiveName := res.Unwrap()
+		
+		if newArchiveName == "" ||  newArchiveName == "." || strings.Contains(newArchiveName, "/") {
+			return nil, 2, nil
+		}
+
+		newArchiveName = utils.PrepArchiveName(newArchiveName)
+		
+		dirErr := utils.EnsureDirectoryExists(utils.GetArchiveRoot(newArchiveName))
+
+		message := fmt.Sprintf("Created %s!", newArchiveName)
+
+		if dirErr != nil {
+			message = fmt.Sprintf("Creation of %s failed.\nTry a different name.", newArchiveName)
+		}
+
+		utils.ShowTimedMessage(message, time.Second * 2)
+
+		return nil, 0, nil
+	}
+
+	return nil, 2, nil
+}

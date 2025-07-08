@@ -7,6 +7,7 @@ import (
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
+	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"github.com/disintegration/imaging"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/viper"
@@ -17,6 +18,7 @@ import (
 	"qlova.tech/sum"
 	"slices"
 	"strings"
+	"time"
 )
 
 const (
@@ -37,11 +39,14 @@ func GetRomDirectory() string {
 	return common.RomDirectory
 }
 
-func GetArchiveRoot() string {
+func GetArchiveRoot(archiveName string) string {
 	if IsDev() {
 		return os.Getenv("ARCHIVE_DIRECTORY")
 	}
-	return "/mnt/SDCARD/Roms/.Archive"
+	if strings.HasPrefix(archiveName, ".") {
+		return fmt.Sprintf("/mnt/SDCARD/Roms/%s", archiveName)
+	}
+	return fmt.Sprintf("/mnt/SDCARD/Roms/.%s", archiveName)
 }
 
 func GetCollectionDirectory() string {
@@ -50,7 +55,7 @@ func GetCollectionDirectory() string {
 		dir = os.Getenv("COLLECTION_DIRECTORY")
 	}
 
-	_ = ensureDirectoryExists(dir)
+	_ = EnsureDirectoryExists(dir)
 	return dir
 }
 
@@ -76,7 +81,39 @@ func GetFileList(dirPath string) ([]os.DirEntry, error) {
 	return entries, nil
 }
 
-func ensureDirectoryExists(dirPath string) error {
+func GetArchiveFileListBasic() ([]string, error) {
+	entries, err := GetFileList(GetRomDirectory())
+	if err != nil {
+		return nil, err
+	}
+
+	var archiveFolders []string
+	for _, folder := range entries {
+		folderName := folder.Name()
+		if directoryExists(filepath.Join(GetRomDirectory(), folderName)) {
+			if strings.HasPrefix(folderName, ".") {
+				archiveFolders = append(archiveFolders, folderName)
+			}
+		}
+	}
+
+	return archiveFolders, nil
+}
+
+func GetArchiveFileList() ([]string, error) {
+	archiveFolders, err := GetArchiveFileListBasic()
+
+	if err != nil {
+		return nil, err
+	}
+
+	if archiveFolders == nil {
+		archiveFolders = append(archiveFolders, ".Archive")
+	}
+	return archiveFolders, nil
+}
+
+func EnsureDirectoryExists(dirPath string) error {
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		return os.MkdirAll(dirPath, defaultDirPerm)
 	}
@@ -86,7 +123,7 @@ func ensureDirectoryExists(dirPath string) error {
 func MoveFile(sourcePath, destinationPath string) error {
 	logger := common.GetLoggerInstance()
 
-	if err := ensureDirectoryExists(filepath.Dir(destinationPath)); err != nil {
+	if err := EnsureDirectoryExists(filepath.Dir(destinationPath)); err != nil {
 		logger.Error("Failed to create destination directory", zap.Error(err))
 		return fmt.Errorf("failed to create destination directory: %w", err)
 	}
@@ -305,11 +342,11 @@ func buildNewArtPath(oldArtPath, newFilename string) string {
 	return filepath.Join(dir, newFilename+ext)
 }
 
-func ArchiveRom(selectedGame shared.Item, romDirectory shared.RomDirectory) error {
+func ArchiveRom(selectedGame shared.Item, romDirectory shared.RomDirectory, archiveName string) error {
 	logger := common.GetLoggerInstance()
 
 	sourcePath := filepath.Join(romDirectory.Path, selectedGame.Filename)
-	destinationPath := buildArchivePath(selectedGame.Filename, romDirectory)
+	destinationPath := buildArchivePath(selectedGame.Filename, romDirectory, archiveName)
 
 	logger.Debug("Archiving ROM", zap.String("from", sourcePath), zap.String("to", destinationPath))
 
@@ -317,28 +354,63 @@ func ArchiveRom(selectedGame shared.Item, romDirectory shared.RomDirectory) erro
 		return fmt.Errorf("failed to archive ROM: %w", err)
 	}
 
-	archiveArtFile(selectedGame.Filename, romDirectory, logger)
+	archiveArtFile(selectedGame.Filename, romDirectory, archiveName, logger)
 	return nil
 }
 
-func buildArchivePath(filename string, romDirectory shared.RomDirectory) string {
-	archiveRoot := GetArchiveRoot()
+func RestoreRom(selectedGame shared.Item, romDirectory shared.RomDirectory, archive shared.RomDirectory) error {
+	logger := common.GetLoggerInstance()
+
+	sourcePath := filepath.Join(romDirectory.Path, selectedGame.Filename)
+	destinationPath := buildRestorePath(selectedGame.Filename, romDirectory, archive)
+
+	logger.Debug("Restoring ROM", zap.String("from", sourcePath), zap.String("to", destinationPath))
+
+	if err := MoveFile(sourcePath, destinationPath); err != nil {
+		return fmt.Errorf("failed to restore ROM: %w", err)
+	}
+
+	restoreArtFile(selectedGame.Filename, romDirectory, archive, logger)
+	return nil
+}
+
+func buildArchivePath(filename string, romDirectory shared.RomDirectory, archiveName string) string {
+	archiveRoot := GetArchiveRoot(archiveName)
 	subdirectory := strings.ReplaceAll(romDirectory.Path, GetRomDirectory(), "")
 	return filepath.Join(archiveRoot, subdirectory, filename)
 }
 
-func archiveArtFile(filename string, romDirectory shared.RomDirectory, logger *zap.Logger) {
+func buildRestorePath(filename string, romDirectory shared.RomDirectory, archive shared.RomDirectory) string {
+	subdirectory := strings.ReplaceAll(romDirectory.Path, archive.Path, "")
+	return filepath.Join(GetRomDirectory(), subdirectory, filename)
+}
+
+func archiveArtFile(filename string, romDirectory shared.RomDirectory, archiveName string, logger *zap.Logger) {
 	artPath, err := FindExistingArt(filename, romDirectory)
 	if err != nil || artPath == "" {
 		return
 	}
 
-	archiveRoot := GetArchiveRoot()
+	archiveRoot := GetArchiveRoot(archiveName)
 	subdirectory := strings.ReplaceAll(romDirectory.Path, GetRomDirectory(), "")
 	destinationPath := filepath.Join(archiveRoot, subdirectory, ".media", filepath.Base(artPath))
 
 	if err := MoveFile(artPath, destinationPath); err != nil {
 		logger.Error("Failed to archive art file", zap.Error(err))
+	}
+}
+
+func restoreArtFile(filename string, romDirectory shared.RomDirectory, archive shared.RomDirectory, logger *zap.Logger) {
+	artPath, err := FindExistingArt(filename, romDirectory)
+	if err != nil || artPath == "" {
+		return
+	}
+
+	subdirectory := strings.ReplaceAll(romDirectory.Path, archive.Path, "")
+	destinationPath := filepath.Join(GetRomDirectory(), subdirectory, ".media", filepath.Base(artPath))
+
+	if err := MoveFile(artPath, destinationPath); err != nil {
+		logger.Error("Failed to restore art file", zap.Error(err))
 	}
 }
 
@@ -670,7 +742,7 @@ func ReadCollection(collection models.Collection) (models.Collection, error) {
 }
 
 func SaveCollection(collection models.Collection) error {
-	if err := ensureDirectoryExists(filepath.Dir(collection.CollectionFile)); err != nil {
+	if err := EnsureDirectoryExists(filepath.Dir(collection.CollectionFile)); err != nil {
 		return fmt.Errorf("failed to create collection directory: %w", err)
 	}
 
@@ -756,4 +828,79 @@ func directoryExists(path string) bool {
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return !os.IsNotExist(err)
+}
+
+func PrepArchiveName(archive string) string {
+	if !strings.HasPrefix(archive, ".") {
+		return "." + archive
+	}
+	return archive
+}
+
+func CleanArchiveName(archive string) string {
+	if !strings.HasPrefix(archive, ".") {
+		return archive
+	}
+	return strings.TrimPrefix(archive, ".")
+}
+
+func DeleteArchive(archive shared.RomDirectory) (string, error) {
+	logger := common.GetLoggerInstance()
+	res, err := deleteArchiveRecursive(archive.Path, 0)
+	
+	if err != nil {
+		logger.Error("Failed to traverse archive", zap.Error(err))
+		return res, err
+	}
+
+	if res != "" {
+		return res, nil
+	}
+
+	removeErr := os.RemoveAll(archive.Path)
+
+	if removeErr != nil {
+		return "", removeErr
+	}
+
+	return "", nil
+}
+
+func deleteArchiveRecursive(currentDirectory string, currentDepth int) (string, error) {
+	logger := common.GetLoggerInstance()
+	if currentDepth > 10 {
+		return "Max Depth Exceeded", nil
+	}
+
+	entries, err := GetFileList(currentDirectory)
+
+	if err != nil {
+		logger.Error("Failed to traverse archive", zap.Error(err))
+		return "", err
+	}
+
+	for _, file := range entries {
+		if !file.IsDir() {
+			return file.Name(), nil
+		}
+
+		res, recurseErr := deleteArchiveRecursive(filepath.Join(currentDirectory, file.Name()), currentDepth + 1)
+
+		if recurseErr != nil {
+			return "", recurseErr
+		}
+		
+		if res != "" {
+			return res, nil
+		}
+	}
+
+	return "", nil
+}
+
+func ShowTimedMessage(message string, delay time.Duration) {
+	gaba.ProcessMessage(message, gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+		time.Sleep(delay)
+		return nil, nil
+	})
 }
