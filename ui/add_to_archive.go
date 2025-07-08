@@ -80,7 +80,7 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 		
 		message := fmt.Sprintf("Archive %s into %s?", atas.Games[0].DisplayName, archiveFolder)
 		if bulk {
-			message := fmt.Sprintf("Archive %d games into %s?", len(atas.Games), archiveFolder)
+			message = fmt.Sprintf("Archive %d games into %s?", len(atas.Games), archiveFolder)
 		}
 
 		if !confirmAction(message) {
@@ -99,7 +99,7 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 
 		successMessage := fmt.Sprintf("Added %s To Archive %s!", atas.Games[0].DisplayName, archiveFolder)
 		if bulk {
-			successMessage := fmt.Sprintf("Added %d Games To Archive %s!", len(atas.Games), archiveFolder)
+			successMessage = fmt.Sprintf("Added %d Games To Archive %s!", len(atas.Games), archiveFolder)
 		}
 
 		gaba.ProcessMessage(successMessage, gaba.ProcessMessageOptions{}, func() (interface{}, error) {
