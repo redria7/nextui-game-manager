@@ -159,13 +159,8 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 			}
 		}
 
-		result, err := gaba.ConfirmationMessage(confirmMessage, []gaba.FooterHelpItem{
-			{ButtonName: "B", HelpText: "I Changed My Mind"},
-			{ButtonName: "A", HelpText: "Yes"},
-		}, gaba.MessageOptions{})
-
-		if err != nil || !result.IsSome() {
-			return agl.SearchFilter, 4, err
+		if !utils.ConfirmAction(confirmMessage) {
+			return agl.SearchFilter, 4, nil
 		}
 
 		for _, selection := range rawSelection {

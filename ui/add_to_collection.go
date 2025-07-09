@@ -47,16 +47,7 @@ func (a AddToCollectionScreen) Draw() (collection interface{}, exitCode int, e e
 	}
 
 	if len(fb.Items) == 0 {
-		res, err := gaba.ConfirmationMessage("No Collections Found. \n Want to create your first?",
-			[]gaba.FooterHelpItem{{
-				HelpText:   "No Thanks",
-				ButtonName: "B",
-			}, {
-				HelpText:   "Yes",
-				ButtonName: "A",
-			}}, gaba.MessageOptions{})
-
-		if err != nil || res.IsNone() {
+		if !utils.ConfirmAction("No Collections Found. \n Want to create your first?") {
 			return nil, 2, nil
 		}
 

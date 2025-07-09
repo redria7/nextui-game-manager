@@ -80,7 +80,7 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 			message = fmt.Sprintf("Archive %d games into %s?", len(atas.Games), archiveFolder)
 		}
 
-		if !confirmAction(message) {
+		if !utils.ConfirmAction(message) {
 			return nil, 404, nil
 		}
 
@@ -106,13 +106,4 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 	}
 
 	return nil, 2, nil
-}
-
-func confirmAction(message string) bool {
-	result, err := gaba.ConfirmationMessage(message, []gaba.FooterHelpItem{
-		{ButtonName: "B", HelpText: "I Changed My Mind"},
-		{ButtonName: "A", HelpText: "Yes"},
-	}, gaba.MessageOptions{})
-
-	return err != nil || result.IsSome()
 }

@@ -445,7 +445,7 @@ func handleRenameRomAction(as ui.ActionsScreen) models.Screen {
 
 func handleClearGameTrackerAction(as ui.ActionsScreen) models.Screen {
 	message := fmt.Sprintf("Clear %s from Game Tracker?", as.Game.DisplayName)
-	if !confirmAction(message) {
+	if !utils.ConfirmAction(message) {
 		return ui.InitActionsScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 	}
 
@@ -461,7 +461,7 @@ func handleClearGameTrackerAction(as ui.ActionsScreen) models.Screen {
 
 func handleDeleteRomAction(as ui.ActionsScreen) models.Screen {
 	message := fmt.Sprintf("Delete %s?", as.Game.DisplayName)
-	if confirmAction(message) {
+	if utils.ConfirmAction(message) {
 		utils.DeleteRom(as.Game, as.RomDirectory)
 		return ui.InitGamesListWithPreviousDirectory(as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 	}
@@ -471,7 +471,7 @@ func handleDeleteRomAction(as ui.ActionsScreen) models.Screen {
 
 func handleNukeAction(as ui.ActionsScreen) models.Screen {
 	message := fmt.Sprintf("Nuke %s?", as.Game.DisplayName)
-	if confirmAction(message) {
+	if utils.ConfirmAction(message) {
 		utils.Nuke(as.Game, as.RomDirectory)
 		return ui.InitGamesListWithPreviousDirectory(as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 	}
@@ -543,7 +543,7 @@ func showArtDownloadResult(artPaths []string, totalGames int) {
 }
 
 func handleBulkDeleteArt(ba ui.BulkOptionsScreen) {
-	if confirmBulkAction("Delete art for the selected games?") {
+	if utils.ConfirmBulkAction("Delete art for the selected games?") {
 		for _, game := range ba.Games {
 			utils.DeleteArt(game.Filename, ba.RomDirectory)
 		}
@@ -551,7 +551,7 @@ func handleBulkDeleteArt(ba ui.BulkOptionsScreen) {
 }
 
 func handleBulkDelete(ba ui.BulkOptionsScreen) {
-	if confirmBulkAction("Delete the selected games?") {
+	if utils.ConfirmBulkAction("Delete the selected games?") {
 		for _, game := range ba.Games {
 			utils.DeleteRom(game, ba.RomDirectory)
 		}
@@ -559,7 +559,7 @@ func handleBulkDelete(ba ui.BulkOptionsScreen) {
 }
 
 func handleBulkNuke(ba ui.BulkOptionsScreen) {
-	if confirmBulkAction("Nuke the selected games?") {
+	if utils.ConfirmBulkAction("Nuke the selected games?") {
 		for _, game := range ba.Games {
 			utils.Nuke(game, ba.RomDirectory)
 		}
@@ -621,15 +621,6 @@ func handleDownloadArtTransition(currentScreen models.Screen) models.Screen {
 	return ui.InitActionsScreen(das.Game, das.RomDirectory, das.PreviousRomDirectory, das.SearchFilter)
 }
 
-func confirmAction(message string) bool {
-	result, err := gaba.ConfirmationMessage(message, []gaba.FooterHelpItem{
-		{ButtonName: "B", HelpText: "I Changed My Mind"},
-		{ButtonName: "A", HelpText: "Yes"},
-	}, gaba.MessageOptions{})
-
-	return err != nil || result.IsSome()
-}
-
 func confirmDeletion(message, imagePath string) bool {
 	result, err := gaba.ConfirmationMessage(message, []gaba.FooterHelpItem{
 		{ButtonName: "B", HelpText: "I Changed My Mind"},
@@ -638,17 +629,5 @@ func confirmDeletion(message, imagePath string) bool {
 		ImagePath: imagePath,
 	})
 
-	return err != nil || result.IsSome()
-}
-
-func confirmBulkAction(message string) bool {
-	confirm, _ := gaba.ConfirmationMessage(message, []gaba.FooterHelpItem{
-		{ButtonName: "B", HelpText: "Cancel"},
-		{ButtonName: "X", HelpText: "Remove"},
-	}, gaba.MessageOptions{
-		ImagePath:     "",
-		ConfirmButton: gaba.ButtonX,
-	})
-
-	return confirm.IsSome() && !confirm.Unwrap().Cancelled
+	return err == nil && result.IsSome()
 }
