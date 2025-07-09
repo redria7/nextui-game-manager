@@ -722,7 +722,7 @@ func ReadCollection(collection models.Collection) (models.Collection, error) {
 			continue
 		}
 
-		displayName := filepath.Base(line)
+		displayName := strings.ReplaceAll(filepath.Base(line), filepath.Ext(line), "")
 
 		games = append(games, shared.Item{
 			DisplayName: displayName,
