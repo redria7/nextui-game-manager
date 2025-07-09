@@ -62,11 +62,7 @@ func (c CreateCollectionScreen) Draw() (collection interface{}, exitCode int, e 
 			message = fmt.Sprintf("%s\nAlso added %s!", message, c.Games[0].DisplayName)
 		}
 
-		gaba.ProcessMessage(message,
-			gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-				time.Sleep(time.Second * 2)
-				return nil, nil
-			})
+		utils.ShowTimedMessage(message, time.Second*2)
 
 		return nil, 0, nil
 	}

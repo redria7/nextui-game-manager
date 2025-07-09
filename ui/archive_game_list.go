@@ -172,18 +172,12 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 			item := selection.Metadata.(shared.Item)
 			err := utils.RestoreRom(item, agl.RomDirectory, agl.Archive)
 			if err != nil {
-				gaba.ProcessMessage(fmt.Sprintf("Unable to restore %s!", item.DisplayName), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-					time.Sleep(time.Second * 2)
-					return nil, nil
-				})
+				utils.ShowTimedMessage(fmt.Sprintf("Unable to restore %s!", item.DisplayName), time.Second*2)
 				return shared.RomDirectory{}, 0, err
 			}
 		}
 
-		gaba.ProcessMessage(successMessage, gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-			time.Sleep(time.Second * 2)
-			return nil, nil
-		})
+		utils.ShowTimedMessage(successMessage, time.Second*2)
 
 		return shared.RomDirectory{}, 0, nil
 	}

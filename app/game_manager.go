@@ -223,11 +223,11 @@ func handleArchiveGamesListTransition(currentScreen models.Screen, result interf
 		return ui.InitArchiveGamesListScreen(agl.Archive, agl.RomDirectory, "")
 	case ExitCodeEmpty:
 		if agl.SearchFilter != "" {
-			showTimedMessage(fmt.Sprintf("No results found for %s!", agl.SearchFilter), shortMessageDelay)
+			utils.ShowTimedMessage(fmt.Sprintf("No results found for %s!", agl.SearchFilter), shortMessageDelay)
 			return ui.InitArchiveGamesListScreen(agl.Archive, agl.RomDirectory, "")
 		}
 
-		showTimedMessage(fmt.Sprintf("%s is empty!", agl.RomDirectory.DisplayName), longMessageDelay)
+		utils.ShowTimedMessage(fmt.Sprintf("%s is empty!", agl.RomDirectory.DisplayName), longMessageDelay)
 		return ui.InitArchiveManagementScreen(agl.Archive)
 	default:
 		return ui.InitArchiveManagementScreen(agl.Archive)
@@ -349,11 +349,11 @@ func handleGameListBack(gl ui.GameList) models.Screen {
 
 func handleEmptyGamesList(gl ui.GameList) models.Screen {
 	if gl.SearchFilter != "" {
-		showTimedMessage(fmt.Sprintf("No results found for %s!", gl.SearchFilter), shortMessageDelay)
+		utils.ShowTimedMessage(fmt.Sprintf("No results found for %s!", gl.SearchFilter), shortMessageDelay)
 		return ui.InitSearch(gl.RomDirectory)
 	}
 
-	showTimedMessage(fmt.Sprintf("%s is empty!", gl.RomDirectory.DisplayName), longMessageDelay)
+	utils.ShowTimedMessage(fmt.Sprintf("%s is empty!", gl.RomDirectory.DisplayName), longMessageDelay)
 	return ui.InitMainMenu()
 }
 
@@ -408,7 +408,7 @@ func handleDeleteArtAction(as ui.ActionsScreen) models.Screen {
 	existingArtPath, err := utils.FindExistingArt(as.Game.Filename, as.RomDirectory)
 	if err != nil {
 		logger.Error("Failed to find existing art", zap.Error(err))
-		showTimedMessage("Unable to delete art!", longMessageDelay)
+		utils.ShowTimedMessage("Unable to delete art!", longMessageDelay)
 		return ui.InitActionsScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 	}
 
@@ -422,7 +422,7 @@ func handleDeleteArtAction(as ui.ActionsScreen) models.Screen {
 func handleRenameRomAction(as ui.ActionsScreen) models.Screen {
 	newName, err := gaba.Keyboard(as.Game.DisplayName)
 	if err != nil {
-		showTimedMessage("Unable to rename ROM!", longMessageDelay)
+		utils.ShowTimedMessage("Unable to rename ROM!", longMessageDelay)
 		return ui.InitActionsScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 	}
 
@@ -433,7 +433,7 @@ func handleRenameRomAction(as ui.ActionsScreen) models.Screen {
 	newFilename := newName.Unwrap()
 	newPath, err := utils.RenameRom(as.Game, newFilename, as.RomDirectory)
 	if err != nil {
-		showTimedMessage("Unable to rename ROM!", longMessageDelay)
+		utils.ShowTimedMessage("Unable to rename ROM!", longMessageDelay)
 		return ui.InitActionsScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 	}
 
@@ -451,9 +451,9 @@ func handleClearGameTrackerAction(as ui.ActionsScreen) models.Screen {
 
 	success := utils.ClearGameTracker(as.Game.Filename, as.RomDirectory)
 	if success {
-		showTimedMessage("Game Tracker data cleared!", longMessageDelay)
+		utils.ShowTimedMessage("Game Tracker data cleared!", longMessageDelay)
 	} else {
-		showTimedMessage("Unable to clear Game Tracker data!", longMessageDelay)
+		utils.ShowTimedMessage("Unable to clear Game Tracker data!", longMessageDelay)
 	}
 
 	return ui.InitActionsScreen(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
@@ -532,13 +532,13 @@ func handleBulkDownloadArt(ba ui.BulkOptionsScreen) {
 
 func showArtDownloadResult(artPaths []string, totalGames int) {
 	if len(artPaths) == 0 {
-		showTimedMessage("No art found!", standardMessageDelay)
+		utils.ShowTimedMessage("No art found!", standardMessageDelay)
 		return
 	}
 
 	if totalGames > 1 {
 		message := fmt.Sprintf("Art found for %d/%d games!", len(artPaths), totalGames)
-		showTimedMessage(message, standardMessageDelay)
+		utils.ShowTimedMessage(message, standardMessageDelay)
 	}
 }
 
@@ -651,11 +651,4 @@ func confirmBulkAction(message string) bool {
 	})
 
 	return confirm.IsSome() && !confirm.Unwrap().Cancelled
-}
-
-func showTimedMessage(message string, delay time.Duration) {
-	gaba.ProcessMessage(message, gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-		time.Sleep(delay)
-		return nil, nil
-	})
 }

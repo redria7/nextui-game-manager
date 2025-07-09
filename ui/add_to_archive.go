@@ -42,10 +42,7 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 
 	archiveFolders, err := utils.GetArchiveFileList()
 	if err != nil {
-		gaba.ProcessMessage("Unable to Load Archives!", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-			time.Sleep(time.Second * 2)
-			return nil, nil
-		})
+		utils.ShowTimedMessage("Unable to Load Archives!", time.Second*2)
 		return nil, -1, nil
 	}
 	var archiveFolderEntries []gaba.MenuItem
@@ -89,10 +86,7 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 
 		for _, game := range atas.Games {
 			if err := utils.ArchiveRom(game, atas.RomDirectory, archiveFolder); err != nil {
-				gaba.ProcessMessage(fmt.Sprintf("Unable to archive %s!", game.DisplayName), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-					time.Sleep(3 * time.Second)
-					return nil, nil
-				})
+				utils.ShowTimedMessage(fmt.Sprintf("Unable to archive %s!", game.DisplayName), time.Second*3)
 				return nil, 404, err
 			}
 		}
@@ -102,10 +96,7 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 			successMessage = fmt.Sprintf("Added %d Games To Archive %s!", len(atas.Games), archiveFolder)
 		}
 
-		gaba.ProcessMessage(successMessage, gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-			time.Sleep(time.Second * 2)
-			return nil, nil
-		})
+		utils.ShowTimedMessage(successMessage, time.Second*2)
 
 		return nil, 0, nil
 	}

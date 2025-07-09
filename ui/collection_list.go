@@ -33,10 +33,7 @@ func (c CollectionListScreen) Draw() (collection interface{}, exitCode int, e er
 	fb := filebrowser.NewFileBrowser(common.GetLoggerInstance())
 	err := fb.CWD(utils.GetCollectionDirectory(), false)
 	if err != nil {
-		gaba.ProcessMessage("Unable to Load Collections!", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-			time.Sleep(time.Second * 2)
-			return nil, nil
-		})
+		utils.ShowTimedMessage("Unable to Load Collections!", time.Second*2)
 		return nil, 404, nil
 	}
 
@@ -65,10 +62,7 @@ func (c CollectionListScreen) Draw() (collection interface{}, exitCode int, e er
 		col, err = utils.ReadCollection(col)
 
 		if err != nil {
-			gaba.ProcessMessage("Unable to Load Collections!", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-				time.Sleep(time.Second * 2)
-				return nil, nil
-			})
+			utils.ShowTimedMessage("Unable to Load Collections!", time.Second*2)
 			return nil, -1, err
 		}
 
