@@ -32,7 +32,6 @@ func (acs ArchiveCreateScreen) Name() sum.Int[models.ScreenName] {
 	return models.ScreenNames.ArchiveCreate
 }
 
-// Creates a new archive folder from keyboard input
 func (acs ArchiveCreateScreen) Draw() (value interface{}, exitCode int, e error) {
 	res, err := gaba.Keyboard("")
 	if err != nil {
@@ -41,13 +40,13 @@ func (acs ArchiveCreateScreen) Draw() (value interface{}, exitCode int, e error)
 
 	if res.IsSome() {
 		newArchiveName := res.Unwrap()
-		
-		if newArchiveName == "" ||  newArchiveName == "." || strings.Contains(newArchiveName, "/") {
+
+		if newArchiveName == "" || newArchiveName == "." || strings.Contains(newArchiveName, "/") {
 			return nil, 2, nil
 		}
 
 		newArchiveName = utils.PrepArchiveName(newArchiveName)
-		
+
 		dirErr := utils.EnsureDirectoryExists(utils.GetArchiveRoot(newArchiveName))
 
 		message := fmt.Sprintf("Created %s!", newArchiveName)
@@ -56,7 +55,7 @@ func (acs ArchiveCreateScreen) Draw() (value interface{}, exitCode int, e error)
 			message = fmt.Sprintf("Creation of %s failed.\nTry a different name.", newArchiveName)
 		}
 
-		utils.ShowTimedMessage(message, time.Second * 2)
+		utils.ShowTimedMessage(message, time.Second*2)
 
 		return nil, 0, nil
 	}

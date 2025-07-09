@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"database/sql"
 	"fmt"
+	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
-	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"github.com/disintegration/imaging"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/viper"
@@ -40,13 +40,11 @@ func GetRomDirectory() string {
 }
 
 func GetArchiveRoot(archiveName string) string {
-	if IsDev() {
-		return os.Getenv("ARCHIVE_DIRECTORY")
+	if !strings.HasPrefix(archiveName, ".") {
+		archiveName = "." + archiveName
 	}
-	if strings.HasPrefix(archiveName, ".") {
-		return fmt.Sprintf("/mnt/SDCARD/Roms/%s", archiveName)
-	}
-	return fmt.Sprintf("/mnt/SDCARD/Roms/.%s", archiveName)
+
+	return filepath.Join(GetRomDirectory(), archiveName)
 }
 
 func GetCollectionDirectory() string {
@@ -832,16 +830,13 @@ func PrepArchiveName(archive string) string {
 }
 
 func CleanArchiveName(archive string) string {
-	if !strings.HasPrefix(archive, ".") {
-		return archive
-	}
 	return strings.TrimPrefix(archive, ".")
 }
 
 func DeleteArchive(archive shared.RomDirectory) (string, error) {
 	logger := common.GetLoggerInstance()
 	res, err := deleteArchiveRecursive(archive.Path, 0)
-	
+
 	if err != nil {
 		logger.Error("Failed to traverse archive", zap.Error(err))
 		return res, err
@@ -878,12 +873,12 @@ func deleteArchiveRecursive(currentDirectory string, currentDepth int) (string, 
 			return file.Name(), nil
 		}
 
-		res, recurseErr := deleteArchiveRecursive(filepath.Join(currentDirectory, file.Name()), currentDepth + 1)
+		res, recurseErr := deleteArchiveRecursive(filepath.Join(currentDirectory, file.Name()), currentDepth+1)
 
 		if recurseErr != nil {
 			return "", recurseErr
 		}
-		
+
 		if res != "" {
 			return res, nil
 		}

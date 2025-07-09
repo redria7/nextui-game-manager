@@ -1,12 +1,12 @@
 package ui
 
 import (
+	"fmt"
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"nextui-game-manager/models"
 	"nextui-game-manager/utils"
 	"qlova.tech/sum"
-	"fmt"
 	"time"
 )
 
@@ -34,12 +34,12 @@ func (atas AddToArchiveScreen) Name() sum.Int[models.ScreenName] {
 // Adds selected rom(s) to an archive option. New archives can be created through the action button
 func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) {
 	bulk := len(atas.Games) > 1
-	
+
 	title := fmt.Sprintf("Move %s To Archive", atas.Games[0].DisplayName)
 	if bulk {
 		title = fmt.Sprintf("Move %d Games To Archive", len(atas.Games))
 	}
-	
+
 	archiveFolders, err := utils.GetArchiveFileList()
 	if err != nil {
 		gaba.ProcessMessage("Unable to Load Archives!", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
@@ -77,7 +77,7 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 
 	if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
 		archiveFolder := selection.Unwrap().SelectedItem.Text
-		
+
 		message := fmt.Sprintf("Archive %s into %s?", atas.Games[0].DisplayName, archiveFolder)
 		if bulk {
 			message = fmt.Sprintf("Archive %d games into %s?", len(atas.Games), archiveFolder)
@@ -86,7 +86,7 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 		if !confirmAction(message) {
 			return nil, 404, nil
 		}
-		
+
 		for _, game := range atas.Games {
 			if err := utils.ArchiveRom(game, atas.RomDirectory, archiveFolder); err != nil {
 				gaba.ProcessMessage(fmt.Sprintf("Unable to archive %s!", game.DisplayName), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
@@ -108,8 +108,8 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 		})
 
 		return nil, 0, nil
-	} 
-	
+	}
+
 	if selection.IsSome() && selection.Unwrap().ActionTriggered {
 		return nil, 4, nil
 	}

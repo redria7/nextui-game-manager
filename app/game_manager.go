@@ -13,8 +13,8 @@ import (
 	"nextui-game-manager/ui"
 	"nextui-game-manager/utils"
 	"os"
-	"time"
 	"qlova.tech/sum"
+	"time"
 )
 
 const (
@@ -201,7 +201,7 @@ func handleArchiveGamesListTransition(currentScreen models.Screen, result interf
 		if newRomDirectory.Path != "" {
 			return ui.InitArchiveGamesListScreenWithPreviousDirectory(agl.Archive, newRomDirectory, agl.RomDirectory, "")
 		}
-		
+
 		return ui.InitArchiveGamesListScreen(agl.Archive, agl.RomDirectory, "")
 	case ExitCodeCancel:
 		if agl.PreviousRomDirectory.Path != "" {
@@ -219,7 +219,7 @@ func handleArchiveGamesListTransition(currentScreen models.Screen, result interf
 		if searchFilter != "" {
 			return ui.InitArchiveGamesListScreen(agl.Archive, agl.RomDirectory, searchFilter)
 		}
-		
+
 		return ui.InitArchiveGamesListScreen(agl.Archive, agl.RomDirectory, "")
 	case ExitCodeEmpty:
 		if agl.SearchFilter != "" {

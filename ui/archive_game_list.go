@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
@@ -11,12 +12,11 @@ import (
 	"path/filepath"
 	"qlova.tech/sum"
 	"strings"
-	"fmt"
 	"time"
 )
 
 type ArchiveGamesListScreen struct {
-	Archive 			 shared.RomDirectory
+	Archive              shared.RomDirectory
 	RomDirectory         shared.RomDirectory
 	SearchFilter         string
 	PreviousRomDirectory shared.RomDirectory
@@ -28,7 +28,7 @@ func InitArchiveGamesListScreen(archive shared.RomDirectory, romDirectory shared
 
 func InitArchiveGamesListScreenWithPreviousDirectory(archive shared.RomDirectory, romDirectory shared.RomDirectory, previousRomDirectory shared.RomDirectory, searchFilter string) ArchiveGamesListScreen {
 	return ArchiveGamesListScreen{
-		Archive:			  archive,
+		Archive:              archive,
 		RomDirectory:         romDirectory,
 		PreviousRomDirectory: previousRomDirectory,
 		SearchFilter:         searchFilter,
@@ -39,7 +39,6 @@ func (agl ArchiveGamesListScreen) Name() sum.Int[models.ScreenName] {
 	return models.ScreenNames.ArchiveGamesList
 }
 
-// Lists ROMs in the current archive/directory path and allows for restoration
 func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e error) {
 	logger := common.GetLoggerInstance()
 	title := agl.Archive.DisplayName + " : " + agl.RomDirectory.DisplayName
@@ -129,7 +128,7 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 
 	if selection.IsSome() && selection.Unwrap().ActionTriggered {
 		query, err := gaba.Keyboard("")
-		
+
 		if err != nil {
 			return nil, 1, err
 		}
@@ -141,7 +140,7 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 		return nil, 4, nil
 	} else if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
 		rawSelection := selection.Unwrap().SelectedItems
-		
+
 		firstItem := rawSelection[0].Metadata.(shared.Item)
 
 		confirmMessage := fmt.Sprintf("Restore %s from archive %s?", firstItem.DisplayName, agl.Archive.DisplayName)
