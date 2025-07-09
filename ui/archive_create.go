@@ -47,6 +47,11 @@ func (acs ArchiveCreateScreen) Draw() (value interface{}, exitCode int, e error)
 
 		newArchiveName = utils.PrepArchiveName(newArchiveName)
 
+		if newArchiveName == ".media" {
+			utils.ShowTimedMessage(".media folder is reserved for themes.\nPlease choose a different name.", time.Second*2)
+			return nil, 0, nil
+		}
+
 		dirErr := utils.EnsureDirectoryExists(utils.GetArchiveRoot(newArchiveName))
 
 		message := fmt.Sprintf("Created %s!", newArchiveName)

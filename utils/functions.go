@@ -90,7 +90,9 @@ func GetArchiveFileListBasic() ([]string, error) {
 		folderName := folder.Name()
 		if directoryExists(filepath.Join(GetRomDirectory(), folderName)) {
 			if strings.HasPrefix(folderName, ".") {
-				archiveFolders = append(archiveFolders, folderName)
+				if folderName != ".media" {
+					archiveFolders = append(archiveFolders, folderName)
+				}
 			}
 		}
 	}
