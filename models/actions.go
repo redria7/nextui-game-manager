@@ -11,6 +11,8 @@ type Action struct {
 	ClearGameTracker,
 	ClearSaveStates,
 	ArchiveRom,
+	ArchiveRename,
+	ArchiveDelete,
 	DeleteRom,
 	Nuke,
 
@@ -27,6 +29,8 @@ var ActionMap = map[string]sum.Int[Action]{
 	"Delete Art":         Actions.DeleteArt,
 	"Clear Game Tracker": Actions.ClearGameTracker,
 	"Archive ROM":        Actions.ArchiveRom,
+	"Rename Archive": 	  Actions.ArchiveRename,
+	"Delete Archive": 	  Actions.ArchiveDelete,
 	"Delete ROM":         Actions.DeleteRom,
 	"Nuclear Option":     Actions.Nuke,
 
@@ -45,6 +49,8 @@ var ActionMessages = map[sum.Int[Action]]string{
 	Actions.DeleteRom:        "Delete",
 	Actions.Nuke:             "Nuke (Deletes ROM, Art and Game Tracker)",
 	Actions.CollectionDelete: "Delete",
+	Actions.ArchiveRename: "Rename",
+	Actions.ArchiveDelete: "Delete",
 	Actions.CollectionRename: "Rename",
 	Actions.CollectionAdd:    "Add to",
 }
@@ -63,7 +69,7 @@ var BulkActionKeys = []string{
 	"Download Art",
 	"Delete Art",
 	//"Clear Game Tracker",
-	//"Archive ROM",
+	"Archive ROM",
 	//"Delete ROM",
 	//"Nuclear Option",
 }
@@ -71,6 +77,11 @@ var BulkActionKeys = []string{
 var CollectionActionKeys = []string{
 	"Rename Collection",
 	"Delete Collection",
+}
+
+var ArchiveActionKeys = []string{
+	"Rename Archive",
+	"Delete Archive",
 }
 
 var ActionNames = map[sum.Int[Action]]string{}

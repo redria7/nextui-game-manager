@@ -13,6 +13,13 @@ type ScreenName struct {
 	AddToCollection,
 	Confirm,
 	DownloadArt,
+	
+	AddToArchive,
+	ArchiveCreate,
+	ArchiveList,
+	ArchiveManagement,
+	ArchiveOptions,
+	ArchiveGamesList,
 
 	CollectionsList,
 	CollectionOptions,
