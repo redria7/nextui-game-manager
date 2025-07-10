@@ -895,3 +895,24 @@ func ShowTimedMessage(message string, delay time.Duration) {
 		return nil, nil
 	})
 }
+
+func ConfirmAction(message string) bool {
+	result, err := gaba.ConfirmationMessage(message, []gaba.FooterHelpItem{
+		{ButtonName: "B", HelpText: "I Changed My Mind"},
+		{ButtonName: "A", HelpText: "Yes"},
+	}, gaba.MessageOptions{})
+
+	return err == nil && result.IsSome()
+}
+
+func ConfirmBulkAction(message string) bool {
+	confirm, _ := gaba.ConfirmationMessage(message, []gaba.FooterHelpItem{
+		{ButtonName: "B", HelpText: "Cancel"},
+		{ButtonName: "X", HelpText: "Remove"},
+	}, gaba.MessageOptions{
+		ImagePath:     "",
+		ConfirmButton: gaba.ButtonX,
+	})
+
+	return confirm.IsSome() && !confirm.Unwrap().Cancelled
+}

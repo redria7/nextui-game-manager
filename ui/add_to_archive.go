@@ -42,10 +42,7 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 
 	archiveFolders, err := utils.GetArchiveFileList()
 	if err != nil {
-		gaba.ProcessMessage("Unable to Load Archives!", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-			time.Sleep(time.Second * 2)
-			return nil, nil
-		})
+		utils.ShowTimedMessage("Unable to Load Archives!", time.Second*2)
 		return nil, -1, nil
 	}
 	var archiveFolderEntries []gaba.MenuItem
@@ -83,16 +80,13 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 			message = fmt.Sprintf("Archive %d games into %s?", len(atas.Games), archiveFolder)
 		}
 
-		if !confirmAction(message) {
+		if !utils.ConfirmAction(message) {
 			return nil, 404, nil
 		}
 
 		for _, game := range atas.Games {
 			if err := utils.ArchiveRom(game, atas.RomDirectory, archiveFolder); err != nil {
-				gaba.ProcessMessage(fmt.Sprintf("Unable to archive %s!", game.DisplayName), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-					time.Sleep(3 * time.Second)
-					return nil, nil
-				})
+				utils.ShowTimedMessage(fmt.Sprintf("Unable to archive %s!", game.DisplayName), time.Second*3)
 				return nil, 404, err
 			}
 		}
@@ -102,10 +96,7 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 			successMessage = fmt.Sprintf("Added %d Games To Archive %s!", len(atas.Games), archiveFolder)
 		}
 
-		gaba.ProcessMessage(successMessage, gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-			time.Sleep(time.Second * 2)
-			return nil, nil
-		})
+		utils.ShowTimedMessage(successMessage, time.Second*2)
 
 		return nil, 0, nil
 	}
@@ -115,13 +106,4 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 	}
 
 	return nil, 2, nil
-}
-
-func confirmAction(message string) bool {
-	result, err := gaba.ConfirmationMessage(message, []gaba.FooterHelpItem{
-		{ButtonName: "B", HelpText: "I Changed My Mind"},
-		{ButtonName: "A", HelpText: "Yes"},
-	}, gaba.MessageOptions{})
-
-	return err != nil || result.IsSome()
 }

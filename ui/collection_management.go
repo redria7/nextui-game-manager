@@ -96,15 +96,7 @@ func (c CollectionManagement) Draw() (value interface{}, exitCode int, e error) 
 			message = fmt.Sprintf("Remove %d ROMs from %s?", len(selected.SelectedItems), c.Collection.DisplayName)
 		}
 
-		confirm, _ := gaba.ConfirmationMessage(message, []gaba.FooterHelpItem{
-			{ButtonName: "B", HelpText: "Cancel"},
-			{ButtonName: "X", HelpText: "Remove"},
-		}, gaba.MessageOptions{
-			ImagePath:     "",
-			ConfirmButton: gaba.ButtonX,
-		})
-
-		if confirm.IsSome() && !confirm.Unwrap().Cancelled {
+		if utils.ConfirmBulkAction(message) {
 			var games shared.Items
 			for _, item := range c.Collection.Games {
 				if !slices.ContainsFunc(selected.SelectedItems, func(i *gaba.MenuItem) bool {

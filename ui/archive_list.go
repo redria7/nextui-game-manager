@@ -25,10 +25,7 @@ func (als ArchiveListScreen) Draw() (item interface{}, exitCode int, e error) {
 	
 	archiveFolders, err := utils.GetArchiveFileListBasic()
 	if err != nil {
-		gaba.ProcessMessage("Unable to Load Archives!", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-			time.Sleep(time.Second * 2)
-			return nil, nil
-		})
+		utils.ShowTimedMessage("Unable to Load Archives!", time.Second*2)
 		return nil, 404, nil
 	}
 

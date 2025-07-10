@@ -42,24 +42,12 @@ func (a AddToCollectionScreen) Draw() (collection interface{}, exitCode int, e e
 	fb := filebrowser.NewFileBrowser(logger)
 	err := fb.CWD(utils.GetCollectionDirectory(), false)
 	if err != nil {
-		gaba.ProcessMessage("Unable to Load Collections!", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-			time.Sleep(time.Second * 2)
-			return nil, nil
-		})
+		utils.ShowTimedMessage("Unable to Load Collections!", time.Second*2)
 		return nil, -1, nil
 	}
 
 	if len(fb.Items) == 0 {
-		res, err := gaba.ConfirmationMessage("No Collections Found. \n Want to create your first?",
-			[]gaba.FooterHelpItem{{
-				HelpText:   "No Thanks",
-				ButtonName: "B",
-			}, {
-				HelpText:   "Yes",
-				ButtonName: "A",
-			}}, gaba.MessageOptions{})
-
-		if err != nil || res.IsNone() {
+		if !utils.ConfirmAction("No Collections Found. \n Want to create your first?") {
 			return nil, 2, nil
 		}
 
@@ -124,10 +112,7 @@ func (a AddToCollectionScreen) Draw() (collection interface{}, exitCode int, e e
 		col, err = utils.ReadCollection(col)
 
 		if err != nil {
-			gaba.ProcessMessage("Unable to Load Collections!", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-				time.Sleep(time.Second * 2)
-				return nil, nil
-			})
+			utils.ShowTimedMessage("Unable to Load Collections!", time.Second*2)
 			return nil, -1, err
 		}
 
@@ -176,10 +161,7 @@ func (a AddToCollectionScreen) Draw() (collection interface{}, exitCode int, e e
 				gameText = fmt.Sprintf("%d Games", len(a.Games))
 			}
 
-			gaba.ProcessMessage(fmt.Sprintf("Unable to Add %s To Collection!", gameText), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-				time.Sleep(time.Second * 2)
-				return nil, nil
-			})
+			utils.ShowTimedMessage(fmt.Sprintf("Unable to Add %s To Collection!", gameText), time.Second*2)
 			return nil, 0, err
 		}
 
@@ -189,10 +171,7 @@ func (a AddToCollectionScreen) Draw() (collection interface{}, exitCode int, e e
 			successMessage = fmt.Sprintf("Added %d Games To Collection %s!", len(a.Games), selectedCol.DisplayName)
 		}
 
-		gaba.ProcessMessage(successMessage, gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-			time.Sleep(time.Second * 2)
-			return nil, nil
-		})
+		utils.ShowTimedMessage(successMessage, time.Second*2)
 
 		return nil, 0, nil
 	} else if selection.IsSome() && selection.Unwrap().ActionTriggered {
