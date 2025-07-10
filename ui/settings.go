@@ -72,6 +72,23 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 			}(),
 		},
 		{
+			Item: gabagool.MenuItem{Text: "Show Art"},
+			Options: []gabagool.Option{
+				{DisplayName: "True", Value: true},
+				{DisplayName: "False", Value: false},
+			},
+			SelectedOption: func() int {
+				switch appState.Config.ShowArt {
+				case true:
+					return 0
+				case false:
+					return 1
+				default:
+					return 1
+				}
+			}(),
+		},
+		{
 			Item: gabagool.MenuItem{
 				Text: "Log Level",
 			},
@@ -126,6 +143,8 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 				}
 			} else if option.Item.Text == "Hide Empty Platforms" {
 				appState.Config.HideEmpty = option.Options[option.SelectedOption].Value.(bool)
+			} else if option.Item.Text == "Show Art" {
+				appState.Config.ShowArt = option.Options[option.SelectedOption].Value.(bool)
 			} else if option.Item.Text == "Log Level" {
 				logLevelValue := option.Options[option.SelectedOption].Value.(string)
 				appState.Config.LogLevel = logLevelValue

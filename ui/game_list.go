@@ -7,6 +7,7 @@ import (
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
+	"nextui-game-manager/state"
 	"nextui-game-manager/utils"
 	"path/filepath"
 	"qlova.tech/sum"
@@ -86,11 +87,14 @@ func (gl GameList) Draw() (item interface{}, exitCode int, e error) {
 				NotMultiSelectable: true,
 			})
 		} else {
+			imageFilename := strings.TrimSuffix(item.Filename, filepath.Ext(item.Filename)) + ".png"
+
 			itemEntries = append(itemEntries, gabagool.MenuItem{
-				Text:     itemName,
-				Selected: false,
-				Focused:  false,
-				Metadata: item,
+				Text:          itemName,
+				Selected:      false,
+				Focused:       false,
+				Metadata:      item,
+				ImageFilename: filepath.Join(gl.RomDirectory.Path, ".media", imageFilename),
 			})
 		}
 	}
@@ -106,6 +110,12 @@ func (gl GameList) Draw() (item interface{}, exitCode int, e error) {
 		{ButtonName: "B", HelpText: "Back"},
 		{ButtonName: "X", HelpText: "Search"},
 		{ButtonName: "Menu", HelpText: "Help"},
+	}
+
+	appState := state.GetAppState()
+
+	if appState.Config.ShowArt {
+		options.EnableImages = true
 	}
 
 	options.EnableHelp = true

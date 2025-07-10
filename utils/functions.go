@@ -794,6 +794,7 @@ func SaveConfig(config *models.Config) error {
 
 	viper.Set("art_download_type", config.ArtDownloadType)
 	viper.Set("hide_empty", config.HideEmpty)
+	viper.Set("show_art", config.ShowArt)
 	viper.Set("log_level", config.LogLevel)
 
 	return viper.WriteConfigAs(configFile)
