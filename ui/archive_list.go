@@ -4,6 +4,7 @@ import (
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"nextui-game-manager/models"
+	"nextui-game-manager/state"
 	"nextui-game-manager/utils"
 	"qlova.tech/sum"
 	"time"
@@ -45,6 +46,11 @@ func (als ArchiveListScreen) Draw() (item interface{}, exitCode int, e error) {
 	}
 
 	options := gaba.DefaultListOptions(title, menuItems)
+
+	selectedIndex, visibleStartIndex := state.GetCurrentMenuPosition()
+	options.SelectedIndex = selectedIndex
+	options.VisibleStartIndex = visibleStartIndex
+
 	options.EnableAction = true
 	options.FooterHelpItems = []gaba.FooterHelpItem{
 		{ButtonName: "B", HelpText: "Back"},
@@ -57,6 +63,7 @@ func (als ArchiveListScreen) Draw() (item interface{}, exitCode int, e error) {
 	}
 
 	if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
+		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
 		archive := selection.Unwrap().SelectedItem.Metadata.(string)
 		archiveDirectory := shared.RomDirectory{
 			DisplayName: archive,

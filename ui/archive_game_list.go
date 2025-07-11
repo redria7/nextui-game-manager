@@ -8,6 +8,7 @@ import (
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
+	"nextui-game-manager/state"
 	"nextui-game-manager/utils"
 	"path/filepath"
 	"qlova.tech/sum"
@@ -102,6 +103,11 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 	allEntries := append(directoryEntries, itemEntries...)
 
 	options := gaba.DefaultListOptions(title, allEntries)
+
+	selectedIndex, visibleStartIndex := state.GetCurrentMenuPosition()
+	options.SelectedIndex = selectedIndex
+	options.VisibleStartIndex = visibleStartIndex
+
 	options.SmallTitle = true
 	options.EmptyMessage = "No ROMs Found"
 	options.EnableAction = true
@@ -127,6 +133,7 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 	}
 
 	if selection.IsSome() && selection.Unwrap().ActionTriggered {
+		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
 		query, err := gaba.Keyboard("")
 
 		if err != nil {
@@ -139,6 +146,7 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 
 		return nil, 4, nil
 	} else if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
+		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
 		rawSelection := selection.Unwrap().SelectedItems
 
 		firstItem := rawSelection[0].Metadata.(shared.Item)

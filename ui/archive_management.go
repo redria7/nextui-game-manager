@@ -7,6 +7,7 @@ import (
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
+	"nextui-game-manager/state"
 	"qlova.tech/sum"
 )
 
@@ -59,6 +60,11 @@ func (am ArchiveManagementScreen) Draw() (value interface{}, exitCode int, e err
 	}
 
 	options := gaba.DefaultListOptions(title, consoles)
+
+	selectedIndex, visibleStartIndex := state.GetCurrentMenuPosition()
+	options.SelectedIndex = selectedIndex
+	options.VisibleStartIndex = visibleStartIndex
+
 	options.EnableAction = true
 	options.EnableHelp = true
 	options.HelpTitle = "Archive Management Controls"
@@ -81,8 +87,10 @@ func (am ArchiveManagementScreen) Draw() (value interface{}, exitCode int, e err
 	}
 
 	if selection.IsSome() && selection.Unwrap().ActionTriggered {
+		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
 		return nil, 4, nil
 	} else if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
+		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
 		return selection.Unwrap().SelectedItem.Metadata.(shared.RomDirectory), 0, nil
 	}
 

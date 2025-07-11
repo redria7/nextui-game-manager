@@ -7,6 +7,7 @@ import (
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
+	"nextui-game-manager/state"
 	"nextui-game-manager/utils"
 	"qlova.tech/sum"
 	"time"
@@ -40,20 +41,26 @@ func (aos ArchiveOptionsScreen) Draw() (screenReturn interface{}, exitCode int, 
 	}
 
 	options := gabagool.DefaultListOptions(fmt.Sprintf("%s Options", aos.Archive.DisplayName), actions)
+
+	selectedIndex, visibleStartIndex := state.GetCurrentMenuPosition()
+	options.SelectedIndex = selectedIndex
+	options.VisibleStartIndex = visibleStartIndex
+
 	options.EnableAction = true
 	options.FooterHelpItems = []gabagool.FooterHelpItem{
 		{ButtonName: "B", HelpText: "Back"},
 		{ButtonName: "A", HelpText: "Select"},
 	}
 
-	result, err := gabagool.List(options)
+	selection, err := gabagool.List(options)
 
 	if err != nil {
 		return nil, -1, err
 	}
 
-	if result.IsSome() && !result.Unwrap().ActionTriggered && result.Unwrap().SelectedIndex != -1 {
-		action := models.ActionMap[result.Unwrap().SelectedItem.Metadata.(string)]
+	if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
+		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
+		action := models.ActionMap[selection.Unwrap().SelectedItem.Metadata.(string)]
 
 		switch action {
 		case models.Actions.ArchiveRename:

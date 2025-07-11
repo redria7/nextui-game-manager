@@ -6,6 +6,7 @@ import (
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"nextui-game-manager/models"
+	"nextui-game-manager/state"
 	"nextui-game-manager/utils"
 	"qlova.tech/sum"
 	"slices"
@@ -80,6 +81,11 @@ func (c CollectionListScreen) Draw() (collection interface{}, exitCode int, e er
 	}
 
 	options := gaba.DefaultListOptions(title, menuItems)
+
+	selectedIndex, visibleStartIndex := state.GetCurrentMenuPosition()
+	options.SelectedIndex = selectedIndex
+	options.VisibleStartIndex = visibleStartIndex
+
 	options.EnableAction = true
 	options.FooterHelpItems = []gaba.FooterHelpItem{
 		{ButtonName: "B", HelpText: "Back"},
@@ -92,6 +98,7 @@ func (c CollectionListScreen) Draw() (collection interface{}, exitCode int, e er
 	}
 
 	if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
+		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
 		return selection.Unwrap().SelectedItem.Metadata.(models.Collection), 0, nil
 	}
 
