@@ -328,7 +328,6 @@ func handleGamesListTransition(currentScreen models.Screen, result interface{}, 
 
 	switch code {
 	case ExitCodeSuccess:
-		state.AddNewMenuPosition()
 		return handleGameSelection(gl, result)
 	case ExitCodeCancel:
 		return handleGameListBack(gl)
@@ -354,10 +353,12 @@ func handleGameSelection(gl ui.GameList, result interface{}) models.Screen {
 		return handleSingleGameSelection(gl, selections[0])
 	}
 
+	state.AddNewMenuPosition()
 	return ui.InitBulkOptionsScreen(selections, gl.RomDirectory, gl.PreviousRomDirectory, gl.SearchFilter)
 }
 
 func handleSingleGameSelection(gl ui.GameList, selection shared.Item) models.Screen {
+	state.AddNewMenuPosition()
 	if selection.IsDirectory {
 		newRomDirectory := shared.RomDirectory{
 			DisplayName: selection.DisplayName,
@@ -664,7 +665,7 @@ func handleAddToArchiveTransition(currentScreen models.Screen, result interface{
 		state.AddNewMenuPosition()
 		return ui.InitArchiveCreateScreen(atas.Games, atas.RomDirectory, atas.PreviousRomDirectory, atas.SearchFilter)
 	default:
-		state.AddNewMenuPosition()
+		state.RemoveMenuPositions(1)
 		if len(atas.Games) > 1 {
 			return ui.InitBulkOptionsScreen(atas.Games, atas.RomDirectory, atas.PreviousRomDirectory, atas.SearchFilter)
 		}
