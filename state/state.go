@@ -107,9 +107,6 @@ func GetCurrentMenuPosition() (int, int) {
 	selectedPosition := currentPosition.SelectedPosition
 
 	selectedPosition = max(0, selectedIndex-selectedPosition)
-	if selectedIndex < 9 {
-		selectedIndex = 0
-	}
 
 	return selectedIndex, selectedPosition
 }
