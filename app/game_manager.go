@@ -258,7 +258,8 @@ func handleArchiveOptionsTransition(currentScreen models.Screen, result interfac
 	switch code {
 	case ExitCodeError, ExitCodeAction:
 		if result != nil {
-			// TODO: Review behavior when archive is renamed
+			// TODO: Update position around renamed archive
+			state.UpdateCurrentMenuPosition(0, 0)
 			return ui.InitArchiveOptionsScreen(result.(shared.RomDirectory))
 		}
 		return ui.InitArchiveOptionsScreen(aos.Archive)
@@ -315,7 +316,8 @@ func handleCollectionOptionsTransition(currentScreen models.Screen, result inter
 		return ui.InitCollectionManagement(co.Collection)
 	case ExitCodeAction:
 		updatedCollection := result.(models.Collection)
-		//TODO: Review behavior when collection is renamed
+		//TODO: Update position around renamed collection
+		state.UpdateCurrentMenuPosition(0, 0)
 		return ui.InitCollectionOptions(updatedCollection, co.SearchFilter)
 	default:
 		state.RemoveMenuPositions(2)
@@ -510,8 +512,9 @@ func handleDeleteRomAction(as ui.ActionsScreen) models.Screen {
 	message := fmt.Sprintf("Delete %s?", as.Game.DisplayName)
 	if utils.ConfirmAction(message) {
 		utils.DeleteRom(as.Game, as.RomDirectory)
-		//TODO: review behavior with deleted rom
+		//TODO: Update position around deleted rom
 		state.RemoveMenuPositions(1)
+		state.UpdateCurrentMenuPosition(0, 0)
 		return ui.InitGamesListWithPreviousDirectory(as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 	}
 
@@ -522,8 +525,9 @@ func handleNukeAction(as ui.ActionsScreen) models.Screen {
 	message := fmt.Sprintf("Nuke %s?", as.Game.DisplayName)
 	if utils.ConfirmAction(message) {
 		utils.Nuke(as.Game, as.RomDirectory)
-		//TODO: review behavior with deleted rom
+		//TODO: Update position around deleted rom
 		state.RemoveMenuPositions(1)
+		state.UpdateCurrentMenuPosition(0, 0)
 		return ui.InitGamesListWithPreviousDirectory(as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 	}
 
@@ -626,7 +630,8 @@ func handleAddToCollectionTransition(currentScreen models.Screen, code int) mode
 
 	switch code {
 	case ExitCodeSuccess:
-		//TODO: review behaviour after selection added to collection
+		//TODO: Update position around collection removed from list due to game added
+		state.UpdateCurrentMenuPosition(0, 0)
 		return ui.InitAddToCollectionScreen(atc.Games, atc.RomDirectory, atc.PreviousRomDirectory, atc.SearchFilter)
 	case ExitCodeAction, ExitCodeEmpty:
 		state.AddNewMenuPosition()
