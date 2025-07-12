@@ -19,6 +19,7 @@ const (
 	archivesTag            = "Archives"
 	settingsExitCode       = 4
 	selectExitCode         = 0
+	GlobalActionsExitCode  = 5
 	quitExitCode           = 2
 	errorExitCode          = -1
 )
@@ -55,12 +56,20 @@ func buildMenuItems(logger *zap.Logger) ([]gaba.MenuItem, error) {
 		menuItems = append(menuItems, *archivesItem)
 	}
 
+	menuItems = append(menuItems, gaba.MenuItem{
+		Text:     "Global Actions",
+		Selected: false,
+		Focused:  false,
+		Metadata: "Global Actions",
+	})
+
 	romItems, err := buildRomDirectoryMenuItems(logger)
 	if err != nil {
 		return nil, err
 	}
 
 	menuItems = append(menuItems, romItems...)
+
 	return menuItems, nil
 }
 
@@ -95,7 +104,7 @@ func createCollectionsRomDirectory() shared.RomDirectory {
 
 func buildArchivesMenuItem(logger *zap.Logger) *gaba.MenuItem {
 	archiveFolders, err := utils.GetArchiveFileListBasic()
-	
+
 	if err != nil {
 		return nil
 	}
@@ -133,21 +142,13 @@ func buildRomDirectoryMenuItems(logger *zap.Logger) ([]gaba.MenuItem, error) {
 	var menuItems []gaba.MenuItem
 	for _, item := range fb.Items {
 		if item.IsDirectory {
-			romDirectory := createRomDirectoryFromItem(item)
+			romDirectory := utils.CreateRomDirectoryFromItem(item)
 			menuItem := createMenuItemFromRomDirectory(romDirectory)
 			menuItems = append(menuItems, menuItem)
 		}
 	}
 
 	return menuItems, nil
-}
-
-func createRomDirectoryFromItem(item shared.Item) shared.RomDirectory {
-	return shared.RomDirectory{
-		DisplayName: item.DisplayName,
-		Tag:         item.Tag,
-		Path:        item.Path,
-	}
 }
 
 func createMenuItemFromRomDirectory(romDirectory shared.RomDirectory) gaba.MenuItem {
@@ -178,6 +179,10 @@ func handleMenuSelection(menuItems []gaba.MenuItem) (interface{}, int, error) {
 		return nil, settingsExitCode, nil
 	} else if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
 		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
+		if selection.Unwrap().SelectedItem.Metadata == "Global Actions" {
+			return nil, GlobalActionsExitCode, nil
+		}
+
 		return selection.Unwrap().SelectedItem.Metadata.(shared.RomDirectory), selectExitCode, nil
 	}
 

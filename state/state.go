@@ -48,8 +48,8 @@ func SetConfig(config *models.Config) {
 func AddNewMenuPosition() {
 	temp := GetAppState()
 	temp.MenuPositionList = append(temp.MenuPositionList, models.MenuPositionPointer{
-		SelectedIndex: 		0,
-		SelectedPosition: 	0,
+		SelectedIndex:    0,
+		SelectedPosition: 0,
 	})
 	UpdateAppState(temp)
 }
@@ -57,8 +57,8 @@ func AddNewMenuPosition() {
 func UpdateCurrentMenuPosition(newIndex int, newPosition int) {
 	temp := GetAppState()
 	temp.MenuPositionList[len(temp.MenuPositionList)-1] = models.MenuPositionPointer{
-		SelectedIndex: 		newIndex,
-		SelectedPosition: 	newPosition,
+		SelectedIndex:    newIndex,
+		SelectedPosition: newPosition,
 	}
 	UpdateAppState(temp)
 }
@@ -69,7 +69,7 @@ func RemoveMenuPositions(positionCount int) {
 
 	EndPosition := 0
 	if positionCount < 0 {
-		EndPosition = -1*positionCount
+		EndPosition = -1 * positionCount
 		if EndPosition > listLength {
 			return
 		}
@@ -77,7 +77,7 @@ func RemoveMenuPositions(positionCount int) {
 		if positionCount > listLength {
 			positionCount = listLength
 		}
-		EndPosition = listLength-positionCount
+		EndPosition = listLength - positionCount
 	}
 
 	temp.MenuPositionList = temp.MenuPositionList[:EndPosition]
@@ -100,6 +100,7 @@ func GetCurrentMenuPosition() (int, int) {
 	tempList := GetAppState().MenuPositionList
 	if len(tempList) <= 0 {
 		AddNewMenuPosition()
+		tempList = GetAppState().MenuPositionList
 	}
 
 	currentPosition := tempList[len(tempList)-1]

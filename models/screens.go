@@ -13,7 +13,7 @@ type ScreenName struct {
 	AddToCollection,
 	Confirm,
 	DownloadArt,
-	
+
 	AddToArchive,
 	ArchiveCreate,
 	ArchiveList,
@@ -24,7 +24,9 @@ type ScreenName struct {
 	CollectionsList,
 	CollectionOptions,
 	CollectionManagement,
-	CollectionCreate sum.Int[ScreenName]
+	CollectionCreate,
+
+	GlobalActions sum.Int[ScreenName]
 }
 
 var ScreenNames = sum.Int[ScreenName]{}.Sum()

@@ -120,6 +120,14 @@ func EnsureDirectoryExists(dirPath string) error {
 	return nil
 }
 
+func CreateRomDirectoryFromItem(item shared.Item) shared.RomDirectory {
+	return shared.RomDirectory{
+		DisplayName: item.DisplayName,
+		Tag:         item.Tag,
+		Path:        item.Path,
+	}
+}
+
 func MoveFile(sourcePath, destinationPath string) error {
 	logger := common.GetLoggerInstance()
 
@@ -235,6 +243,128 @@ func FindArt(romDirectory shared.RomDirectory, game shared.Item, downloadType su
 	return lastSavedArtPath
 }
 
+func FindRomsWithoutArt() (map[shared.RomDirectory][]shared.Item, error) {
+	logger := common.GetLoggerInstance()
+	romDirectories := make(map[shared.RomDirectory][]shared.Item)
+
+	fb := filebrowser.NewFileBrowser(logger)
+
+	err := fb.CWD(GetRomDirectory(), false)
+	if err != nil {
+		logger.Error("Failed to get rom directories", zap.Error(err))
+		return nil, fmt.Errorf("failed to get rom directories: %w", err)
+	}
+
+	for _, dir := range fb.Items {
+		romDir := CreateRomDirectoryFromItem(dir)
+
+		romsWithoutArt, err := findRomsWithoutArtInDirectory(romDir)
+		if err != nil {
+			logger.Error("Failed to process rom directory", zap.String("directory", romDir.Path), zap.Error(err))
+			continue
+		}
+
+		if len(romsWithoutArt) > 0 {
+			romDirectories[romDir] = romsWithoutArt
+		}
+	}
+
+	return romDirectories, nil
+}
+
+func findRomsWithoutArtInDirectory(romDir shared.RomDirectory) ([]shared.Item, error) {
+	logger := common.GetLoggerInstance()
+
+	romFiles, err := getRomFilesRecursive(romDir.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get ROM files: %w", err)
+	}
+
+	artFiles, err := getArtFileNames(romDir.Path)
+	if err != nil {
+		logger.Debug("No art files found or error accessing .media directory", zap.String("directory", romDir.Path))
+		return romFiles, nil
+	}
+
+	var romsWithoutArt []shared.Item
+	for _, romFile := range romFiles {
+		romNameWithoutExt := removeFileExtension(romFile.Filename)
+		if !hasMatchingArt(romNameWithoutExt, artFiles) {
+			romsWithoutArt = append(romsWithoutArt, romFile)
+		}
+	}
+
+	return romsWithoutArt, nil
+}
+
+func getRomFilesRecursive(dirPath string) ([]shared.Item, error) {
+	var romFiles []shared.Item
+
+	err := filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() && info.Name() == ".media" {
+			return filepath.SkipDir
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		romFiles = append(romFiles, shared.Item{
+			Filename:    info.Name(),
+			Path:        path,
+			DisplayName: removeFileExtension(info.Name()),
+			IsDirectory: false,
+		})
+
+		return nil
+	})
+
+	return romFiles, err
+}
+
+func getArtFileNames(romDirPath string) (map[string]bool, error) {
+	mediaDir := filepath.Join(romDirPath, ".media")
+
+	if !directoryExists(mediaDir) {
+		return nil, fmt.Errorf("media directory does not exist: %s", mediaDir)
+	}
+
+	entries, err := GetFileList(mediaDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read media directory: %w", err)
+	}
+
+	artFileNames := make(map[string]bool)
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.ToLower(filepath.Ext(entry.Name())) == ".png" {
+			artFileName := removeFileExtension(entry.Name())
+			artFileNames[strings.ToLower(artFileName)] = true
+		}
+	}
+
+	return artFileNames, nil
+}
+
+func hasMatchingArt(romName string, artFileNames map[string]bool) bool {
+	romNameLower := strings.ToLower(romName)
+
+	if artFileNames[romNameLower] {
+		return true
+	}
+
+	for artName := range artFileNames {
+		if strings.Contains(artName, romNameLower) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func buildArtDirectory(romDirectory shared.RomDirectory) string {
 	if IsDev() {
 		adjustedPath := strings.ReplaceAll(romDirectory.Path, common.RomDirectory, GetRomDirectory())
@@ -251,8 +381,11 @@ func cleanTag(tag string) string {
 func findMatchingArt(artList []shared.Item, filename string) shared.Item {
 	targetName := strings.ToLower(removeFileExtension(filename))
 
+	// toastd's trick for Libretro Thumbnail Naming
+	cleanedName := strings.ReplaceAll(targetName, "&", "_")
+
 	for _, art := range artList {
-		if strings.Contains(strings.ToLower(art.Filename), targetName) {
+		if strings.Contains(strings.ToLower(art.Filename), cleanedName) {
 			return art
 		}
 	}

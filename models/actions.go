@@ -18,7 +18,9 @@ type Action struct {
 
 	CollectionRename,
 	CollectionDelete,
-	CollectionAdd sum.Int[Action]
+	CollectionAdd,
+
+	GlobalDownloadArt sum.Int[Action]
 }
 
 var Actions = sum.Int[Action]{}.Sum()
@@ -29,8 +31,8 @@ var ActionMap = map[string]sum.Int[Action]{
 	"Delete Art":         Actions.DeleteArt,
 	"Clear Game Tracker": Actions.ClearGameTracker,
 	"Archive ROM":        Actions.ArchiveRom,
-	"Rename Archive": 	  Actions.ArchiveRename,
-	"Delete Archive": 	  Actions.ArchiveDelete,
+	"Rename Archive":     Actions.ArchiveRename,
+	"Delete Archive":     Actions.ArchiveDelete,
 	"Delete ROM":         Actions.DeleteRom,
 	"Nuclear Option":     Actions.Nuke,
 
@@ -39,20 +41,8 @@ var ActionMap = map[string]sum.Int[Action]{
 	"Add to Collection": Actions.CollectionAdd,
 }
 
-var ActionMessages = map[sum.Int[Action]]string{
-	Actions.RenameRom:        "Rename",
-	Actions.DownloadArt:      "Download Art for",
-	Actions.DeleteArt:        "Delete Art for",
-	Actions.ClearGameTracker: "Clear Game Tracker for",
-	Actions.ClearSaveStates:  "Clear Save States",
-	Actions.ArchiveRom:       "Archive",
-	Actions.DeleteRom:        "Delete",
-	Actions.Nuke:             "Nuke (Deletes ROM, Art and Game Tracker)",
-	Actions.CollectionDelete: "Delete",
-	Actions.ArchiveRename: "Rename",
-	Actions.ArchiveDelete: "Delete",
-	Actions.CollectionRename: "Rename",
-	Actions.CollectionAdd:    "Add to",
+var GlobalActionMap = map[string]sum.Int[Action]{
+	"Download Missing Art": Actions.GlobalDownloadArt,
 }
 
 var ActionKeys = []string{
@@ -62,6 +52,10 @@ var ActionKeys = []string{
 	"Archive ROM",
 	"Delete ROM",
 	//"Nuclear Option",
+}
+
+var GlobalActionKeys = []string{
+	"Download Missing Art",
 }
 
 var BulkActionKeys = []string{
