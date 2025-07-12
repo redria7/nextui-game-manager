@@ -206,7 +206,7 @@ func FindExistingArt(selectedFile string, romDirectory shared.RomDirectory) (str
 func FindArt(romDirectory shared.RomDirectory, game shared.Item, downloadType sum.Int[shared.ArtDownloadType]) string {
 	logger := common.GetLoggerInstance()
 
-	artDirectory := buildArtDirectory(romDirectory)
+	artDirectory := buildArtDirectory(game)
 	client := common.NewThumbnailClient(downloadType)
 	section := client.BuildThumbnailSection(cleanTag(romDirectory.Tag))
 
@@ -317,6 +317,10 @@ func getRomFilesRecursive(dirPath string) ([]shared.Item, error) {
 			return nil
 		}
 
+		if strings.HasPrefix(info.Name(), ".") {
+			return nil
+		}
+
 		romFiles = append(romFiles, shared.Item{
 			Filename:    info.Name(),
 			Path:        path,
@@ -369,12 +373,14 @@ func hasMatchingArt(romName string, artFileNames map[string]bool) bool {
 	return false
 }
 
-func buildArtDirectory(romDirectory shared.RomDirectory) string {
+func buildArtDirectory(game shared.Item) string {
+	romDirectoryPath := filepath.Dir(game.Path)
+
 	if IsDev() {
-		adjustedPath := strings.ReplaceAll(romDirectory.Path, common.RomDirectory, GetRomDirectory())
+		adjustedPath := strings.ReplaceAll(romDirectoryPath, common.RomDirectory, GetRomDirectory())
 		return filepath.Join(adjustedPath, ".media")
 	}
-	return filepath.Join(romDirectory.Path, ".media")
+	return filepath.Join(romDirectoryPath, ".media")
 }
 
 func cleanTag(tag string) string {
