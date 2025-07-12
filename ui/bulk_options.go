@@ -5,6 +5,7 @@ import (
 	"github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"nextui-game-manager/models"
+	"nextui-game-manager/state"
 	"qlova.tech/sum"
 )
 
@@ -44,6 +45,11 @@ func (b BulkOptionsScreen) Draw() (action interface{}, exitCode int, e error) {
 	}
 
 	options := gabagool.DefaultListOptions(fmt.Sprintf("Manage %d Games", len(b.Games)), actionEntries)
+
+	selectedIndex, visibleStartIndex := state.GetCurrentMenuPosition()
+	options.SelectedIndex = selectedIndex
+	options.VisibleStartIndex = visibleStartIndex
+
 	options.SmallTitle = true
 	options.FooterHelpItems = []gabagool.FooterHelpItem{
 		{ButtonName: "B", HelpText: "Back"},
@@ -56,6 +62,7 @@ func (b BulkOptionsScreen) Draw() (action interface{}, exitCode int, e error) {
 	}
 
 	if selection.IsSome() && selection.Unwrap().SelectedIndex != -1 {
+		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
 		return selection.Unwrap().SelectedItem.Text, 0, nil
 	}
 

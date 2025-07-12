@@ -174,8 +174,10 @@ func handleMenuSelection(menuItems []gaba.MenuItem) (interface{}, int, error) {
 	}
 
 	if selection.IsSome() && selection.Unwrap().ActionTriggered {
+		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
 		return nil, settingsExitCode, nil
 	} else if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
+		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
 		return selection.Unwrap().SelectedItem.Metadata.(shared.RomDirectory), selectExitCode, nil
 	}
 
@@ -184,6 +186,11 @@ func handleMenuSelection(menuItems []gaba.MenuItem) (interface{}, int, error) {
 
 func createListOptions(menuItems []gaba.MenuItem) gaba.ListOptions {
 	options := gaba.DefaultListOptions("Game Manager", menuItems)
+
+	selectedIndex, visibleStartIndex := state.GetCurrentMenuPosition()
+	options.SelectedIndex = selectedIndex
+	options.VisibleStartIndex = visibleStartIndex
+
 	options.EnableAction = true
 	options.FooterHelpItems = []gaba.FooterHelpItem{
 		{ButtonName: "B", HelpText: "Quit"},

@@ -8,6 +8,7 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
+	"nextui-game-manager/state"
 	"nextui-game-manager/utils"
 	"qlova.tech/sum"
 	"slices"
@@ -50,6 +51,11 @@ func (c CollectionManagement) Draw() (value interface{}, exitCode int, e error) 
 	}
 
 	options := gaba.DefaultListOptions(c.Collection.DisplayName, menuItems)
+
+	selectedIndex, visibleStartIndex := state.GetCurrentMenuPosition()
+	options.SelectedIndex = selectedIndex
+	options.VisibleStartIndex = visibleStartIndex
+
 	options.EnableAction = true
 	options.EnableHelp = true
 	options.HelpTitle = "Collection Management Controls"
@@ -84,8 +90,10 @@ func (c CollectionManagement) Draw() (value interface{}, exitCode int, e error) 
 	selection, _ := gaba.List(options)
 
 	if selection.IsSome() && selection.Unwrap().ActionTriggered {
+		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
 		return nil, 4, nil
 	} else if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
+		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
 		selected := selection.Unwrap()
 
 		var message string
