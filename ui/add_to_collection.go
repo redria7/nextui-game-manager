@@ -71,7 +71,15 @@ func (a AddToCollectionScreen) Draw() (collection interface{}, exitCode int, e e
 			continue
 		}
 
-		if len(a.Games) > 1 || !utils.GameExistsInCollection(collection.Games, a.Games[0]) {
+		membershipCount := 0
+
+		for _, game := range a.Games {
+			if utils.GameExistsInCollection(collection.Games, game) {
+				membershipCount++
+			}
+		}
+
+		if len(a.Games) > membershipCount {
 			collections = append(collections, collection)
 			collectionsMap[item.DisplayName] = collection
 		}
