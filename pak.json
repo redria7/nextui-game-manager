@@ -1,6 +1,6 @@
 {
   "name": "Game Manager",
-  "version": "v2.1.1",
+  "version": "v2.2.0",
   "type": "TOOL",
   "description": "A one-stop pak for all your game management needs.",
   "author": "K-Wall & redria7",
@@ -10,6 +10,7 @@
     "BRICK": ".github/resources/banner.png"
   },
   "changelog": {
+    "v2.2.0": "Nice little update for y'all. Added art images to the games list, added a global action menu for downloading all missing art and now art can be found for nested folders. Also three bugfixes; bulk adding games to collections should be more reliable, redria7 added a robust system for keeping track of the last selected list item and toastd figured out why art could not be found for some games.",
     "v2.1.1": "Bugfixes",
     "v2.1.0": "Enhanced archiving features courtesy of redria7!",
     "v2.0.1": "Small fix in UI library for artifacts that appeared when no bg.png is present.",
