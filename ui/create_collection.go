@@ -47,12 +47,10 @@ func (c CreateCollectionScreen) Draw() (collection interface{}, exitCode int, e 
 			return nil, 2, nil
 		}
 
-		for _, game := range c.Games {
-			utils.AddCollectionGame(models.Collection{
-				DisplayName:    newCollectionName,
-				CollectionFile: filepath.Join(utils.GetCollectionDirectory(), newCollectionName+".txt"),
-			}, game)
-		}
+		utils.AddCollectionGames(models.Collection{
+			DisplayName:    newCollectionName,
+			CollectionFile: filepath.Join(utils.GetCollectionDirectory(), newCollectionName+".txt"),
+		}, c.Games)
 
 		message := fmt.Sprintf("Created %s!", newCollectionName)
 

@@ -807,10 +807,10 @@ func DeleteCollection(collection models.Collection) {
 	common.DeleteFile(collection.CollectionFile)
 }
 
-func AddCollectionGame(collection models.Collection, game shared.Item) (models.Collection, error) {
+func AddCollectionGames(collection models.Collection, games []shared.Item) (models.Collection, error) {
 	logger := common.GetLoggerInstance()
 
-	if len(collection.Games) == 0 && fileExists(collection.CollectionFile) {
+	if fileExists(collection.CollectionFile) {
 		logger.Debug("Loading existing collection")
 
 		if loadedCollection, err := ReadCollection(collection); err == nil {
@@ -820,12 +820,14 @@ func AddCollectionGame(collection models.Collection, game shared.Item) (models.C
 		}
 	}
 
-	if GameExistsInCollection(collection.Games, game) {
-		logger.Debug("Game already exists in collection", zap.String("path", game.Path))
-		return collection, nil
+	for _, game := range games {
+		if GameExistsInCollection(collection.Games, game) {
+			logger.Debug("Game already exists in collection", zap.String("path", game.Path))
+			continue
+		}
+		collection.Games = append(collection.Games, game)
 	}
 
-	collection.Games = append(collection.Games, game)
 	return collection, SaveCollection(collection)
 }
 

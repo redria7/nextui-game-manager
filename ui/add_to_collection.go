@@ -71,7 +71,7 @@ func (a AddToCollectionScreen) Draw() (collection interface{}, exitCode int, e e
 			continue
 		}
 
-		if !utils.GameExistsInCollection(collection.Games, a.Games[0]) {
+		if len(a.Games) > 1 || !utils.GameExistsInCollection(collection.Games, a.Games[0]) {
 			collections = append(collections, collection)
 			collectionsMap[item.DisplayName] = collection
 		}
@@ -155,11 +155,7 @@ func (a AddToCollectionScreen) Draw() (collection interface{}, exitCode int, e e
 		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
 		selectedCol := selection.Unwrap().SelectedItem.Metadata.(models.Collection)
 
-		var err error
-
-		for _, game := range a.Games {
-			_, err = utils.AddCollectionGame(selectedCol, game)
-		}
+		_, err := utils.AddCollectionGames(selectedCol, a.Games)
 
 		if err != nil {
 			gameText := a.Games[0].DisplayName
