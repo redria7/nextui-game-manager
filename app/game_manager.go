@@ -379,7 +379,7 @@ func handleSingleGameSelection(gl ui.GameList, selection shared.Item) models.Scr
 	if selection.IsDirectory {
 		newRomDirectory := shared.RomDirectory{
 			DisplayName: selection.DisplayName,
-			Tag:         selection.Tag,
+			Tag:         gl.RomDirectory.Tag,
 			Path:        selection.Path,
 		}
 		return ui.InitGamesListWithPreviousDirectory(newRomDirectory, gl.RomDirectory, "")
