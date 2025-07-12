@@ -10,10 +10,10 @@ A one-stop pak for all your game management needs.
 
 ## [Download this in the Pak Store!](https://github.com/UncleJunVIP/nextui-pak-store)
 
-![GitHub License](https://img.shields.io/github/license/UncleJunVip/nextui-game-manager?style=for-the-badge)
-![GitHub Release](https://img.shields.io/github/v/release/UncleJunVIP/nextui-game-manager?sort=semver&style=for-the-badge)
-![GitHub Repo stars](https://img.shields.io/github/stars/UncleJunVip/nextui-game-manager?style=for-the-badge)
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/UncleJunVIP/nextui-game-manager/total?style=for-the-badge&label=Total%20Downloads)
+![GitHub License](https://img.shields.io/github/license/UncleJunVip/nextui-game-manager?style=for-the-badge&color=007C77)
+![GitHub Release](https://img.shields.io/github/v/release/UncleJunVIP/nextui-game-manager?sort=semver&style=for-the-badge&color=007C77)
+![GitHub Repo stars](https://img.shields.io/github/stars/UncleJunVip/nextui-game-manager?style=for-the-badge&color=007C77)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/UncleJunVIP/nextui-game-manager/total?style=for-the-badge&label=Total%20Downloads&color=007C77)
 
 
 </div>
