@@ -142,6 +142,11 @@ func buildRomDirectoryMenuItems(logger *zap.Logger) ([]gaba.MenuItem, error) {
 	var menuItems []gaba.MenuItem
 	for _, item := range fb.Items {
 		if item.IsDirectory {
+
+			if item.Tag == "(PORTS)" {
+				continue
+			}
+
 			romDirectory := utils.CreateRomDirectoryFromItem(item)
 			menuItem := createMenuItemFromRomDirectory(romDirectory)
 			menuItems = append(menuItems, menuItem)
