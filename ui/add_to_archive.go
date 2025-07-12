@@ -5,6 +5,7 @@ import (
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"nextui-game-manager/models"
+	"nextui-game-manager/state"
 	"nextui-game-manager/utils"
 	"qlova.tech/sum"
 	"time"
@@ -57,6 +58,11 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 	}
 
 	options := gaba.DefaultListOptions(title, archiveFolderEntries)
+
+	selectedIndex, visibleStartIndex := state.GetCurrentMenuPosition()
+	options.SelectedIndex = selectedIndex
+	options.VisibleStartIndex = visibleStartIndex
+
 	options.SmallTitle = true
 	options.EmptyMessage = "No Archive Folders Found"
 	options.EnableAction = true
@@ -73,6 +79,7 @@ func (atas AddToArchiveScreen) Draw() (item interface{}, exitCode int, e error) 
 	}
 
 	if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
+		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
 		archiveFolder := selection.Unwrap().SelectedItem.Text
 
 		message := fmt.Sprintf("Archive %s into %s?", atas.Games[0].DisplayName, archiveFolder)

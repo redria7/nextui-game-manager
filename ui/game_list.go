@@ -102,6 +102,11 @@ func (gl GameList) Draw() (item interface{}, exitCode int, e error) {
 	allEntries := append(directoryEntries, itemEntries...)
 
 	options := gabagool.DefaultListOptions(title, allEntries)
+
+	selectedIndex, visibleStartIndex := state.GetCurrentMenuPosition()
+	options.SelectedIndex = selectedIndex
+	options.VisibleStartIndex = visibleStartIndex
+
 	options.SmallTitle = true
 	options.EmptyMessage = "No ROMs Found"
 	options.EnableAction = true
@@ -132,8 +137,10 @@ func (gl GameList) Draw() (item interface{}, exitCode int, e error) {
 	}
 
 	if selection.IsSome() && selection.Unwrap().ActionTriggered {
+		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
 		return nil, 4, nil
 	} else if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
+		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
 		var selectedItems shared.Items
 		rawSelection := selection.Unwrap().SelectedItems
 

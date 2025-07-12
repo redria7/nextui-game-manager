@@ -8,6 +8,7 @@ import (
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"go.uber.org/zap"
 	"nextui-game-manager/models"
+	"nextui-game-manager/state"
 	"nextui-game-manager/utils"
 	"qlova.tech/sum"
 	"slices"
@@ -131,6 +132,11 @@ func (a AddToCollectionScreen) Draw() (collection interface{}, exitCode int, e e
 	}
 
 	options := gaba.DefaultListOptions(title, menuItems)
+
+	selectedIndex, visibleStartIndex := state.GetCurrentMenuPosition()
+	options.SelectedIndex = selectedIndex
+	options.VisibleStartIndex = visibleStartIndex
+
 	options.SmallTitle = true
 	options.EnableAction = true
 	options.EnableMultiSelect = true
@@ -146,6 +152,7 @@ func (a AddToCollectionScreen) Draw() (collection interface{}, exitCode int, e e
 	}
 
 	if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
+		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
 		selectedCol := selection.Unwrap().SelectedItem.Metadata.(models.Collection)
 
 		var err error
