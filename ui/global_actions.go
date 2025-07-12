@@ -49,25 +49,25 @@ func (gas GlobalActionsScreen) Draw() (value interface{}, exitCode int, e error)
 		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
 
 		if selection.Unwrap().SelectedItem.Metadata == models.Actions.GlobalDownloadArt {
+			noArt, err := utils.FindRomsWithoutArt()
+			if err != nil {
+				utils.ShowTimedMessage("Failed to scan for missing art", time.Second*2)
+				return nil, -1, err
+			}
+
+			platformCount := len(noArt)
+			missingArtCount := 0
+
+			for _, missing := range noArt {
+				missingArtCount += len(missing)
+			}
+
+			if missingArtCount == 0 {
+				utils.ShowTimedMessage("All your games have art!\nGo play something!", time.Second*2)
+				return nil, 0, nil
+			}
+
 			if utils.ConfirmAction("Depending on the size of your collection\nthis process may take a while.\n\nContinue?") {
-				noArt, err := utils.FindRomsWithoutArt()
-				if err != nil {
-					utils.ShowTimedMessage("Failed to scan for missing art", time.Second*2)
-					return nil, -1, err
-				}
-
-				platformCount := len(noArt)
-				missingArtCount := 0
-
-				for _, missing := range noArt {
-					missingArtCount += len(missing)
-				}
-
-				if missingArtCount == 0 {
-					utils.ShowTimedMessage("All your games have art!\nGo play something!", time.Second*2)
-					return nil, 0, nil
-				}
-
 				var artPaths []string
 
 				gabagool.ProcessMessage(fmt.Sprintf("Searching for art...\n%d Platforms | %d Games Total", platformCount, missingArtCount), gabagool.ProcessMessageOptions{}, func() (interface{}, error) {
@@ -91,7 +91,7 @@ func (gas GlobalActionsScreen) Draw() (value interface{}, exitCode int, e error)
 			}
 		}
 
-		return selection.Unwrap().SelectedItem.Text, 0, nil
+		return nil, 0, nil
 	}
 
 	return nil, 2, nil

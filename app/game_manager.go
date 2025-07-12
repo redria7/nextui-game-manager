@@ -170,6 +170,7 @@ func handleMainMenuTransition(result interface{}, code int) models.Screen {
 	case ExitCodeAction:
 		return ui.InitSettingsScreen()
 	case ui.GlobalActionsExitCode:
+		state.AddNewMenuPosition()
 		return ui.InitGlobalActionsScreen()
 	default:
 		state.ReturnToMain()
@@ -332,7 +333,6 @@ func handleCollectionOptionsTransition(currentScreen models.Screen, result inter
 func handleGlobalActionsTransition(currentScreen models.Screen, result interface{}, code int) models.Screen {
 	switch code {
 	case ExitCodeSuccess:
-		state.RemoveMenuPositions(1)
 		return ui.InitGlobalActionsScreen()
 	default:
 		state.ReturnToMain()

@@ -258,6 +258,10 @@ func FindRomsWithoutArt() (map[shared.RomDirectory][]shared.Item, error) {
 	for _, dir := range fb.Items {
 		romDir := CreateRomDirectoryFromItem(dir)
 
+		if romDir.Tag == "(PORTS)" {
+			continue
+		}
+
 		romsWithoutArt, err := findRomsWithoutArtInDirectory(romDir)
 		if err != nil {
 			logger.Error("Failed to process rom directory", zap.String("directory", romDir.Path), zap.Error(err))
