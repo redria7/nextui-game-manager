@@ -54,17 +54,7 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 		return shared.Item{}, 1, err
 	}
 
-	var roms shared.Items
-
-	for _, entry := range fb.Items {
-		roms = append(roms, shared.Item{
-			DisplayName:          entry.DisplayName,
-			Filename:             entry.Filename,
-			IsDirectory:          !entry.IsMultiDiscDirectory && entry.IsDirectory,
-			IsMultiDiscDirectory: entry.IsMultiDiscDirectory,
-			Path:                 entry.Path,
-		})
-	}
+	roms := fb.Items
 
 	if agl.SearchFilter != "" {
 		title = "[Search: \"" + agl.SearchFilter + "\"]"
@@ -81,7 +71,7 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 
 		itemName := strings.TrimSuffix(item.Filename, filepath.Ext(item.Filename))
 
-		if item.IsDirectory {
+		if !item.IsSelfContainedDirectory && !item.IsMultiDiscDirectory && item.IsDirectory {
 			itemName = "/" + itemName
 			directoryEntries = append(directoryEntries, gaba.MenuItem{
 				Text:               itemName,
@@ -157,7 +147,7 @@ func (agl ArchiveGamesListScreen) Draw() (item interface{}, exitCode int, e erro
 			confirmMessage = fmt.Sprintf("Restore %d from archive %s?", len(rawSelection), agl.Archive.DisplayName)
 			successMessage = fmt.Sprintf("Restored %d games from archive %s!", len(rawSelection), agl.Archive.DisplayName)
 		} else {
-			if firstItem.IsDirectory {
+			if !firstItem.IsSelfContainedDirectory && !firstItem.IsMultiDiscDirectory && firstItem.IsDirectory {
 				newRomDirectory := shared.RomDirectory{
 					DisplayName: firstItem.DisplayName,
 					Tag:         firstItem.Tag,

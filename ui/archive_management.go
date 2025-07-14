@@ -12,7 +12,7 @@ import (
 )
 
 type ArchiveManagementScreen struct {
-	Archive   shared.RomDirectory
+	Archive shared.RomDirectory
 }
 
 func InitArchiveManagementScreen(archive shared.RomDirectory) ArchiveManagementScreen {
@@ -43,7 +43,7 @@ func (am ArchiveManagementScreen) Draw() (value interface{}, exitCode int, e err
 	var consoles []gaba.MenuItem
 
 	for _, item := range fb.Items {
-		if item.IsDirectory {
+		if !item.IsSelfContainedDirectory && !item.IsMultiDiscDirectory && item.IsDirectory {
 			romDirectory := shared.RomDirectory{
 				DisplayName: item.DisplayName,
 				Tag:         item.Tag,
