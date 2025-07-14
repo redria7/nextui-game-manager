@@ -90,40 +90,44 @@ func (gas GlobalActionsScreen) Draw() (value interface{}, exitCode int, e error)
 				return strings.Compare(m1.Text, m2.Text)
 			})
 
-			if len(missingArtPlatforms) > 1 {
-				platformSelectionOptions := gabagool.DefaultListOptions("Platforms Missing Art", missingArtPlatforms)
+			platformSelectionOptions := gabagool.DefaultListOptions("Platforms Missing Art", missingArtPlatforms)
 
-				platformSelectionOptions.EnableMultiSelect = true
-				platformSelectionOptions.StartInMultiSelectMode = true
-				platformSelectionOptions.MultiSelectButton = gabagool.ButtonUnassigned
-				platformSelectionOptions.MultiSelectKey = sdl.K_0
+			platformSelectionOptions.EnableMultiSelect = true
+			platformSelectionOptions.StartInMultiSelectMode = true
+			platformSelectionOptions.MultiSelectButton = gabagool.ButtonUnassigned
+			platformSelectionOptions.MultiSelectKey = sdl.K_0
 
-				platformSelectionOptions.FooterHelpItems = []gabagool.FooterHelpItem{
-					{ButtonName: "B", HelpText: "Back"},
-					{ButtonName: "A", HelpText: "Select / Unselect"},
-					{ButtonName: "Start", HelpText: "Confirm"},
-				}
+			platformSelectionOptions.FooterHelpItems = []gabagool.FooterHelpItem{
+				{ButtonName: "B", HelpText: "Back"},
+				{ButtonName: "A", HelpText: "Select / Unselect"},
+				{ButtonName: "Start", HelpText: "Confirm"},
+			}
 
-				platformSelection, err := gabagool.List(platformSelectionOptions)
-				if err != nil {
-					return nil, 0, err
-				}
+			platformSelection, err := gabagool.List(platformSelectionOptions)
+			if err != nil {
+				return nil, 0, err
+			}
 
-				if !platformSelection.IsSome() || platformSelection.Unwrap().SelectedIndex == -1 {
-					return nil, 0, nil
-				}
+			if !platformSelection.IsSome() {
+				return nil, 0, nil
+			}
 
-				selectedPlatforms := platformSelection.Unwrap().SelectedItems
-				selectedPlatformsMap := make(map[shared.RomDirectory][]shared.Item)
+			selectedPlatforms := platformSelection.Unwrap().SelectedItems
 
-				selectedMissingArtCount := 0
+			if len(selectedPlatforms) == 0 {
+				utils.ShowTimedMessage("Please select at least one platform!", time.Second*2)
+				return nil, 0, nil
+			}
 
-				for _, selection := range selectedPlatforms {
-					platform := selection.Metadata.(shared.RomDirectory)
-					selectedPlatformsMap[platform] = noArt[platform]
+			selectedPlatformsMap := make(map[shared.RomDirectory][]shared.Item)
 
-					selectedMissingArtCount += len(noArt[platform])
-				}
+			selectedMissingArtCount := 0
+
+			for _, selection := range selectedPlatforms {
+				platform := selection.Metadata.(shared.RomDirectory)
+				selectedPlatformsMap[platform] = noArt[platform]
+
+				selectedMissingArtCount += len(noArt[platform])
 
 				downloadedArtMap := make(map[shared.Item]string)
 
