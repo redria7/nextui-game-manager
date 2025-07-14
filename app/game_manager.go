@@ -376,7 +376,7 @@ func handleGameSelection(gl ui.GameList, result interface{}) models.Screen {
 
 func handleSingleGameSelection(gl ui.GameList, selection shared.Item) models.Screen {
 	state.AddNewMenuPosition()
-	if selection.IsDirectory {
+	if selection.IsDirectory && !selection.IsMultiDiscDirectory && !selection.IsSelfContainedDirectory {
 		newRomDirectory := shared.RomDirectory{
 			DisplayName: selection.DisplayName,
 			Tag:         gl.RomDirectory.Tag,

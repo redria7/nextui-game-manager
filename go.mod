@@ -4,7 +4,7 @@ go 1.24
 
 require (
 	github.com/UncleJunVIP/certifiable v1.0.0
-	github.com/UncleJunVIP/gabagool v0.0.55
+	github.com/UncleJunVIP/gabagool v0.0.58
 	github.com/UncleJunVIP/nextui-pak-shared-functions v1.8.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/mattn/go-sqlite3 v1.14.28
@@ -22,6 +22,7 @@ require (
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
+	github.com/holoplot/go-evdev v0.0.0-20240306072622-217e18f17db1 // indirect
 	github.com/kettek/apng v0.0.0-20220823221153-ff692776a607 // indirect
 	github.com/patrickhuber/go-types v0.6.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect

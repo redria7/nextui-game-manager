@@ -18,6 +18,7 @@ import (
 	"qlova.tech/sum"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -203,6 +204,64 @@ func FindExistingArt(selectedFile string, romDirectory shared.RomDirectory) (str
 	return "", nil
 }
 
+func FindAllArt(romDirectory shared.RomDirectory, games shared.Items, downloadType sum.Int[shared.ArtDownloadType]) map[shared.Item]string {
+	logger := common.GetLoggerInstance()
+
+	artMap := make(map[shared.Item]string)
+
+	client := common.NewThumbnailClient(downloadType)
+	section := client.BuildThumbnailSection(cleanTag(romDirectory.Tag))
+
+	artList, err := client.ListDirectory(section.HostSubdirectory)
+	if err != nil {
+		logger.Info("Unable to fetch art list", zap.Error(err))
+		return artMap
+	}
+
+	for _, game := range games {
+		matchedArt := findMatchingArt(artList, game.Filename)
+		if matchedArt.Filename != "" {
+			artMap[game] = matchedArt.Filename
+		}
+	}
+
+	downloadedArtMap := downloadArtConcurrently(artMap, client, section, logger)
+
+	return downloadedArtMap
+}
+
+func downloadArtConcurrently(artMap map[shared.Item]string, client *common.ThumbnailClient, section shared.Section, logger *zap.Logger) map[shared.Item]string {
+	downloadedArtMap := make(map[shared.Item]string)
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	maxConcurrency := 10
+	semaphore := make(chan struct{}, maxConcurrency)
+
+	for game, art := range artMap {
+		wg.Add(1)
+		go func(game shared.Item, art string) {
+			defer wg.Done()
+
+			semaphore <- struct{}{}
+			defer func() { <-semaphore }()
+
+			path, err := client.DownloadArt(section.HostSubdirectory, buildArtDirectory(game), art, game.Filename)
+			if err != nil {
+				logger.Error("Failed to download art", zap.Error(err))
+				return
+			}
+
+			mu.Lock()
+			downloadedArtMap[game] = path
+			mu.Unlock()
+		}(game, art)
+	}
+
+	wg.Wait()
+	return downloadedArtMap
+}
+
 func FindArt(romDirectory shared.RomDirectory, game shared.Item, downloadType sum.Int[shared.ArtDownloadType]) string {
 	logger := common.GetLoggerInstance()
 
@@ -277,23 +336,18 @@ func FindRomsWithoutArt() (map[shared.RomDirectory][]shared.Item, error) {
 }
 
 func findRomsWithoutArtInDirectory(romDir shared.RomDirectory) ([]shared.Item, error) {
-	logger := common.GetLoggerInstance()
-
 	romFiles, err := getRomFilesRecursive(romDir.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ROM files: %w", err)
 	}
 
-	artFiles, err := getArtFileNames(romDir.Path)
-	if err != nil {
-		logger.Debug("No art files found or error accessing .media directory", zap.String("directory", romDir.Path))
-		return romFiles, nil
-	}
-
 	var romsWithoutArt []shared.Item
 	for _, romFile := range romFiles {
 		romNameWithoutExt := removeFileExtension(romFile.Filename)
-		if !hasMatchingArt(romNameWithoutExt, artFiles) {
+
+		artFilename := filepath.Join(filepath.Dir(romFile.Path), ".media", romNameWithoutExt+".png")
+
+		if !fileExists(artFilename) {
 			romsWithoutArt = append(romsWithoutArt, romFile)
 		}
 	}
@@ -304,73 +358,36 @@ func findRomsWithoutArtInDirectory(romDir shared.RomDirectory) ([]shared.Item, e
 func getRomFilesRecursive(dirPath string) ([]shared.Item, error) {
 	var romFiles []shared.Item
 
-	err := filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
+	fb := filebrowser.NewFileBrowser(common.GetLoggerInstance())
+	err := fb.CWDDepth(dirPath, true, -1)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get rom files: %w", err)
+	}
+
+	var selfContainedPaths []string
+
+	for _, item := range fb.Items {
+		if strings.Contains(item.Path, ".media") {
+			continue
 		}
 
-		if info.IsDir() && info.Name() == ".media" {
-			return filepath.SkipDir
+		parent := filepath.Dir(item.Path)
+		if slices.Contains(selfContainedPaths, parent) {
+			continue
 		}
 
-		if info.IsDir() {
-			return nil
+		if item.IsSelfContainedDirectory {
+			selfContainedPaths = append(selfContainedPaths, item.Path)
+			romFiles = append(romFiles, item)
 		}
 
-		if strings.HasPrefix(info.Name(), ".") {
-			return nil
+		if !item.IsDirectory {
+			romFiles = append(romFiles, item)
 		}
-
-		romFiles = append(romFiles, shared.Item{
-			Filename:    info.Name(),
-			Path:        path,
-			DisplayName: removeFileExtension(info.Name()),
-			IsDirectory: false,
-		})
-
-		return nil
-	})
+	}
 
 	return romFiles, err
-}
-
-func getArtFileNames(romDirPath string) (map[string]bool, error) {
-	mediaDir := filepath.Join(romDirPath, ".media")
-
-	if !directoryExists(mediaDir) {
-		return nil, fmt.Errorf("media directory does not exist: %s", mediaDir)
-	}
-
-	entries, err := GetFileList(mediaDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read media directory: %w", err)
-	}
-
-	artFileNames := make(map[string]bool)
-	for _, entry := range entries {
-		if !entry.IsDir() && strings.ToLower(filepath.Ext(entry.Name())) == ".png" {
-			artFileName := removeFileExtension(entry.Name())
-			artFileNames[strings.ToLower(artFileName)] = true
-		}
-	}
-
-	return artFileNames, nil
-}
-
-func hasMatchingArt(romName string, artFileNames map[string]bool) bool {
-	romNameLower := strings.ToLower(romName)
-
-	if artFileNames[romNameLower] {
-		return true
-	}
-
-	for artName := range artFileNames {
-		if strings.Contains(artName, romNameLower) {
-			return true
-		}
-	}
-
-	return false
 }
 
 func buildArtDirectory(game shared.Item) string {

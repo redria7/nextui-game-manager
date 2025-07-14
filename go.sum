@@ -4,6 +4,12 @@ github.com/UncleJunVIP/certifiable v1.0.0 h1:g8SMZrGW74qLvli9j0CYO5BvpVcGhqxfvAU
 github.com/UncleJunVIP/certifiable v1.0.0/go.mod h1:paPhCSE8DKzYvBcFcr5NVAYJmmvADq8e5fvkvs95np4=
 github.com/UncleJunVIP/gabagool v0.0.55 h1:k0vf0r+WGg004rEXWBwV6wKKWjG+Iek3VmYXEw7S3Pw=
 github.com/UncleJunVIP/gabagool v0.0.55/go.mod h1:EPPgmkQllHgR2jY8DcmwhL9+d+Viw752HOug4IusHxI=
+github.com/UncleJunVIP/gabagool v0.0.56 h1:5GMbPQkxxph3jLFcV+/QcyfTWknSp6jRCckwmzwWrpw=
+github.com/UncleJunVIP/gabagool v0.0.56/go.mod h1:m9myn3onXF9duenLShS+lDJ+EZDvimZQpUVea5W9TQ4=
+github.com/UncleJunVIP/gabagool v0.0.57 h1:u2iH/eaWvbvTr0H1JOVGY45v0Rfzey9C/2oLWV8yG9I=
+github.com/UncleJunVIP/gabagool v0.0.57/go.mod h1:m9myn3onXF9duenLShS+lDJ+EZDvimZQpUVea5W9TQ4=
+github.com/UncleJunVIP/gabagool v0.0.58 h1:oAddjUmbmB2qbf1EeGdlgL1Yx8g40rHBi+pCzczL3pw=
+github.com/UncleJunVIP/gabagool v0.0.58/go.mod h1:m9myn3onXF9duenLShS+lDJ+EZDvimZQpUVea5W9TQ4=
 github.com/UncleJunVIP/nextui-pak-shared-functions v1.8.0 h1:ZrWObb/N3pvyPrqHHlYsp7Lbi8Wy2uCM4b0Rw5w0LpQ=
 github.com/UncleJunVIP/nextui-pak-shared-functions v1.8.0/go.mod h1:sXHrQmYySc2DVrGkhpoAoqDxb3lq3AS1HRbuHKCLnDE=
 github.com/activcoding/HTML-Table-to-JSON v0.0.4 h1:6xQvdHFFMHHW8ubDS+xUW/USUx25kZtC6nfVnY8tZQU=
@@ -22,6 +28,8 @@ github.com/go-viper/mapstructure/v2 v2.3.0 h1:27XbWsHIqhbdR5TIC911OfYvgSaW93HM+d
 github.com/go-viper/mapstructure/v2 v2.3.0/go.mod h1:oJDH3BJKyqBA2TXFhDsKDGDTlndYOZ6rGS0BRZIxGhM=
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
+github.com/holoplot/go-evdev v0.0.0-20240306072622-217e18f17db1 h1:92OsBIf5KB1Tatx+uUGOhah73jyNUrt7DmfDRXXJ5Xo=
+github.com/holoplot/go-evdev v0.0.0-20240306072622-217e18f17db1/go.mod h1:iHAf8OIncO2gcQ8XOjS7CMJ2aPbX2Bs0wl5pZyanEqk=
 github.com/kettek/apng v0.0.0-20220823221153-ff692776a607 h1:8tP9cdXzcGX2AvweVVG/lxbI7BSjWbNNUustwJ9dQVA=
 github.com/kettek/apng v0.0.0-20220823221153-ff692776a607/go.mod h1:x78/VRQYKuCftMWS0uK5e+F5RJ7S4gSlESRWI0Prl6Q=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=

@@ -51,16 +51,7 @@ func (gl GameList) Draw() (item interface{}, exitCode int, e error) {
 	}
 
 	var roms shared.Items
-
-	for _, entry := range fb.Items {
-		roms = append(roms, shared.Item{
-			DisplayName:          entry.DisplayName,
-			Filename:             entry.Filename,
-			IsDirectory:          !entry.IsMultiDiscDirectory && entry.IsDirectory,
-			IsMultiDiscDirectory: entry.IsMultiDiscDirectory,
-			Path:                 entry.Path,
-		})
-	}
+	roms = fb.Items
 
 	if gl.SearchFilter != "" {
 		title = "[Search: \"" + gl.SearchFilter + "\"]"
@@ -77,16 +68,7 @@ func (gl GameList) Draw() (item interface{}, exitCode int, e error) {
 
 		itemName := strings.TrimSuffix(item.Filename, filepath.Ext(item.Filename))
 
-		if item.IsDirectory {
-			itemName = "/" + itemName
-			directoryEntries = append(directoryEntries, gabagool.MenuItem{
-				Text:               itemName,
-				Selected:           false,
-				Focused:            false,
-				Metadata:           item,
-				NotMultiSelectable: true,
-			})
-		} else {
+		if item.IsMultiDiscDirectory || item.IsSelfContainedDirectory || !item.IsDirectory {
 			imageFilename := strings.TrimSuffix(item.Filename, filepath.Ext(item.Filename)) + ".png"
 
 			itemEntries = append(itemEntries, gabagool.MenuItem{
@@ -95,6 +77,15 @@ func (gl GameList) Draw() (item interface{}, exitCode int, e error) {
 				Focused:       false,
 				Metadata:      item,
 				ImageFilename: filepath.Join(gl.RomDirectory.Path, ".media", imageFilename),
+			})
+		} else {
+			itemName = "/" + itemName
+			directoryEntries = append(directoryEntries, gabagool.MenuItem{
+				Text:               itemName,
+				Selected:           false,
+				Focused:            false,
+				Metadata:           item,
+				NotMultiSelectable: true,
 			})
 		}
 	}
