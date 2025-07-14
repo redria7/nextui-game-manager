@@ -448,6 +448,9 @@ func RenameRom(game shared.Item, newFilename string, romDirectory shared.RomDire
 		return "", fmt.Errorf("failed to rename ROM file: %w", err)
 	}
 
+	renameAssociatedFile(game.Filename, newFilename, newPath, ".cue")
+	renameAssociatedFile(game.Filename, newFilename, newPath, ".m3u")
+
 	updateGameTrackerForRename(game.Filename, newFilename, romDirectory, logger)
 	renameSaveFile(game.Filename, newFilename, romDirectory)
 	// renameCollectionEntries(game, game.Filename, romDirectory) TODO need to finish this functionality
@@ -459,6 +462,28 @@ func RenameRom(game shared.Item, newFilename string, romDirectory shared.RomDire
 func buildNewRomPath(romDirectoryPath, newFilename, oldFilename string) string {
 	ext := filepath.Ext(oldFilename)
 	return filepath.Join(romDirectoryPath, newFilename+ext)
+}
+
+func renameAssociatedFile(oldFilename string, newFilename string, newPath string, extension string) {
+	logger := common.GetLoggerInstance()
+
+	oldAssociatedFilename := removeFileExtension(oldFilename) + extension
+	oldAssociatedPath := filepath.Join(newPath, oldAssociatedFilename)
+
+	if !fileExists(oldAssociatedPath) {
+		return
+	}
+
+	newAssociatedFilename := newFilename + extension
+	newAssociatedPath := filepath.Join(newPath, newAssociatedFilename)
+
+	if err := MoveFile(oldAssociatedPath, newAssociatedPath); err != nil {
+		logger.Error("Failed to rename associated file",
+			zap.String("from", oldAssociatedPath),
+			zap.String("to", newAssociatedPath),
+			zap.String("extension", extension),
+			zap.Error(err))
+	}
 }
 
 func updateGameTrackerForRename(oldFilename, newFilename string, romDirectory shared.RomDirectory, logger *zap.Logger) {

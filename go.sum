@@ -12,6 +12,8 @@ github.com/UncleJunVIP/gabagool v0.0.58 h1:oAddjUmbmB2qbf1EeGdlgL1Yx8g40rHBi+pCz
 github.com/UncleJunVIP/gabagool v0.0.58/go.mod h1:m9myn3onXF9duenLShS+lDJ+EZDvimZQpUVea5W9TQ4=
 github.com/UncleJunVIP/nextui-pak-shared-functions v1.8.0 h1:ZrWObb/N3pvyPrqHHlYsp7Lbi8Wy2uCM4b0Rw5w0LpQ=
 github.com/UncleJunVIP/nextui-pak-shared-functions v1.8.0/go.mod h1:sXHrQmYySc2DVrGkhpoAoqDxb3lq3AS1HRbuHKCLnDE=
+github.com/UncleJunVIP/nextui-pak-shared-functions v1.9.0 h1:d7Kusw/1XQRMzXUvxSKaTeGkZEtu47u1EkBjuutBc1k=
+github.com/UncleJunVIP/nextui-pak-shared-functions v1.9.0/go.mod h1:sXHrQmYySc2DVrGkhpoAoqDxb3lq3AS1HRbuHKCLnDE=
 github.com/activcoding/HTML-Table-to-JSON v0.0.4 h1:6xQvdHFFMHHW8ubDS+xUW/USUx25kZtC6nfVnY8tZQU=
 github.com/activcoding/HTML-Table-to-JSON v0.0.4/go.mod h1:xStjYiUrfnpo8937cHqbWh4hHGMSpT0sZ+qjvbCTLA0=
 github.com/andybalholm/cascadia v1.3.3 h1:AG2YHrzJIm4BZ19iwJ/DAua6Btl3IwJX+VI4kktS1LM=
