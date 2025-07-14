@@ -118,8 +118,10 @@ func handleScreenTransition(currentScreen models.Screen, result interface{}, cod
 		return handleCollectionManagementTransition(currentScreen, result, code)
 	case models.ScreenNames.CollectionOptions:
 		return handleCollectionOptionsTransition(currentScreen, result, code)
+	case models.ScreenNames.Tools:
+		return handleToolsTransition(result, code)
 	case models.ScreenNames.GlobalActions:
-		return handleGlobalActionsTransition(currentScreen, result, code)
+		return handleGlobalActionsTransition(code)
 	case models.ScreenNames.GamesList:
 		return handleGamesListTransition(currentScreen, result, code)
 	case models.ScreenNames.SearchBox:
@@ -169,9 +171,9 @@ func handleMainMenuTransition(result interface{}, code int) models.Screen {
 		return nil
 	case ExitCodeAction:
 		return ui.InitSettingsScreen()
-	case ui.GlobalActionsExitCode:
+	case ui.ToolsExitCode:
 		state.AddNewMenuPosition()
-		return ui.InitGlobalActionsScreen()
+		return ui.InitToolsScreen()
 	default:
 		state.ReturnToMain()
 		return ui.InitMainMenu()
@@ -330,13 +332,32 @@ func handleCollectionOptionsTransition(currentScreen models.Screen, result inter
 	}
 }
 
-func handleGlobalActionsTransition(currentScreen models.Screen, result interface{}, code int) models.Screen {
+func handleToolsTransition(result interface{}, code int) models.Screen {
+	switch code {
+	case ExitCodeSuccess:
+		selection := result.(string)
+		state.AddNewMenuPosition()
+		switch selection {
+		case "Global Actions":
+			return ui.InitGlobalActionsScreen()
+		}
+		return ui.InitToolsScreen()
+	case ExitCodeAction:
+		state.ReturnToMain()
+		return ui.InitMainMenu()
+	default:
+		state.ReturnToMain()
+		return ui.InitMainMenu()
+	}
+}
+
+func handleGlobalActionsTransition(code int) models.Screen {
 	switch code {
 	case ExitCodeSuccess:
 		return ui.InitGlobalActionsScreen()
 	default:
-		state.ReturnToMain()
-		return ui.InitMainMenu()
+		state.RemoveMenuPositions(1)
+		return ui.InitToolsScreen()
 	}
 }
 

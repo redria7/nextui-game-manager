@@ -19,7 +19,7 @@ const (
 	archivesTag            = "Archives"
 	settingsExitCode       = 4
 	selectExitCode         = 0
-	GlobalActionsExitCode  = 5
+	ToolsExitCode          = 5
 	quitExitCode           = 2
 	errorExitCode          = -1
 )
@@ -52,16 +52,9 @@ func buildMenuItems(logger *zap.Logger) ([]gaba.MenuItem, error) {
 		menuItems = append(menuItems, *collectionsItem)
 	}
 
-	if archivesItem := buildArchivesMenuItem(logger); archivesItem != nil {
+	if archivesItem := buildArchivesMenuItem(); archivesItem != nil {
 		menuItems = append(menuItems, *archivesItem)
 	}
-
-	menuItems = append(menuItems, gaba.MenuItem{
-		Text:     "Global Actions",
-		Selected: false,
-		Focused:  false,
-		Metadata: "Global Actions",
-	})
 
 	romItems, err := buildRomDirectoryMenuItems(logger)
 	if err != nil {
@@ -69,6 +62,13 @@ func buildMenuItems(logger *zap.Logger) ([]gaba.MenuItem, error) {
 	}
 
 	menuItems = append(menuItems, romItems...)
+
+	menuItems = append(menuItems, gaba.MenuItem{
+		Text:     "Tools",
+		Selected: false,
+		Focused:  false,
+		Metadata: "Tools",
+	})
 
 	return menuItems, nil
 }
@@ -102,7 +102,7 @@ func createCollectionsRomDirectory() shared.RomDirectory {
 	}
 }
 
-func buildArchivesMenuItem(logger *zap.Logger) *gaba.MenuItem {
+func buildArchivesMenuItem() *gaba.MenuItem {
 	archiveFolders, err := utils.GetArchiveFileListBasic()
 
 	if err != nil {
@@ -184,8 +184,8 @@ func handleMenuSelection(menuItems []gaba.MenuItem) (interface{}, int, error) {
 		return nil, settingsExitCode, nil
 	} else if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
 		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
-		if selection.Unwrap().SelectedItem.Metadata == "Global Actions" {
-			return nil, GlobalActionsExitCode, nil
+		if selection.Unwrap().SelectedItem.Metadata == "Tools" {
+			return nil, ToolsExitCode, nil
 		}
 
 		return selection.Unwrap().SelectedItem.Metadata.(shared.RomDirectory), selectExitCode, nil
