@@ -108,7 +108,7 @@ func (gas GlobalActionsScreen) Draw() (value interface{}, exitCode int, e error)
 				return nil, 0, err
 			}
 
-			if !platformSelection.IsSome() {
+			if platformSelection.IsSome() && platformSelection.Unwrap().SelectedIndex == -1 {
 				return nil, 0, nil
 			}
 
@@ -123,43 +123,44 @@ func (gas GlobalActionsScreen) Draw() (value interface{}, exitCode int, e error)
 
 			selectedMissingArtCount := 0
 
+			var downloads []gabagool.Download
+
 			for _, selection := range selectedPlatforms {
 				platform := selection.Metadata.(shared.RomDirectory)
 				selectedPlatformsMap[platform] = noArt[platform]
-
 				selectedMissingArtCount += len(noArt[platform])
+			}
 
-				downloadedArtMap := make(map[shared.Item]string)
+			platformLabel := "Platform"
+			if len(selectedPlatformsMap) > 1 {
+				platformLabel = "Platforms"
+			}
 
-				platformLabel := "Platform"
-				if len(selectedPlatformsMap) > 1 {
-					platformLabel = "Platforms"
+			gamesLabel := "Game"
+			if selectedMissingArtCount > 1 {
+				gamesLabel = "Games"
+			}
+
+			gabagool.ProcessMessage(fmt.Sprintf("Searching for art...\n%d %s | %d %s Total",
+				len(selectedPlatformsMap), platformLabel, selectedMissingArtCount, gamesLabel), gabagool.ProcessMessageOptions{}, func() (interface{}, error) {
+				for romDir, games := range selectedPlatformsMap {
+					downloads = append(downloads, utils.FindAllArt(romDir, games, state.GetAppState().Config.ArtDownloadType)...)
 				}
+				return nil, nil
+			})
 
-				gamesLabel := "Game"
-				if selectedMissingArtCount > 1 {
-					gamesLabel = "Games"
-				}
+			res, err := gabagool.DownloadManager(downloads, make(map[string]string))
+			if err != nil {
+				utils.ShowTimedMessage("Failed to download art!", time.Second*2)
+				return nil, 0, nil
+			}
 
-				gabagool.ProcessMessage(fmt.Sprintf("Searching for art...\n%d %s | %d %s Total",
-					len(selectedPlatformsMap), platformLabel, selectedMissingArtCount, gamesLabel), gabagool.ProcessMessageOptions{}, func() (interface{}, error) {
-					for romDir, games := range selectedPlatformsMap {
-						artMap := utils.FindAllArt(romDir, games, state.GetAppState().Config.ArtDownloadType)
-
-						for game, art := range artMap {
-							downloadedArtMap[game] = art
-						}
-					}
-					return nil, nil
-				})
-
-				if len(downloadedArtMap) == 0 {
-					utils.ShowTimedMessage("No art found!", time.Second*2)
-					return
-				} else {
-					message := fmt.Sprintf("Art found for %d/%d games!", len(downloadedArtMap), selectedMissingArtCount)
-					utils.ShowTimedMessage(message, time.Second*2)
-				}
+			if len(res.CompletedDownloads) == 0 {
+				utils.ShowTimedMessage("No art found!", time.Second*2)
+				return
+			} else {
+				message := fmt.Sprintf("Art found for %d/%d games!", len(res.CompletedDownloads), selectedMissingArtCount)
+				utils.ShowTimedMessage(message, time.Second*2)
 			}
 		}
 

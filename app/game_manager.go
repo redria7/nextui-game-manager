@@ -353,11 +353,11 @@ func handleToolsTransition(result interface{}, code int) models.Screen {
 
 func handleGlobalActionsTransition(code int) models.Screen {
 	switch code {
-	case ExitCodeSuccess:
-		return ui.InitGlobalActionsScreen()
-	default:
+	case ExitCodeCancel:
 		state.RemoveMenuPositions(1)
 		return ui.InitToolsScreen()
+	default:
+		return ui.InitGlobalActionsScreen()
 	}
 }
 

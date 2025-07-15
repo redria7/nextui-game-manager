@@ -22,18 +22,17 @@ A one-stop pak for all your game management needs.
 
 # Features
 
-- Create Collection
-- Rename Collection
-- Delete Collection
-- Add / Remove Games from Collection (Single and Multiple Selection)
+- Create / Rename / Delete Collections
+- Add / Remove Games from Collections (Single and Multiple Selection)
 - Rename ROM
     - Renames Art and Associated Save File
 - Download Art from the Libretro Thumbnail Project (Single and Multiple Selection)
     - Can configure what type of art you would like to download in the Game Manager Settings
+    - Searches first for exact match and then uses `Jaccard Similarity` with a configurable threshold
     - The Libretro Thumbnail Project has Box Art, Title Screens, Screenshots and Logos
 - Delete Art (Single and Multiple Selection)
 - Archive ROM (Places ROM and Art if present into a hidden folder)
-- Manage ROM Archives (Customize archive folder names and restore archived ROMs)
+- Manage ROM Archives (Rename archive folder names and restore archived ROMs)
 - Delete ROM (Deletes ROM file and associated Art)
 
 ---
