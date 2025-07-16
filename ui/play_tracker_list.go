@@ -6,7 +6,8 @@ import (
 	"nextui-game-manager/models"
 	"nextui-game-manager/state"
 	"qlova.tech/sum"
-	"math"
+	"maps"
+	"slices"
 )
 
 type PlayTrackerListScreen struct {}
@@ -21,18 +22,19 @@ func (ptls PlayTrackerListScreen) Name() sum.Int[models.ScreenName] {
 
 // Lists available play tracker consoles
 func (ptls PlayTrackerListScreen) Draw() (item interface{}, exitCode int, e error) {
-	title := "Play Tracker Consoles"
+	_, consolePlayMap, totalPlay := state.GetPlayMaps()
 
-	_, consolePlayMap, _ := state.GetPlayMaps()
+	title := fmt.Sprintf("%.1f Total Hours Played", float64(totalPlay)/3600.0)
 
 	if consolePlayMap == nil || len(consolePlayMap) == 0 {
 		return nil, 404, nil
 	}
 
 	var menuItems []gaba.MenuItem
-	for console, playTime := range consolePlayMap {
+	consoles := slices.Sorted(maps.Keys(consolePlayMap))
+	for _, console := range consoles {
 		consoleItem := gaba.MenuItem{
-			Text:     fmt.Sprintf("(%4.0fH) %s", min(9999, math.Ceil(float64(playTime)/3600.0)), console),
+			Text:     fmt.Sprintf("%.1fH : %s", min(9999, float64(consolePlayMap[console])/3600.0), console),
 			Selected: false,
 			Focused:  false,
 			Metadata: console,

@@ -72,15 +72,16 @@ func (ptgds PlayTrackerGameDetailsScreen) Draw() (selection interface{}, exitCod
 
 	_, consolePlayMap, totalPlay := state.GetPlayMaps()
 	sections = append(sections, gaba.NewInfoSection(
-		"",
+		ptgds.GameAggregate.Name,
 		[]gaba.MetadataItem{
-			{Label: "Total Play Time", Value: utils.ConvertSecondsToHumanReadable(ptgds.GameAggregate.PlayTimeTotal)},
-			{Label: "  Play Sessions", Value: strconv.Itoa(ptgds.GameAggregate.PlayCountTotal)},
-			{Label: "   First Played", Value: ptgds.GameAggregate.FirstPlayedTime.Format(time.UnixDate)},
-			{Label: "    Last Played", Value: ptgds.GameAggregate.LastPlayedTime.Format(time.UnixDate)},
-			{Label: "Average Session", Value: utils.ConvertSecondsToHumanReadable(ptgds.GameAggregate.PlayTimeTotal/ptgds.GameAggregate.PlayCountTotal)},
-			{Label: "   Pct of Total", Value: fmt.Sprintf("%.2f%%", (float64(ptgds.GameAggregate.PlayTimeTotal)/float64(totalPlay))*100)},
-			{Label: " Pct of Console", Value: fmt.Sprintf("%.2f%%", (float64(ptgds.GameAggregate.PlayTimeTotal)/float64(consolePlayMap[ptgds.Console]))*100)},
+			{Label: "Console", 			Value: ptgds.Console},
+			{Label: "First Played", 	Value: ptgds.GameAggregate.FirstPlayedTime.Format(time.UnixDate)},
+			{Label: "Last Played", 		Value: ptgds.GameAggregate.LastPlayedTime.Format(time.UnixDate)},
+			{Label: "Total Play Time", 	Value: utils.ConvertSecondsToHumanReadable(ptgds.GameAggregate.PlayTimeTotal)},
+			{Label: "Play Sessions", 	Value: strconv.Itoa(ptgds.GameAggregate.PlayCountTotal)},
+			{Label: "Average Session", 	Value: utils.ConvertSecondsToHumanReadable(ptgds.GameAggregate.PlayTimeTotal/ptgds.GameAggregate.PlayCountTotal)},
+			{Label: "Pct of Total", 	Value: fmt.Sprintf("%.2f%%", (float64(ptgds.GameAggregate.PlayTimeTotal)/float64(totalPlay))*100)},
+			{Label: "Pct of Console", 	Value: fmt.Sprintf("%.2f%%", (float64(ptgds.GameAggregate.PlayTimeTotal)/float64(consolePlayMap[ptgds.Console]))*100)},
 		},
 	))
 
@@ -101,7 +102,7 @@ func (ptgds PlayTrackerGameDetailsScreen) Draw() (selection interface{}, exitCod
 		{ButtonName: "A", HelpText: "History"},
 	}
 
-	sel, err := gaba.DetailScreen(fmt.Sprintf("%s Play Stats", ptgds.GameAggregate.Name), options, footerItems)
+	sel, err := gaba.DetailScreen("Play Stats", options, footerItems)
 	if err != nil {
 		logger.Error("Unable to display Play History screen", zap.Error(err))
 		return nil, -1, err

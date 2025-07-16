@@ -7,7 +7,6 @@ import (
 	"nextui-game-manager/state"
 	"nextui-game-manager/utils"
 	"qlova.tech/sum"
-	"math"
 )
 
 type PlayTrackerGamesListScreen struct {
@@ -27,9 +26,9 @@ func (ptgls PlayTrackerGamesListScreen) Name() sum.Int[models.ScreenName] {
 }
 
 func (ptgls PlayTrackerGamesListScreen) Draw() (item interface{}, exitCode int, e error) {
-	title := "Play Tracker " + ptgls.Console
+	gamePlayMap, consoleMap, _ := state.GetPlayMaps()
 
-	gamePlayMap, _, _ := state.GetPlayMaps()
+	title := fmt.Sprintf("%.1fH : %s", float64(consoleMap[ptgls.Console])/3600.0, ptgls.Console)
 
 	gamesList := gamePlayMap[ptgls.Console]
 
@@ -41,7 +40,7 @@ func (ptgls PlayTrackerGamesListScreen) Draw() (item interface{}, exitCode int, 
 	var menuItems []gaba.MenuItem
 	for _, gamePlayAggregate := range gamesList {
 		gameItem := gaba.MenuItem{
-			Text:     fmt.Sprintf("(%3.0fH) %s", min(999, math.Ceil(float64(gamePlayAggregate.PlayTimeTotal)/3600.0)), gamePlayAggregate.Name),
+			Text:     fmt.Sprintf("%.1fH : %s", min(999, float64(gamePlayAggregate.PlayTimeTotal)/3600.0), gamePlayAggregate.Name),
 			Selected: false,
 			Focused:  false,
 			Metadata: gamePlayAggregate,
