@@ -725,9 +725,9 @@ func GenerateCurrentGameStats() (map[string][]models.PlayTrackingAggregate, map[
 			logger.Error("Failed to load game tracker data", zap.Error(err))
 		}
 
-		logger.Info("extracting name", zap.Info(name))
+		logger.Info(zap.String("extracting name", name))
 		romName, multi := extractMultiDiscName(name, filePath)
-		logger.Info("extracted name", zap.Info(romName))
+		logger.Info(zap.String("extracted name", romName))
 		playTrack := models.PlayTrackingAggregate{
 			Id:					[]int{id},
 			Name: 				romName,
@@ -737,7 +737,7 @@ func GenerateCurrentGameStats() (map[string][]models.PlayTrackingAggregate, map[
 			LastPlayedTime:    	time.Unix(int64(lastPlayedTime), 0),
 		}
 		console := extractPlayConsoleName(filePath)
-		logger.Info("extracted console", zap.Info(console))
+		logger.Info(zap.String("extracted console", console))
 
 		if multi {
 			multiMap[console] = true
@@ -745,13 +745,13 @@ func GenerateCurrentGameStats() (map[string][]models.PlayTrackingAggregate, map[
 		} else {
 			gamePlayMap[console] = append(gamePlayMap[console], playTrack)
 		}
-		logger.Info("mapped game play", zap.Info(gamePlayMap[console]))
+		logger.Info(zap.String("mapped game play", strconv.Itoa(gamePlayMap[console][0].Id[0])))
 
 		consolePlayMap[console] = consolePlayMap[console] + playTrack.PlayTimeTotal
-		logger.Info("mapped console play", zap.Info(consolePlayMap[console]))
+		logger.Info(zap.String("mapped console play", strconv.Itoa(consolePlayMap[console])))
 
 		totalPlay = totalPlay + playTrack.PlayTimeTotal
-		logger.Info("mapped total play", zap.Info(totalPlay))
+		logger.Info(zap.String("mapped total play", strconv.Itoa(totalPlay)))
 	}
 
 	gamePlayMap = sortPlayMap(gamePlayMap, multiMap)
