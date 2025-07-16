@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
-	"go.uber.org/zap"
 	"nextui-game-manager/models"
 	"nextui-game-manager/state"
 	"nextui-game-manager/utils"
@@ -24,7 +23,7 @@ func InitPlayTrackerGamesListScreen(console string, searchFilter string) PlayTra
 }
 
 func (ptgls PlayTrackerGamesListScreen) Name() sum.Int[models.ScreenName] {
-	return models.ScreenNames.PlayTrackerGamesList
+	return models.ScreenNames.PlayTrackerGameList
 }
 
 func (ptgls PlayTrackerGamesListScreen) Draw() (item interface{}, exitCode int, e error) {
