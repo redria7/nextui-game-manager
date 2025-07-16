@@ -49,6 +49,12 @@ func (a ActionsScreen) Draw() (action interface{}, exitCode int, e error) {
 		actions = utils.InsertIntoSlice(actions, 1, "Delete Art")
 	}
 
+	gamePlayMap, _, _ := state.GetPlayMaps()
+	gameAggregate, _ := utils.CollectGameAggregateFromGame(a.Game, gamePlayMap)
+	if gameAggregate.PlayCountTotal != 0 {
+		actions = append(actions, "View Play Details")
+	}
+
 	var actionEntries []gabagool.MenuItem
 	for _, action := range actions {
 		actionEntries = append(actionEntries, gabagool.MenuItem{

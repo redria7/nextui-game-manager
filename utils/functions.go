@@ -637,7 +637,11 @@ func CollectGameAggregateFromGame(gameItem shared.Item, gamePlayMap map[string][
 		}
 	}
 
-	return models.PlayTrackingAggregate{}, console
+	return models.PlayTrackingAggregate{
+		Name: gameItem.DisplayName,
+		PlayTimeTotal: 0,
+		PlayCountTotal: 0,
+	}, console
 }
 
 func convertIntListToStringList(intList []int) []string {

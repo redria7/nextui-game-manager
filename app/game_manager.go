@@ -564,6 +564,7 @@ func executeGameAction(as ui.ActionsScreen, action sum.Int[models.Action]) model
 	case models.Actions.Nuke:
 		return handleNukeAction(as)
 	case models.Actions.PlayTrackerOpen:
+		state.AddNewMenuPosition()
 		return ui.InitPlayTrackerGameDetailsScreenFromActions(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 	default:
 		state.RemoveMenuPositions(1)

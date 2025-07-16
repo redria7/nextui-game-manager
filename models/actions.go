@@ -57,7 +57,6 @@ var ActionKeys = []string{
 	"Archive ROM",
 	"Delete ROM",
 	//"Nuclear Option",
-	"View Play Details",
 }
 
 var GlobalActionKeys = []string{
