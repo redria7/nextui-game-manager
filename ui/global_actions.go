@@ -164,7 +164,7 @@ func (gas GlobalActionsScreen) Draw() (value interface{}, exitCode int, e error)
 				utils.ShowTimedMessage(message, time.Second*2)
 			}
 		} else if selection.Unwrap().SelectedItem.Metadata == models.Actions.GlobalClearRecents {
-			confirmClear := utils.ConfirmAction("Are you sure you want to confirmClear your recently played list?\n\nThis cannot be undone!")
+			confirmClear := utils.ConfirmAction("Are you sure you want to clear your recently played list?\n\nThis cannot be undone!")
 
 			if confirmClear {
 				deletedRes, _ := gabagool.ProcessMessage("Clearing Recently Played List.", gabagool.ProcessMessageOptions{}, func() (interface{}, error) {
