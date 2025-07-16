@@ -627,6 +627,30 @@ func Nuke(game shared.Item, romDirectory shared.RomDirectory) {
 	DeleteRom(game, romDirectory)
 }
 
+func FindRomHomeFromAggregate(gameAggregate models.PlayTrackingAggregate) string {
+	gamePath := gameAggregate.Path
+	if directoryExists(gamePath) || fileExists(gamePath) {
+		return "(•)"
+	}
+
+	archiveList, err := GetArchiveFileListBasic()
+	archiveString := ""
+	if err == nil {
+		for _, archiveName := range archiveList {
+			gameSubPath := strings.ReplaceAll(gamePath, GetRomDirectory(), "")
+			archivePath := filepath.Join(GetRomDirectory(), archiveName, gameSubPath)
+			if directoryExists(archivePath) || fileExists(archivePath) {
+				archiveString = archiveString + string(CleanArchiveName(archiveName)[0])
+			}
+		}
+		if archiveString != "" {
+			return "(" + archiveString + ")"
+		}
+	}
+
+	return "(-)"
+}
+
 func CollectGameAggregateFromGame(gameItem shared.Item, gamePlayMap map[string][]models.PlayTrackingAggregate) (models.PlayTrackingAggregate, string) {
 	console := extractItemConsoleName(gameItem)
 	playTrackingList := gamePlayMap[console]
@@ -729,10 +753,11 @@ func GenerateCurrentGameStats() (map[string][]models.PlayTrackingAggregate, map[
 			logger.Error("Failed to load game tracker data", zap.Error(err))
 		}
 
-		romName, multi := extractMultiDiscName(name, filePath)
+		romName, romPath, multi := extractMultiDiscName(name, filePath)
 		playTrack := models.PlayTrackingAggregate{
 			Id:					[]int{id},
 			Name: 				romName,
+			Path:				romPath,
 			PlayTimeTotal:    	playTimeTotal,
 			PlayCountTotal:    	playCountTotal,
 			FirstPlayedTime: 	time.Unix(int64(firstPlayedTime), 0),
@@ -809,14 +834,14 @@ func maxTime(a time.Time, b time.Time) time.Time {
 	return b
 }
 
-func extractMultiDiscName(romName string, filePath string) (string, bool) {
+func extractMultiDiscName(romName string, filePath string) (string, string, bool) {
 	if (strings.Contains(romName, "(Disc") || strings.Contains(romName, "(Disk")) {
 		pathList := strings.Split(filePath, "/")
 		if len(pathList) >= 2 {
-			return pathList[len(pathList)-2], true
+			return pathList[len(pathList)-2], filepath.Join(GetRomDirectory(), filePath, ".."), true
 		}
 	}
-	return romName, false
+	return romName, filepath.Join(GetRomDirectory(), filePath), false
 }
 
 func extractPlayConsoleName(romFilePath string) string {

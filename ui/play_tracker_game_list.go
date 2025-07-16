@@ -40,7 +40,7 @@ func (ptgls PlayTrackerGamesListScreen) Draw() (item interface{}, exitCode int, 
 	var menuItems []gaba.MenuItem
 	for _, gamePlayAggregate := range gamesList {
 		gameItem := gaba.MenuItem{
-			Text:     fmt.Sprintf("%.1fH : %s", min(999, float64(gamePlayAggregate.PlayTimeTotal)/3600.0), gamePlayAggregate.Name),
+			Text:     fmt.Sprintf("%.1fH %s : %s", min(999, float64(gamePlayAggregate.PlayTimeTotal)/3600.0), utils.FindRomHomeFromAggregate(gamePlayAggregate), gamePlayAggregate.Name),
 			Selected: false,
 			Focused:  false,
 			Metadata: gamePlayAggregate,
@@ -60,15 +60,15 @@ func (ptgls PlayTrackerGamesListScreen) Draw() (item interface{}, exitCode int, 
 	options.FooterHelpItems = []gaba.FooterHelpItem{
 		{ButtonName: "B", HelpText: "Back"},
 		{ButtonName: "X", HelpText: "Search"},
-		{ButtonName: "Menu", HelpText: "Help"},
+		// {ButtonName: "Menu", HelpText: "Help"},
 		{ButtonName: "A", HelpText: "Details"},
 	}
 
-	options.EnableHelp = true
-	options.HelpTitle = "Play Records Docs"
-	options.HelpText = []string{
-		"Hours played displays rounded up",
-	}
+	// options.EnableHelp = true
+	// options.HelpTitle = "Play Records Docs"
+	// options.HelpText = []string{
+	// 	"Hours played displays rounded up",
+	// }
 
 	selection, err := gaba.List(options)
 	if err != nil {

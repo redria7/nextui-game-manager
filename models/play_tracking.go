@@ -5,6 +5,7 @@ import "time"
 type PlayTrackingAggregate struct {
 	Id 				[]int
 	Name 			string
+	Path			string
 	PlayTimeTotal 	int
 	PlayCountTotal 	int
 	FirstPlayedTime time.Time
