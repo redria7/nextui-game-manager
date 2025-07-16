@@ -1,0 +1,100 @@
+package ui
+
+import (
+	"fmt"
+	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
+	"go.uber.org/zap"
+	"nextui-game-manager/models"
+	"nextui-game-manager/state"
+	"nextui-game-manager/utils"
+	"qlova.tech/sum"
+	"math"
+)
+
+type PlayTrackerGamesListScreen struct {
+	Console         string
+	SearchFilter	string
+}
+
+func InitPlayTrackerGamesListScreen(console string, searchFilter string) PlayTrackerGamesListScreen {
+	return PlayTrackerGamesListScreen{
+		Console:              console,
+		SearchFilter:         searchFilter,
+	}
+}
+
+func (ptgls PlayTrackerGamesListScreen) Name() sum.Int[models.ScreenName] {
+	return models.ScreenNames.PlayTrackerGamesList
+}
+
+func (ptgls PlayTrackerGamesListScreen) Draw() (item interface{}, exitCode int, e error) {
+	title := "Play Tracker " + ptgls.Console
+
+	gamePlayMap, _, _ := state.GetPlayMaps()
+
+	gamesList := gamePlayMap[ptgls.Console]
+
+	if ptgls.SearchFilter != "" {
+		title = "[Search: \"" + ptgls.SearchFilter + "\"]"
+		gamesList = utils.FilterPlayList(gamesList, ptgls.SearchFilter)
+	}
+
+	var menuItems []gaba.MenuItem
+	for _, gamePlayAggregate := range gamesList {
+		gameItem := gaba.MenuItem{
+			Text:     fmt.Sprintf("(%3.0fH) %s", min(999, math.Ceil(float64(gamePlayAggregate.PlayTimeTotal)/3600.0)), gamePlayAggregate.Name),
+			Selected: false,
+			Focused:  false,
+			Metadata: gamePlayAggregate,
+		}
+		menuItems = append(menuItems, gameItem)
+	}
+
+	options := gaba.DefaultListOptions(title, menuItems)
+
+	selectedIndex, visibleStartIndex := state.GetCurrentMenuPosition()
+	options.SelectedIndex = selectedIndex
+	options.VisibleStartIndex = visibleStartIndex
+
+	options.SmallTitle = true
+	options.EmptyMessage = "No Play Records Found"
+	options.EnableAction = true
+	options.FooterHelpItems = []gaba.FooterHelpItem{
+		{ButtonName: "B", HelpText: "Back"},
+		{ButtonName: "X", HelpText: "Search"},
+		{ButtonName: "Menu", HelpText: "Help"},
+		{ButtonName: "A", HelpText: "Details"},
+	}
+
+	options.EnableHelp = true
+	options.HelpTitle = "Play Records Docs"
+	options.HelpText = []string{
+		"Hours played displays rounded up",
+	}
+
+	selection, err := gaba.List(options)
+	if err != nil {
+		return nil, -1, err
+	}
+
+	if selection.IsSome() && selection.Unwrap().ActionTriggered {
+		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
+		query, err := gaba.Keyboard("")
+
+		if err != nil {
+			return nil, 1, err
+		}
+
+		if query.IsSome() {
+			return query.Unwrap(), 4, nil
+		}
+
+		return nil, 4, nil
+	} else if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
+		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
+		game := selection.Unwrap().SelectedItem.Metadata.(models.PlayTrackingAggregate)
+		return game, 0, nil
+	}
+
+	return nil, 2, nil
+}

@@ -16,8 +16,10 @@ import (
 	"os"
 	"path/filepath"
 	"qlova.tech/sum"
+	"maps"
 	"slices"
 	"strings"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -153,6 +155,20 @@ func FilterList(itemList []shared.Item, keywords ...string) []shared.Item {
 	var filteredItems []shared.Item
 	for _, item := range itemList {
 		if matchesAnyKeyword(item.Filename, keywords) {
+			filteredItems = append(filteredItems, item)
+		}
+	}
+	return filteredItems
+}
+
+func FilterPlayList(itemList []models.PlayTrackingAggregate, keywords ...string) []models.PlayTrackingAggregate {
+	if len(keywords) == 0 {
+		return itemList
+	}
+
+	var filteredItems []models.PlayTrackingAggregate
+	for _, item := range itemList {
+		if matchesAnyKeyword(item.Name, keywords) {
 			filteredItems = append(filteredItems, item)
 		}
 	}
@@ -609,6 +625,218 @@ func DeleteRom(game shared.Item, romDirectory shared.RomDirectory) {
 func Nuke(game shared.Item, romDirectory shared.RomDirectory) {
 	ClearGameTracker(game.Filename, romDirectory)
 	DeleteRom(game, romDirectory)
+}
+
+func CollectGameAggregateFromGame(gameItem shared.Item, gamePlayMap map[string][]models.PlayTrackingAggregate) (models.PlayTrackingAggregate, string) {
+	console := extractItemConsoleName(gameItem)
+	playTrackingList := gamePlayMap[console]
+
+	for _, gameAggregate := range playTrackingList {
+		if gameAggregate.Name == gameItem.DisplayName {
+			return gameAggregate, console
+		}
+	}
+
+	return models.PlayTrackingAggregate{}, console
+}
+
+func convertIntListToStringList(intList []int) []string {
+	var stringList []string
+	for _, i := range intList {
+		stringList = append(stringList, strconv.Itoa(i))
+	}
+	return stringList
+}
+
+func GenerateSingleGameGranularRecords(romIds []int) []models.PlayTrackingGranular {
+	if len(romIds) == 0 {
+		return nil
+	}
+	
+	logger := common.GetLoggerInstance()
+	db, err := openGameTrackerDB()
+	if err != nil {
+		return nil
+	}
+	defer closeDB(db)
+
+	romIdString := strings.Join(convertIntListToStringList(romIds), "','")
+
+	rows, err := db.Query("SELECT play_time, created_at, updated_at " +
+        				  "FROM play_activity " +
+						  "WHERE rom_id in ('"+romIdString+"') " +
+        				  "ORDER BY created_at")
+	defer rows.Close()
+
+	var granularList []models.PlayTrackingGranular
+	for rows.Next() {
+		var playTime 	int
+		var createTime 	int
+		var updateTime 	int
+		if err := rows.Scan(&playTime, &createTime, &updateTime); err != nil {
+			logger.Error("Failed to load game tracker data", zap.Error(err))
+		}
+
+		playTrack := models.PlayTrackingGranular{
+			PlayTime:	playTime,
+			StartTime: 	createTime,
+			UpdateTime:	updateTime,
+		}
+		granularList = append(granularList, playTrack)
+	}
+
+	return granularList
+}
+
+func GenerateCurrentGameStats() (map[string][]models.PlayTrackingAggregate, map[string]int, int) {
+	logger := common.GetLoggerInstance()
+	db, err := openGameTrackerDB()
+	if err != nil {
+		return nil, nil, 0
+	}
+	defer closeDB(db)
+
+	rows, err := db.Query("SELECT rom.id, rom.name, rom.file_path, " +
+						  "SUM(play_activity.play_time) AS play_time_total, " +
+						  "COUNT(play_activity.ROWID) AS play_count_total, " +
+						  "datetime(MIN(play_activity.created_at), 'unixepoch') AS first_played_at, " +
+						  "datetime(MAX(play_activity.created_at), 'unixepoch') AS last_played_at " +
+        				  "FROM rom " +
+						  "LEFT JOIN play_activity " +
+						  "ON rom.id = play_activity.rom_id " +
+        				  "GROUP BY rom.id " +
+        				  "HAVING play_time_total > 0 " +
+        				  "ORDER BY play_time_total DESC")
+	defer rows.Close()
+
+	var gamePlayMap map[string][]models.PlayTrackingAggregate
+	var consolePlayMap map[string]int
+	totalPlay := 0
+	var multiMap map[string]bool
+	for rows.Next() {
+		var id 				int
+		var name 			string
+		var filePath 		string
+		var playTimeTotal 	int
+		var playCountTotal 	int
+		var firstPlayedTime time.Time
+		var lastPlayedTime 	time.Time
+		if err := rows.Scan(&id, &name, &filePath, &playTimeTotal, &playCountTotal, &firstPlayedTime, &lastPlayedTime); err != nil {
+			logger.Error("Failed to load game tracker data", zap.Error(err))
+		}
+
+		romName, multi := extractMultiDiscName(name, filePath)
+		playTrack := models.PlayTrackingAggregate{
+			Id:					[]int{id},
+			Name: 				romName,
+			PlayTimeTotal:    	playTimeTotal,
+			PlayCountTotal:    	playCountTotal,
+			FirstPlayedTime: 	firstPlayedTime,
+			LastPlayedTime:    	lastPlayedTime,
+		}
+		console := extractPlayConsoleName(filePath)
+
+		if multi {
+			multiMap[console] = true
+			gamePlayMap[console] = appendMultiDiscAggregate(gamePlayMap[console], playTrack)
+		} else {
+			gamePlayMap[console] = append(gamePlayMap[console], playTrack)
+		}
+
+		consolePlayMap[console] = consolePlayMap[console] + playTrack.PlayTimeTotal
+
+		totalPlay = totalPlay + playTrack.PlayTimeTotal
+	}
+
+	gamePlayMap = sortPlayMap(gamePlayMap, multiMap)
+
+	return gamePlayMap, consolePlayMap, totalPlay
+}
+
+func sortPlayMap(playMap map[string][]models.PlayTrackingAggregate, multiMap map[string]bool) map[string][]models.PlayTrackingAggregate {
+	keys := slices.Sorted(maps.Keys(multiMap))
+	for _, key := range keys {
+		aggregateList := playMap[key]
+		slices.SortFunc(aggregateList, func(a, b models.PlayTrackingAggregate) int {
+			return a.PlayTimeTotal - b.PlayTimeTotal
+		})
+		playMap[key] = aggregateList
+	}
+	return playMap
+}
+
+func appendMultiDiscAggregate(existingList []models.PlayTrackingAggregate, newAggregate models.PlayTrackingAggregate) []models.PlayTrackingAggregate {
+	for index, existingAggregate := range existingList {
+		if existingAggregate.Name == newAggregate.Name {
+			existingList[index] = models.PlayTrackingAggregate{
+				Id:					appendUniqueAggregateId(existingAggregate.Id, newAggregate.Id[0]),
+				Name: 				existingAggregate.Name,
+				PlayTimeTotal:    	existingAggregate.PlayTimeTotal+newAggregate.PlayTimeTotal,
+				PlayCountTotal:    	existingAggregate.PlayCountTotal+newAggregate.PlayCountTotal,
+				FirstPlayedTime: 	minTime(existingAggregate.FirstPlayedTime, newAggregate.FirstPlayedTime),
+				LastPlayedTime:    	maxTime(existingAggregate.FirstPlayedTime, newAggregate.FirstPlayedTime),
+			}
+			return existingList
+		}
+	}
+	return append(existingList, newAggregate)
+}
+
+func appendUniqueAggregateId(existingIds []int, newId int) []int {
+	for _, id := range existingIds {
+		if id == newId {
+			return existingIds
+		}
+	}
+	return append(existingIds, newId)
+}
+
+func minTime(a time.Time, b time.Time) time.Time {
+	if a.Before(b) {
+		return a
+	}
+	return b
+}
+
+func maxTime(a time.Time, b time.Time) time.Time {
+	if a.After(b) {
+		return a
+	}
+	return b
+}
+
+func extractMultiDiscName(romName string, filePath string) (string, bool) {
+	if strings.Contains(romName, "(Disc") || strings.Contains(romName, "(Disk") {
+		pathList := strings.Split(filePath, "/")
+		return pathList[len(pathList)-2], true
+	}
+	return romName, false
+}
+
+func extractPlayConsoleName(romFilePath string) string {
+	return strings.Split(romFilePath, "/")[0]
+}
+
+func extractItemConsoleName(gameItem shared.Item) string {
+	pathSplit := strings.Split(gameItem.Path, "/")
+	if len(pathSplit) < 5 {
+		return ""
+	}
+	return pathSplit[4]
+}
+
+func ConvertSecondsToHumanReadable(gameTimeSeconds int) string {
+	hours := gameTimeSeconds/3600
+	minutes := (gameTimeSeconds/60)%60
+	seconds := gameTimeSeconds%60
+	return fmt.Sprintf("%d Hours, %d Minutes, %d Seconds", hours, minutes, seconds)
+}
+
+func ConvertSecondsToHumanReadableAbbreviated(gameTimeSeconds int) string {
+	hours := gameTimeSeconds/3600
+	minutes := (gameTimeSeconds/60)%60
+	seconds := gameTimeSeconds%60
+	return fmt.Sprintf("%dH %dM %dS", hours, minutes, seconds)
 }
 
 func HasGameTrackerData(romFilename string, romDirectory shared.RomDirectory) bool {

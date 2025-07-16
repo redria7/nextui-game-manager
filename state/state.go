@@ -5,6 +5,7 @@ import (
 	"go.uber.org/atomic"
 	"gopkg.in/yaml.v3"
 	"nextui-game-manager/models"
+	"nextui-game-manager/utils"
 	"os"
 	"sync"
 )
@@ -110,4 +111,19 @@ func GetCurrentMenuPosition() (int, int) {
 	selectedPosition = max(0, selectedIndex-selectedPosition)
 
 	return selectedIndex, selectedPosition
+}
+
+func GetPlayMaps() (map[string][]models.PlayTrackingAggregate, map[string]int, int) {
+	temp := GetAppState()
+	if temp.GamePlayMap == nil {
+		UpdatePlayMaps()
+		temp = GetAppState()
+	}
+	return temp.GamePlayMap, temp.ConsolePlayMap, temp.TotalPlay
+}
+
+func UpdatePlayMaps() {
+	temp := GetAppState()
+	temp.GamePlayMap, temp.ConsolePlayMap, temp.TotalPlay = utils.GenerateCurrentGameStats()
+	UpdateAppState(temp)
 }

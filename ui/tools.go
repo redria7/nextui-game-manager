@@ -27,6 +27,13 @@ func (ts ToolsScreen) Draw() (value interface{}, exitCode int, e error) {
 		Metadata: "Global Actions",
 	})
 
+	menuItems = append(menuItems, gabagool.MenuItem{
+		Text:     "Play History",
+		Selected: false,
+		Focused:  false,
+		Metadata: "Play History",
+	})
+
 	options := gabagool.DefaultListOptions("Tools", menuItems)
 	options.FooterHelpItems = []gabagool.FooterHelpItem{
 		{ButtonName: "B", HelpText: "Back"},
