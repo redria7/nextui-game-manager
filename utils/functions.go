@@ -627,24 +627,71 @@ func Nuke(game shared.Item, romDirectory shared.RomDirectory) {
 	DeleteRom(game, romDirectory)
 }
 
+func GenerateCollectionMap() map[string][]models.Collection {
+	collectionMap := make(map[string][]models.Collection)
+	collectionList, _, _ := GenerateCollectionList("", false)
+	for _, collection := range collectionList {
+		for _, game := range collection.Games {
+			collectionMap[game.DisplayName] = append(collectionMap[game.DisplayName], collection)
+		}
+	}
+	return collectionMap
+}
+
+func GenerateCollectionList(searchFilter string, onScreen bool) (collections []models.Collection, exitCode int, e error) {
+	fb := filebrowser.NewFileBrowser(common.GetLoggerInstance())
+	err := fb.CWD(GetCollectionDirectory(), false)
+	if err != nil {
+		if onScreen {
+			ShowTimedMessage("Unable to Load Collections!", time.Second*2)
+		}
+		return nil, 404, nil
+	}
+
+	if fb.Items == nil || len(fb.Items) == 0 {
+		return nil, 404, nil
+	}
+
+	itemList := fb.Items
+
+	if searchFilter != "" {
+		itemList = FilterList(itemList, searchFilter)
+	}
+
+	slices.SortFunc(itemList, func(a, b shared.Item) int {
+		return strings.Compare(a.DisplayName, b.DisplayName)
+	})
+
+	var collectionList []models.Collection
+	for _, item := range itemList {
+		col := models.Collection{DisplayName: item.DisplayName, CollectionFile: item.Path}
+		col, err = ReadCollection(col)
+
+		if err != nil {
+			if onScreen {
+				ShowTimedMessage("Unable to Load Collections!", time.Second*2)
+			}
+			return nil, -1, err
+		}
+	}
+
+	return collectionList, 0, nil
+}
+
 func FindRomHomeFromAggregate(gameAggregate models.PlayTrackingAggregate) string {
 	gamePath := gameAggregate.Path
 	if directoryExists(gamePath) || fileExists(gamePath) {
-		return "(•)"
+		return "(+)"
 	}
 
 	archiveList, err := GetArchiveFileListBasic()
-	archiveString := ""
 	if err == nil {
 		for _, archiveName := range archiveList {
 			gameSubPath := strings.ReplaceAll(gamePath, GetRomDirectory(), "")
 			archivePath := filepath.Join(GetRomDirectory(), archiveName, gameSubPath)
 			if directoryExists(archivePath) || fileExists(archivePath) {
-				archiveString = archiveString + string(CleanArchiveName(archiveName)[0])
+				return "(" + string(CleanArchiveName(archiveName)[0]) + ")"
 			}
-		}
-		if archiveString != "" {
-			return "(" + archiveString + ")"
 		}
 	}
 

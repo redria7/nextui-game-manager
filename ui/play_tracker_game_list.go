@@ -38,9 +38,20 @@ func (ptgls PlayTrackerGamesListScreen) Draw() (item interface{}, exitCode int, 
 	}
 
 	var menuItems []gaba.MenuItem
+	collectionMap := state.GetCollectionMap()
 	for _, gamePlayAggregate := range gamesList {
+		playHours := min(999, float64(gamePlayAggregate.PlayTimeTotal)/3600.0)
+		romHomeStatus := utils.FindRomHomeFromAggregate(gamePlayAggregate)
+		collections := collectionMap[gamePlayAggregate.Name]
+		collectionString := ""
+		for _, collection := range collections {
+			collectionString = collectionString + string(collection.DisplayName[0])
+		}
+		if collectionString != "" {
+			collectionString = "[" + collectionString + "] "
+		}
 		gameItem := gaba.MenuItem{
-			Text:     fmt.Sprintf("%.1fH %s : %s", min(999, float64(gamePlayAggregate.PlayTimeTotal)/3600.0), utils.FindRomHomeFromAggregate(gamePlayAggregate), gamePlayAggregate.Name),
+			Text:     fmt.Sprintf("%.1fH %s %s: %s", playHours, romHomeStatus, collectionString, gamePlayAggregate.Name),
 			Selected: false,
 			Focused:  false,
 			Metadata: gamePlayAggregate,

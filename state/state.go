@@ -127,3 +127,18 @@ func UpdatePlayMaps() {
 	temp.GamePlayMap, temp.ConsolePlayMap, temp.TotalPlay = utils.GenerateCurrentGameStats()
 	UpdateAppState(temp)
 }
+
+func GetCollectionMap() map[string][]models.Collection {
+	temp := GetAppState()
+	if temp.CollectionMap == nil {
+		UpdateCollectionMap()
+		temp = GetAppState()
+	}
+	return temp.CollectionMap
+}
+
+func UpdateCollectionMap() {
+	temp := GetAppState()
+	temp.CollectionMap = utils.GenerateCollectionMap()
+	UpdateAppState(temp)
+}

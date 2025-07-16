@@ -12,6 +12,8 @@ type AppState struct {
 	GamePlayMap 	map[string][]PlayTrackingAggregate
 	ConsolePlayMap 	map[string]int
 	TotalPlay 		int
+
+	CollectionMap	map[string][]Collection
 }
 
 func (a AppState) MarshalLogObject(enc zapcore.ObjectEncoder) error {
