@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
-	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	"nextui-game-manager/models"
 	"nextui-game-manager/state"
 	"nextui-game-manager/utils"
@@ -28,7 +27,6 @@ func (ptgls PlayTrackerGamesListScreen) Name() sum.Int[models.ScreenName] {
 
 func (ptgls PlayTrackerGamesListScreen) Draw() (item interface{}, exitCode int, e error) {
 	gamePlayMap, consoleMap, _ := state.GetPlayMaps()
-	logger := common.GetLoggerInstance()
 
 	title := fmt.Sprintf("%.1fH : %s", float64(consoleMap[ptgls.Console])/3600.0, ptgls.Console)
 
@@ -42,20 +40,9 @@ func (ptgls PlayTrackerGamesListScreen) Draw() (item interface{}, exitCode int, 
 	var menuItems []gaba.MenuItem
 	collectionMap := state.GetCollectionMap()
 	
-	logger.Info("collection map keys")
-	for k, v := range collectionMap {
-		logger.Info(k)
-		vString := ""
-		for _, c := range v {
-			vString = vString + "," + string(c.DisplayName)
-		}
-		logger.Info(vString)
-	}
-	logger.Info("loading game list")
 	for _, gamePlayAggregate := range gamesList {
 		playHours := min(999, float64(gamePlayAggregate.PlayTimeTotal)/3600.0)
 		romHomeStatus := utils.FindRomHomeFromAggregate(gamePlayAggregate)
-		logger.Info(gamePlayAggregate.Name)
 		collections := collectionMap[gamePlayAggregate.Name]
 		collectionString := ""
 		for _, collection := range collections {
