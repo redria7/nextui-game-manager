@@ -709,10 +709,10 @@ func GenerateCurrentGameStats() (map[string][]models.PlayTrackingAggregate, map[
         				  "ORDER BY play_time_total DESC")
 	defer rows.Close()
 
-	var gamePlayMap map[string][]models.PlayTrackingAggregate
-	var consolePlayMap map[string]int
+	gamePlayMap := make(map[string][]models.PlayTrackingAggregate)
+	consolePlayMap := make(map[string]int)
 	totalPlay := 0
-	var multiMap map[string]bool
+	multiMap := make(map[string]bool)
 	for rows.Next() {
 		var id 				int
 		var name 			string
@@ -725,9 +725,7 @@ func GenerateCurrentGameStats() (map[string][]models.PlayTrackingAggregate, map[
 			logger.Error("Failed to load game tracker data", zap.Error(err))
 		}
 
-		logger.Info("loading", zap.String("extracting name", name))
 		romName, multi := extractMultiDiscName(name, filePath)
-		logger.Info("loading", zap.String("extracted name", romName))
 		playTrack := models.PlayTrackingAggregate{
 			Id:					[]int{id},
 			Name: 				romName,
@@ -737,7 +735,6 @@ func GenerateCurrentGameStats() (map[string][]models.PlayTrackingAggregate, map[
 			LastPlayedTime:    	time.Unix(int64(lastPlayedTime), 0),
 		}
 		console := extractPlayConsoleName(filePath)
-		logger.Info("loading", zap.String("extracted console", console))
 
 		if multi {
 			multiMap[console] = true
@@ -745,13 +742,10 @@ func GenerateCurrentGameStats() (map[string][]models.PlayTrackingAggregate, map[
 		} else {
 			gamePlayMap[console] = append(gamePlayMap[console], playTrack)
 		}
-		logger.Info("loading", zap.String("mapped game play", strconv.Itoa(gamePlayMap[console][0].Id[0])))
 
 		consolePlayMap[console] = consolePlayMap[console] + playTrack.PlayTimeTotal
-		logger.Info("loading", zap.String("mapped console play", strconv.Itoa(consolePlayMap[console])))
 
 		totalPlay = totalPlay + playTrack.PlayTimeTotal
-		logger.Info("loading", zap.String("mapped total play", strconv.Itoa(totalPlay)))
 	}
 
 	gamePlayMap = sortPlayMap(gamePlayMap, multiMap)
@@ -812,9 +806,11 @@ func maxTime(a time.Time, b time.Time) time.Time {
 }
 
 func extractMultiDiscName(romName string, filePath string) (string, bool) {
-	if strings.Contains(romName, "(Disc") || strings.Contains(romName, "(Disk") {
+	if (strings.Contains(romName, "(Disc") || strings.Contains(romName, "(Disk")) {
 		pathList := strings.Split(filePath, "/")
-		return pathList[len(pathList)-2], true
+		if len(pathList) >= 2 {
+			return pathList[len(pathList)-2], true
+		}
 	}
 	return romName, false
 }
