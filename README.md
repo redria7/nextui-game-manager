@@ -34,6 +34,10 @@ A one-stop pak for all your game management needs.
 - Archive ROM (Places ROM and Art if present into a hidden folder)
 - Manage ROM Archives (Rename archive folder names and restore archived ROMs)
 - Delete ROM (Deletes ROM file and associated Art)
+- Global Actions
+    - Download all missing art
+        - Ability to download by platform
+    - Clear recently played list
 
 ---
 
