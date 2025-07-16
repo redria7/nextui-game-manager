@@ -20,7 +20,8 @@ type Action struct {
 	CollectionDelete,
 	CollectionAdd,
 
-	GlobalDownloadArt sum.Int[Action]
+	GlobalDownloadArt,
+	GlobalClearRecents sum.Int[Action]
 }
 
 var Actions = sum.Int[Action]{}.Sum()
@@ -42,7 +43,8 @@ var ActionMap = map[string]sum.Int[Action]{
 }
 
 var GlobalActionMap = map[string]sum.Int[Action]{
-	"Download Missing Art": Actions.GlobalDownloadArt,
+	"Download Missing Art":  Actions.GlobalDownloadArt,
+	"Clear Recently Played": Actions.GlobalClearRecents,
 }
 
 var ActionKeys = []string{
@@ -56,6 +58,7 @@ var ActionKeys = []string{
 
 var GlobalActionKeys = []string{
 	"Download Missing Art",
+	"Clear Recently Played",
 }
 
 var BulkActionKeys = []string{

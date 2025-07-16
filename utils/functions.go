@@ -13,10 +13,11 @@ import (
 )
 
 const (
-	gameTrackerDBPath = "/mnt/SDCARD/.userdata/shared/game_logs.sqlite"
-	saveFileDirectory = "/mnt/SDCARD/Saves/"
-	defaultDirPerm    = 0755
-	defaultFilePerm   = 0644
+	gameTrackerDBPath  = "/mnt/SDCARD/.userdata/shared/game_logs.sqlite"
+	saveFileDirectory  = "/mnt/SDCARD/Saves/"
+	RecentlyPlayedFile = "/mnt/SDCARD/.userdata/shared/.minui/recent.txt"
+	defaultDirPerm     = 0755
+	defaultFilePerm    = 0644
 )
 
 func IsDev() bool {

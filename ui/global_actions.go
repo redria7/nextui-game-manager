@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"github.com/UncleJunVIP/gabagool/pkg/gabagool"
+	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"github.com/veandco/go-sdl2/sdl"
 	"nextui-game-manager/models"
@@ -161,6 +162,21 @@ func (gas GlobalActionsScreen) Draw() (value interface{}, exitCode int, e error)
 			} else {
 				message := fmt.Sprintf("Art found for %d/%d games!", len(res.CompletedDownloads), selectedMissingArtCount)
 				utils.ShowTimedMessage(message, time.Second*2)
+			}
+		} else if selection.Unwrap().SelectedItem.Metadata == models.Actions.GlobalClearRecents {
+			confirmClear := utils.ConfirmAction("Are you sure you want to confirmClear your recently played list?\n\nThis cannot be undone!")
+
+			if confirmClear {
+				deletedRes, _ := gabagool.ProcessMessage("Clearing Recently Played List.", gabagool.ProcessMessageOptions{}, func() (interface{}, error) {
+					time.Sleep(1500 * time.Millisecond)
+					return common.DeleteFile(utils.RecentlyPlayedFile), nil
+				})
+
+				if deletedRes.Result.(bool) {
+					utils.ShowTimedMessage("Recently Played List Cleared!", time.Millisecond*1500)
+				} else {
+					utils.ShowTimedMessage("Failed to confirmClear recently played list!", time.Millisecond*1500)
+				}
 			}
 		}
 
