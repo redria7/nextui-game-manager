@@ -699,8 +699,8 @@ func GenerateCurrentGameStats() (map[string][]models.PlayTrackingAggregate, map[
 	rows, err := db.Query("SELECT rom.id, rom.name, rom.file_path, " +
 						  "SUM(play_activity.play_time) AS play_time_total, " +
 						  "COUNT(play_activity.ROWID) AS play_count_total, " +
-						  "datetime(MIN(play_activity.created_at), 'unixepoch') AS first_played_at, " +
-						  "datetime(MAX(play_activity.created_at), 'unixepoch') AS last_played_at " +
+						  "MIN(play_activity.created_at) AS first_played_at, " +
+						  "MAX(play_activity.created_at) AS last_played_at " +
         				  "FROM rom " +
 						  "LEFT JOIN play_activity " +
 						  "ON rom.id = play_activity.rom_id " +
@@ -719,8 +719,8 @@ func GenerateCurrentGameStats() (map[string][]models.PlayTrackingAggregate, map[
 		var filePath 		string
 		var playTimeTotal 	int
 		var playCountTotal 	int
-		var firstPlayedTime time.Time
-		var lastPlayedTime 	time.Time
+		var firstPlayedTime int
+		var lastPlayedTime 	int
 		if err := rows.Scan(&id, &name, &filePath, &playTimeTotal, &playCountTotal, &firstPlayedTime, &lastPlayedTime); err != nil {
 			logger.Error("Failed to load game tracker data", zap.Error(err))
 		}
@@ -731,8 +731,8 @@ func GenerateCurrentGameStats() (map[string][]models.PlayTrackingAggregate, map[
 			Name: 				romName,
 			PlayTimeTotal:    	playTimeTotal,
 			PlayCountTotal:    	playCountTotal,
-			FirstPlayedTime: 	firstPlayedTime,
-			LastPlayedTime:    	lastPlayedTime,
+			FirstPlayedTime: 	time.Unix(int64(firstPlayedTime), 0),
+			LastPlayedTime:    	time.Unix(int64(lastPlayedTime), 0),
 		}
 		console := extractPlayConsoleName(filePath)
 
