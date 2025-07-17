@@ -836,7 +836,7 @@ func sortPlayMap(playMap map[string][]models.PlayTrackingAggregate, multiMap map
 	for _, key := range keys {
 		aggregateList := playMap[key]
 		slices.SortFunc(aggregateList, func(a, b models.PlayTrackingAggregate) int {
-			return a.PlayTimeTotal - b.PlayTimeTotal
+			return  b.PlayTimeTotal - a.PlayTimeTotal
 		})
 		playMap[key] = aggregateList
 	}
