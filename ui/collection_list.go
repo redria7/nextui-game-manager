@@ -30,11 +30,8 @@ func (c CollectionListScreen) Draw() (collection interface{}, exitCode int, e er
 		return nil, code, err
 	}
 
-	var extraArgs []string
-	extraArgs = append(extraArgs, "--confirm-text", "SELECT")
 	if c.SearchFilter != "" {
 		title = "[Search: \"" + c.SearchFilter + "\"]"
-		extraArgs = append(extraArgs, "--cancel-text", "CLEAR SEARCH")
 	}
 
 	var menuItems []gaba.MenuItem

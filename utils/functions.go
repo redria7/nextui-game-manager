@@ -629,7 +629,7 @@ func Nuke(game shared.Item, romDirectory shared.RomDirectory) {
 
 func GenerateCollectionMap() map[string][]models.Collection {
 	collectionMap := make(map[string][]models.Collection)
-	collectionList, _, _ := GenerateCollectionList("", true)
+	collectionList, _, _ := GenerateCollectionList("", false)
 	for _, collection := range collectionList {
 		for _, game := range collection.Games {
 			collectionMap[game.DisplayName] = append(collectionMap[game.DisplayName], collection)
@@ -673,6 +673,8 @@ func GenerateCollectionList(searchFilter string, onScreen bool) (collections []m
 			}
 			return nil, -1, err
 		}
+
+		collectionList = append(collectionList, col)
 	}
 
 	return collectionList, 0, nil
