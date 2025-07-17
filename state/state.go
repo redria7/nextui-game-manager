@@ -116,29 +116,43 @@ func GetCurrentMenuPosition() (int, int) {
 func GetPlayMaps() (map[string][]models.PlayTrackingAggregate, map[string]int, int) {
 	temp := GetAppState()
 	if temp.GamePlayMap == nil {
-		UpdatePlayMaps()
+		updatePlayMaps()
 		temp = GetAppState()
 	}
 	return temp.GamePlayMap, temp.ConsolePlayMap, temp.TotalPlay
 }
 
-func UpdatePlayMaps() {
+func updatePlayMaps() {
 	temp := GetAppState()
 	temp.GamePlayMap, temp.ConsolePlayMap, temp.TotalPlay = utils.GenerateCurrentGameStats()
+	UpdateAppState(temp)
+}
+
+func ClearPlayMaps() {
+	temp := GetAppState()
+	temp.GamePlayMap = nil
+	temp.ConsolePlayMap = nil
+	temp.TotalPlay = 0
 	UpdateAppState(temp)
 }
 
 func GetCollectionMap() map[string][]models.Collection {
 	temp := GetAppState()
 	if temp.CollectionMap == nil {
-		UpdateCollectionMap()
+		updateCollectionMap()
 		temp = GetAppState()
 	}
 	return temp.CollectionMap
 }
 
-func UpdateCollectionMap() {
+func updateCollectionMap() {
 	temp := GetAppState()
 	temp.CollectionMap = utils.GenerateCollectionMap()
+	UpdateAppState(temp)
+}
+
+func ClearCollectionMap() {
+	temp := GetAppState()
+	temp.CollectionMap = nil
 	UpdateAppState(temp)
 }
