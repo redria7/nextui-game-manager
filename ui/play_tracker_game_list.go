@@ -75,15 +75,18 @@ func (ptgls PlayTrackerGamesListScreen) Draw() (item interface{}, exitCode int, 
 	options.FooterHelpItems = []gaba.FooterHelpItem{
 		{ButtonName: "B", HelpText: "Back"},
 		{ButtonName: "X", HelpText: "Search"},
-		// {ButtonName: "Menu", HelpText: "Help"},
+		{ButtonName: "Menu", HelpText: "Help"},
 		{ButtonName: "A", HelpText: "Details"},
 	}
 
-	// options.EnableHelp = true
-	// options.HelpTitle = "Play Records Docs"
-	// options.HelpText = []string{
-	// 	"Hours played displays rounded up",
-	// }
+	options.EnableHelp = true
+	options.HelpTitle = "Tag Details"
+	options.HelpText = []string{
+		"(+) => Rom location matches play history",
+		"(-) => Missing Rom, 'Orphaned' history",
+		"(A) => Archived Rom, first letter of archive",
+		"[ABC] => Collections containing Rom",
+	}
 
 	selection, err := gaba.List(options)
 	if err != nil {
