@@ -55,6 +55,32 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 			}(),
 		},
 		{
+			Item: gabagool.MenuItem{Text: "Art Fuzzy Search Threshold"},
+			Options: []gabagool.Option{
+				{DisplayName: "Lackadaisical (50%)", Value: .50},
+				{DisplayName: "Loose (65%)", Value: .65},
+				{DisplayName: "Eased (75%)", Value: .75},
+				{DisplayName: "Default (80%)", Value: .80},
+				{DisplayName: "Strict (85%)", Value: .85},
+			},
+			SelectedOption: func() int {
+				switch appState.Config.FuzzySearchThreshold {
+				case .50:
+					return 0
+				case .65:
+					return 1
+				case .75:
+					return 2
+				case .80:
+					return 3
+				case .85:
+					return 4
+				default:
+					return 3
+				}
+			}(),
+		},
+		{
 			Item: gabagool.MenuItem{Text: "Hide Empty Platforms"},
 			Options: []gabagool.Option{
 				{DisplayName: "True", Value: true},
@@ -175,6 +201,8 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 				case "SCREENSHOTS":
 					appState.Config.ArtDownloadType = shared.ArtDownloadTypes.SCREENSHOTS
 				}
+			} else if option.Item.Text == "Art Fuzzy Search Threshold" {
+				appState.Config.FuzzySearchThreshold = option.Options[option.SelectedOption].Value.(float64)
 			} else if option.Item.Text == "Hide Empty Platforms" {
 				appState.Config.HideEmpty = option.Options[option.SelectedOption].Value.(bool)
 			} else if option.Item.Text == "Show Art" {

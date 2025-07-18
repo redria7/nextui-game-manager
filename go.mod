@@ -4,8 +4,8 @@ go 1.24
 
 require (
 	github.com/UncleJunVIP/certifiable v1.0.0
-	github.com/UncleJunVIP/gabagool v0.0.58
-	github.com/UncleJunVIP/nextui-pak-shared-functions v1.9.0
+	github.com/UncleJunVIP/gabagool v0.0.60
+	github.com/UncleJunVIP/nextui-pak-shared-functions v1.9.1
 	github.com/disintegration/imaging v1.6.2
 	github.com/mattn/go-sqlite3 v1.14.28
 	github.com/spf13/viper v1.20.1

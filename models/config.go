@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	ArtDownloadType 			sum.Int[shared.ArtDownloadType] `yaml:"art_download_type"`
+	FuzzySearchThreshold float64                         `yaml:"fuzzy_search_threshold"`
 	HideEmpty       			bool                            `yaml:"hide_empty"`
 	ShowArt         			bool                            `yaml:"show_art"`
 	LogLevel        			string                   		`yaml:"log_level"`
