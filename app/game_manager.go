@@ -148,87 +148,87 @@ func handleScreenTransition(currentScreen models.Screen, result interface{}, cod
 		return handleArchiveManagementTransition(currentScreen, result, code)
 	case models.ScreenNames.ArchiveOptions:
 		return handleArchiveOptionsTransition(currentScreen, result, code)
-	case models.ScreenNames.PlayTrackerList:
-		return handlePlayTrackerListTransition(result, code)
-	case models.ScreenNames.PlayTrackerGameList:
-		return handlePlayTrackerGameListTransition(currentScreen, result, code)
-	case models.ScreenNames.PlayTrackerGameDetails:
-		return handlePlayTrackerGameDetailsTransition(currentScreen, result, code)
-	case models.ScreenNames.PlayTrackerGameHistory:
-		return handlePlayTrackerGameHistoryTransition(currentScreen, result, code)
+	case models.ScreenNames.PlayHistoryList:
+		return handlePlayHistoryListTransition(result, code)
+	case models.ScreenNames.PlayHistoryGameList:
+		return handlePlayHistoryGameListTransition(currentScreen, result, code)
+	case models.ScreenNames.PlayHistoryGameDetails:
+		return handlePlayHistoryGameDetailsTransition(currentScreen, result, code)
+	case models.ScreenNames.PlayHistoryGameHistory:
+		return handlePlayHistoryGameHistoryTransition(currentScreen, result, code)
 	default:
 		state.ReturnToMain()
 		return ui.InitMainMenu()
 	}
 }
 
-func handlePlayTrackerListTransition(result interface{}, code int) models.Screen {
+func handlePlayHistoryListTransition(result interface{}, code int) models.Screen {
 	switch code {
 	case ExitCodeSuccess:
 		state.AddNewMenuPosition()
-		return ui.InitPlayTrackerGamesListScreen(result.(string), "")
+		return ui.InitPlayHistoryGamesListScreen(result.(string), "")
 	default:
 		state.RemoveMenuPositions(1)
 		return ui.InitToolsScreen()
 	}
 }
 
-func handlePlayTrackerGameListTransition(currentScreen models.Screen, result interface{}, code int) models.Screen {
-	ptgls := currentScreen.(ui.PlayTrackerGamesListScreen)
+func handlePlayHistoryGameListTransition(currentScreen models.Screen, result interface{}, code int) models.Screen {
+	ptgls := currentScreen.(ui.PlayHistoryGamesListScreen)
 
 	switch code {
 	case ExitCodeSuccess:
 		state.AddNewMenuPosition()
-		return ui.InitPlayTrackerGameDetailsScreenFromPlayTracker(ptgls.Console, ptgls.SearchFilter, result.(models.PlayTrackingAggregate))
+		return ui.InitPlayHistoryGameDetailsScreenFromPlayHistory(ptgls.Console, ptgls.SearchFilter, result.(models.PlayHistoryAggregate))
 	case ExitCodeCancel:
 		if ptgls.SearchFilter != "" {
 			state.UpdateCurrentMenuPosition(0, 0)
-			return ui.InitPlayTrackerGamesListScreen(ptgls.Console, "")
+			return ui.InitPlayHistoryGamesListScreen(ptgls.Console, "")
 		}
 
 		state.RemoveMenuPositions(1)
-		return ui.InitPlayTrackerListScreen()
+		return ui.InitPlayHistoryListScreen()
 	case ExitCodeAction, ExitCodeError:
 		searchFilter := result.(string)
 
 		if searchFilter != "" {
 			state.UpdateCurrentMenuPosition(0, 0)
-			return ui.InitPlayTrackerGamesListScreen(ptgls.Console, searchFilter)
+			return ui.InitPlayHistoryGamesListScreen(ptgls.Console, searchFilter)
 		}
 
-		return ui.InitPlayTrackerGamesListScreen(ptgls.Console, "")
+		return ui.InitPlayHistoryGamesListScreen(ptgls.Console, "")
 	case ExitCodeEmpty:
 		if ptgls.SearchFilter != "" {
 			utils.ShowTimedMessage(fmt.Sprintf("No results found for %s!", ptgls.SearchFilter), shortMessageDelay)
 			state.UpdateCurrentMenuPosition(0, 0)
-			return ui.InitPlayTrackerGamesListScreen(ptgls.Console, "")
+			return ui.InitPlayHistoryGamesListScreen(ptgls.Console, "")
 		}
 
 		utils.ShowTimedMessage(fmt.Sprintf("%s history is empty!", ptgls.Console), longMessageDelay)
 		state.RemoveMenuPositions(1)
-		return ui.InitPlayTrackerListScreen()
+		return ui.InitPlayHistoryListScreen()
 	default:
 		state.RemoveMenuPositions(1)
-		return ui.InitPlayTrackerListScreen()
+		return ui.InitPlayHistoryListScreen()
 	}
 }
 
-func handlePlayTrackerGameHistoryTransition(currentScreen models.Screen, result interface{}, code int) models.Screen {
-	ptghs := currentScreen.(ui.PlayTrackerGameHistoryScreen)
-	return ui.InitPlayTrackerGameDetailsScreenFromSelf(ptghs.Console, ptghs.SearchFilter, ptghs.GameAggregate, 
-		ptghs.Game, ptghs.RomDirectory, ptghs.PreviousRomDirectory, ptghs.PlayTrackerOrigin)
+func handlePlayHistoryGameHistoryTransition(currentScreen models.Screen, result interface{}, code int) models.Screen {
+	ptghs := currentScreen.(ui.PlayHistoryGameHistoryScreen)
+	return ui.InitPlayHistoryGameDetailsScreenFromSelf(ptghs.Console, ptghs.SearchFilter, ptghs.GameAggregate, 
+		ptghs.Game, ptghs.RomDirectory, ptghs.PreviousRomDirectory, ptghs.PlayHistoryOrigin)
 }
 
-func handlePlayTrackerGameDetailsTransition(currentScreen models.Screen, result interface{}, code int) models.Screen {
-	ptgds := currentScreen.(ui.PlayTrackerGameDetailsScreen)
+func handlePlayHistoryGameDetailsTransition(currentScreen models.Screen, result interface{}, code int) models.Screen {
+	ptgds := currentScreen.(ui.PlayHistoryGameDetailsScreen)
 	switch code {
 	case ExitCodeSuccess:
-		return ui.InitPlayTrackerGameHistoryScreen(ptgds.Console, ptgds.SearchFilter, ptgds.GameAggregate, 
-		ptgds.Game, ptgds.RomDirectory, ptgds.PreviousRomDirectory, ptgds.PlayTrackerOrigin)
+		return ui.InitPlayHistoryGameHistoryScreen(ptgds.Console, ptgds.SearchFilter, ptgds.GameAggregate, 
+		ptgds.Game, ptgds.RomDirectory, ptgds.PreviousRomDirectory, ptgds.PlayHistoryOrigin)
 	default:
 		state.RemoveMenuPositions(1)
-		if ptgds.PlayTrackerOrigin {
-			return ui.InitPlayTrackerGamesListScreen(ptgds.Console, ptgds.SearchFilter)
+		if ptgds.PlayHistoryOrigin {
+			return ui.InitPlayHistoryGamesListScreen(ptgds.Console, ptgds.SearchFilter)
 		}
 		return ui.InitActionsScreen(ptgds.Game, ptgds.RomDirectory, ptgds.PreviousRomDirectory, ptgds.SearchFilter)
 	}
@@ -421,7 +421,7 @@ func handleToolsTransition(result interface{}, code int) models.Screen {
 		case "Global Actions":
 			return ui.InitGlobalActionsScreen()
 		case "Play History":
-			return ui.InitPlayTrackerListScreen()
+			return ui.InitPlayHistoryListScreen()
 		}
 		return ui.InitToolsScreen()
 	case ExitCodeAction:
@@ -563,9 +563,9 @@ func executeGameAction(as ui.ActionsScreen, action sum.Int[models.Action]) model
 		return handleDeleteRomAction(as)
 	case models.Actions.Nuke:
 		return handleNukeAction(as)
-	case models.Actions.PlayTrackerOpen:
+	case models.Actions.PlayHistoryOpen:
 		state.AddNewMenuPosition()
-		return ui.InitPlayTrackerGameDetailsScreenFromActions(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
+		return ui.InitPlayHistoryGameDetailsScreenFromActions(as.Game, as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
 	default:
 		state.RemoveMenuPositions(1)
 		return ui.InitGamesListWithPreviousDirectory(as.RomDirectory, as.PreviousRomDirectory, as.SearchFilter)
@@ -699,7 +699,7 @@ func handleBulkDownloadArt(ba ui.BulkOptionsScreen) {
 		gaba.ProcessMessageOptions{ShowThemeBackground: true},
 		func() (interface{}, error) {
 			for _, game := range ba.Games {
-				if artPath := utils.FindArt(ba.RomDirectory, game, state.GetAppState().Config.ArtDownloadType); artPath != "" {
+				if artPath := utils.FindArt(ba.RomDirectory, game, state.GetAppState().Config.ArtDownloadType, state.GetAppState().Config.FuzzySearchThreshold); artPath != "" {
 					artPaths = append(artPaths, artPath)
 				}
 			}

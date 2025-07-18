@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-type PlayTrackingAggregate struct {
+type PlayHistoryAggregate struct {
 	Id 				[]int
 	Name 			string
 	Path			string
@@ -12,7 +12,7 @@ type PlayTrackingAggregate struct {
 	LastPlayedTime 	time.Time
 }
 
-type PlayTrackingGranular struct {
+type PlayHistoryGranular struct {
 	PlayTime	int
 	StartTime	int
 	UpdateTime	int

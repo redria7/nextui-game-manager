@@ -11,17 +11,17 @@ import (
 	"qlova.tech/sum"
 )
 
-type PlayTrackerActionsScreen struct {
+type PlayHistoryActionsScreen struct {
 	Game                 shared.Item
 	RomDirectory         shared.RomDirectory
 	SearchFilter         string
 	PreviousRomDirectory shared.RomDirectory
 }
 
-func InitPlayTrackerActionsScreen(game shared.Item, romDirectory shared.RomDirectory,
+func InitPlayHistoryActionsScreen(game shared.Item, romDirectory shared.RomDirectory,
 	previousRomDirectory shared.RomDirectory,
-	searchFilter string) PlayTrackerActionsScreen {
-	return PlayTrackerActionsScreen{
+	searchFilter string) PlayHistoryActionsScreen {
+	return PlayHistoryActionsScreen{
 		Game:                 game,
 		RomDirectory:         romDirectory,
 		PreviousRomDirectory: previousRomDirectory,
@@ -29,11 +29,11 @@ func InitPlayTrackerActionsScreen(game shared.Item, romDirectory shared.RomDirec
 	}
 }
 
-func (ptas PlayTrackerActionsScreen) Name() sum.Int[models.ScreenName] {
-	return models.ScreenNames.PlayTrackerActions
+func (ptas PlayHistoryActionsScreen) Name() sum.Int[models.ScreenName] {
+	return models.ScreenNames.PlayHistoryActions
 }
 
-func (ptas PlayTrackerActionsScreen) Draw() (action interface{}, exitCode int, e error) {
+func (ptas PlayHistoryActionsScreen) Draw() (action interface{}, exitCode int, e error) {
 	logger := common.GetLoggerInstance()
 
 	existingArtFilename, err := utils.FindExistingArt(ptas.Game.Filename, ptas.RomDirectory)

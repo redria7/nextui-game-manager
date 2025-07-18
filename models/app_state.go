@@ -9,7 +9,7 @@ type AppState struct {
 
 	MenuPositionList []MenuPositionPointer
 
-	GamePlayMap 	map[string][]PlayTrackingAggregate
+	GamePlayMap 	map[string][]PlayHistoryAggregate
 	ConsolePlayMap 	map[string]int
 	TotalPlay 		int
 

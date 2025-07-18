@@ -11,34 +11,34 @@ import (
 	"time"
 )
 
-type PlayTrackerGameHistoryScreen struct {
+type PlayHistoryGameHistoryScreen struct {
 	Console         		string
 	SearchFilter			string
-	GameAggregate			models.PlayTrackingAggregate
+	GameAggregate			models.PlayHistoryAggregate
 	Game                 	shared.Item
 	RomDirectory         	shared.RomDirectory
 	PreviousRomDirectory 	shared.RomDirectory
-	PlayTrackerOrigin		bool
+	PlayHistoryOrigin		bool
 }
 
-func InitPlayTrackerGameHistoryScreen(console string, searchFilter string, gameAggregate models.PlayTrackingAggregate, game shared.Item, 
-	romDirectory shared.RomDirectory, previousRomDirectory shared.RomDirectory, playTrackerOrigin bool) PlayTrackerGameHistoryScreen {
-	return PlayTrackerGameHistoryScreen{
+func InitPlayHistoryGameHistoryScreen(console string, searchFilter string, gameAggregate models.PlayHistoryAggregate, game shared.Item, 
+	romDirectory shared.RomDirectory, previousRomDirectory shared.RomDirectory, playHistoryOrigin bool) PlayHistoryGameHistoryScreen {
+	return PlayHistoryGameHistoryScreen{
 		Console:              	console,
 		SearchFilter:         	searchFilter,
 		GameAggregate: 			gameAggregate,
 		Game:      				game,
 		RomDirectory: 			romDirectory,
 		PreviousRomDirectory:	previousRomDirectory,
-		PlayTrackerOrigin: 		playTrackerOrigin,
+		PlayHistoryOrigin: 		playHistoryOrigin,
 	}
 }
 
-func (ptgls PlayTrackerGameHistoryScreen) Name() sum.Int[models.ScreenName] {
-	return models.ScreenNames.PlayTrackerGameHistory
+func (ptgls PlayHistoryGameHistoryScreen) Name() sum.Int[models.ScreenName] {
+	return models.ScreenNames.PlayHistoryGameHistory
 }
 
-func (ptghs PlayTrackerGameHistoryScreen) Draw() (item interface{}, exitCode int, e error) {
+func (ptghs PlayHistoryGameHistoryScreen) Draw() (item interface{}, exitCode int, e error) {
 	title := ptghs.GameAggregate.Name + " Play History"
 
 	playHistory := utils.GenerateSingleGameGranularRecords(ptghs.GameAggregate.Id)

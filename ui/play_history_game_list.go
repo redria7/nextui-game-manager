@@ -9,23 +9,23 @@ import (
 	"qlova.tech/sum"
 )
 
-type PlayTrackerGamesListScreen struct {
+type PlayHistoryGamesListScreen struct {
 	Console         string
 	SearchFilter	string
 }
 
-func InitPlayTrackerGamesListScreen(console string, searchFilter string) PlayTrackerGamesListScreen {
-	return PlayTrackerGamesListScreen{
+func InitPlayHistoryGamesListScreen(console string, searchFilter string) PlayHistoryGamesListScreen {
+	return PlayHistoryGamesListScreen{
 		Console:              console,
 		SearchFilter:         searchFilter,
 	}
 }
 
-func (ptgls PlayTrackerGamesListScreen) Name() sum.Int[models.ScreenName] {
-	return models.ScreenNames.PlayTrackerGameList
+func (ptgls PlayHistoryGamesListScreen) Name() sum.Int[models.ScreenName] {
+	return models.ScreenNames.PlayHistoryGameList
 }
 
-func (ptgls PlayTrackerGamesListScreen) Draw() (item interface{}, exitCode int, e error) {
+func (ptgls PlayHistoryGamesListScreen) Draw() (item interface{}, exitCode int, e error) {
 	appState := state.GetAppState()
 	gamePlayMap, consoleMap, _ := state.GetPlayMaps()
 
@@ -108,7 +108,7 @@ func (ptgls PlayTrackerGamesListScreen) Draw() (item interface{}, exitCode int, 
 		return nil, 4, nil
 	} else if selection.IsSome() && !selection.Unwrap().ActionTriggered && selection.Unwrap().SelectedIndex != -1 {
 		state.UpdateCurrentMenuPosition(selection.Unwrap().SelectedIndex, selection.Unwrap().VisiblePosition)
-		game := selection.Unwrap().SelectedItem.Metadata.(models.PlayTrackingAggregate)
+		game := selection.Unwrap().SelectedItem.Metadata.(models.PlayHistoryAggregate)
 		return game, 0, nil
 	}
 
