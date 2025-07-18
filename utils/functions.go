@@ -680,10 +680,13 @@ func GenerateCollectionList(searchFilter string, onScreen bool) (collections []m
 	return collectionList, 0, nil
 }
 
-func FindRomHomeFromAggregate(gameAggregate models.PlayTrackingAggregate) string {
+func FindRomHomeFromAggregate(gameAggregate models.PlayTrackingAggregate, showArchives bool) string {
 	gamePath := gameAggregate.Path
 	if directoryExists(gamePath) || fileExists(gamePath) {
-		return "(+)"
+		if showArchives {
+			return "(+) "
+		}
+		return ""
 	}
 
 	archiveList, err := GetArchiveFileListBasic()
@@ -692,12 +695,15 @@ func FindRomHomeFromAggregate(gameAggregate models.PlayTrackingAggregate) string
 			gameSubPath := strings.ReplaceAll(gamePath, GetRomDirectory(), "")
 			archivePath := filepath.Join(GetRomDirectory(), archiveName, gameSubPath)
 			if directoryExists(archivePath) || fileExists(archivePath) {
-				return "(" + string(CleanArchiveName(archiveName)[0]) + ")"
+				if showArchives {
+					return "(" + string(CleanArchiveName(archiveName)[0]) + ") "
+				}
+				return ""
 			}
 		}
 	}
 
-	return "(-)"
+	return "(-) "
 }
 
 func CollectGameAggregateFromGame(gameItem shared.Item, gamePlayMap map[string][]models.PlayTrackingAggregate) (models.PlayTrackingAggregate, string) {
@@ -1291,6 +1297,8 @@ func SaveConfig(config *models.Config) error {
 	viper.Set("hide_empty", config.HideEmpty)
 	viper.Set("show_art", config.ShowArt)
 	viper.Set("log_level", config.LogLevel)
+	viper.Set("play_history_show_collections", config.PlayHistoryShowCollections)
+	viper.Set("play_history_show_archives", config.PlayHistoryShowArchives)
 
 	return viper.WriteConfigAs(configFile)
 }
