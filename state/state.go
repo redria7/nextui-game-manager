@@ -113,7 +113,7 @@ func GetCurrentMenuPosition() (int, int) {
 	return selectedIndex, selectedPosition
 }
 
-func GetPlayMaps() (map[string][]models.PlayTrackingAggregate, map[string]int, int) {
+func GetPlayMaps() (map[string][]models.PlayHistoryAggregate, map[string]int, int) {
 	temp := GetAppState()
 	if temp.GamePlayMap == nil {
 		updatePlayMaps()

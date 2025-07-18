@@ -10,18 +10,18 @@ import (
 	"slices"
 )
 
-type PlayTrackerListScreen struct {}
+type PlayHistoryListScreen struct {}
 
-func InitPlayTrackerListScreen() PlayTrackerListScreen {
-	return PlayTrackerListScreen{}
+func InitPlayHistoryListScreen() PlayHistoryListScreen {
+	return PlayHistoryListScreen{}
 }
 
-func (ptls PlayTrackerListScreen) Name() sum.Int[models.ScreenName] {
-	return models.ScreenNames.PlayTrackerList
+func (ptls PlayHistoryListScreen) Name() sum.Int[models.ScreenName] {
+	return models.ScreenNames.PlayHistoryList
 }
 
-// Lists available play tracker consoles
-func (ptls PlayTrackerListScreen) Draw() (item interface{}, exitCode int, e error) {
+// Lists available play History consoles
+func (ptls PlayHistoryListScreen) Draw() (item interface{}, exitCode int, e error) {
 	_, consolePlayMap, totalPlay := state.GetPlayMaps()
 
 	title := fmt.Sprintf("%.1f Total Hours Played", float64(totalPlay)/3600.0)

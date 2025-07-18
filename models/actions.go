@@ -20,8 +20,8 @@ type Action struct {
 	CollectionDelete,
 	CollectionAdd,
 
-	PlayTrackerOpen,
-	PlayTrackerAdopt,
+	PlayHistoryOpen,
+	PlayHistoryAdopt,
 
 	GlobalDownloadArt,
 	GlobalClearRecents sum.Int[Action]
@@ -44,7 +44,7 @@ var ActionMap = map[string]sum.Int[Action]{
 	"Delete Collection": Actions.CollectionDelete,
 	"Add to Collection": Actions.CollectionAdd,
 
-	"View Play Details":	Actions.PlayTrackerOpen,
+	"View Play Details":	Actions.PlayHistoryOpen,
 }
 
 var GlobalActionMap = map[string]sum.Int[Action]{
@@ -86,7 +86,7 @@ var ArchiveActionKeys = []string{
 	"Delete Archive",
 }
 
-var PlayTrackerActionKeys = []string{
+var PlayHistoryActionKeys = []string{
 	//"Rehome Orphaned History",
 	//"Delete Existing History",
 }

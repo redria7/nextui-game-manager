@@ -14,58 +14,58 @@ import (
 	"time"
 )
 
-type PlayTrackerGameDetailsScreen struct {
+type PlayHistoryGameDetailsScreen struct {
 	Console         		string
 	SearchFilter			string
-	GameAggregate			models.PlayTrackingAggregate
+	GameAggregate			models.PlayHistoryAggregate
 	Game                 	shared.Item
 	RomDirectory         	shared.RomDirectory
 	PreviousRomDirectory 	shared.RomDirectory
-	PlayTrackerOrigin		bool
+	PlayHistoryOrigin		bool
 }
 
-func InitPlayTrackerGameDetailsScreenFromPlayTracker(console string, searchFilter string, gameAggregate models.PlayTrackingAggregate) PlayTrackerGameDetailsScreen {
-	return PlayTrackerGameDetailsScreen{
+func InitPlayHistoryGameDetailsScreenFromPlayHistory(console string, searchFilter string, gameAggregate models.PlayHistoryAggregate) PlayHistoryGameDetailsScreen {
+	return PlayHistoryGameDetailsScreen{
 		Console:      		console,
 		SearchFilter: 		searchFilter,
 		GameAggregate: 		gameAggregate,
-		PlayTrackerOrigin: 	true,
+		PlayHistoryOrigin: 	true,
 	}
 }
 
-func InitPlayTrackerGameDetailsScreenFromActions(game shared.Item, romDirectory shared.RomDirectory,
-	previousRomDirectory shared.RomDirectory, searchFilter string) PlayTrackerGameDetailsScreen {
+func InitPlayHistoryGameDetailsScreenFromActions(game shared.Item, romDirectory shared.RomDirectory,
+	previousRomDirectory shared.RomDirectory, searchFilter string) PlayHistoryGameDetailsScreen {
 	gamePlayMap, _, _ := state.GetPlayMaps()
 	gameAggregate, console := utils.CollectGameAggregateFromGame(game, gamePlayMap)
-	return PlayTrackerGameDetailsScreen{
+	return PlayHistoryGameDetailsScreen{
 		Console:				console,
 		SearchFilter: 			searchFilter,
 		GameAggregate: 			gameAggregate,
 		Game:      				game,
 		RomDirectory: 			romDirectory,
 		PreviousRomDirectory:	previousRomDirectory,
-		PlayTrackerOrigin: 		false,
+		PlayHistoryOrigin: 		false,
 	}
 }
 
-func InitPlayTrackerGameDetailsScreenFromSelf(console string, searchFilter string, gameAggregate models.PlayTrackingAggregate, game shared.Item, 
-	romDirectory shared.RomDirectory, previousRomDirectory shared.RomDirectory, playTrackerOrigin bool) PlayTrackerGameDetailsScreen {
-	return PlayTrackerGameDetailsScreen{
+func InitPlayHistoryGameDetailsScreenFromSelf(console string, searchFilter string, gameAggregate models.PlayHistoryAggregate, game shared.Item, 
+	romDirectory shared.RomDirectory, previousRomDirectory shared.RomDirectory, playHistoryOrigin bool) PlayHistoryGameDetailsScreen {
+	return PlayHistoryGameDetailsScreen{
 		Console:				console,
 		SearchFilter: 			searchFilter,
 		GameAggregate: 			gameAggregate,
 		Game:      				game,
 		RomDirectory: 			romDirectory,
 		PreviousRomDirectory:	previousRomDirectory,
-		PlayTrackerOrigin: 		playTrackerOrigin,
+		PlayHistoryOrigin: 		playHistoryOrigin,
 	}
 }
 
-func (ptgds PlayTrackerGameDetailsScreen) Name() sum.Int[models.ScreenName] {
-	return models.ScreenNames.PlayTrackerGameDetails
+func (ptgds PlayHistoryGameDetailsScreen) Name() sum.Int[models.ScreenName] {
+	return models.ScreenNames.PlayHistoryGameDetails
 }
 
-func (ptgds PlayTrackerGameDetailsScreen) Draw() (selection interface{}, exitCode int, e error) {
+func (ptgds PlayHistoryGameDetailsScreen) Draw() (selection interface{}, exitCode int, e error) {
 	logger := common.GetLoggerInstance()
 
 	var sections []gaba.Section

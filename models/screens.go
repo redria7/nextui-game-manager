@@ -27,11 +27,11 @@ type ScreenName struct {
 	CollectionManagement,
 	CollectionCreate,
 
-	PlayTrackerActions,
-	PlayTrackerGameDetails,
-	PlayTrackerGameHistory,
-	PlayTrackerGameList,
-	PlayTrackerList,
+	PlayHistoryActions,
+	PlayHistoryGameDetails,
+	PlayHistoryGameHistory,
+	PlayHistoryGameList,
+	PlayHistoryList,
 
 	GlobalActions sum.Int[ScreenName]
 }
