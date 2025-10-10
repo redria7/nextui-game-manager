@@ -1,7 +1,7 @@
 package ui
 
 import (
-	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
+	gaba "github.com/redria7/gabagool/pkg/gabagool"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"

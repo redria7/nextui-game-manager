@@ -3,7 +3,7 @@ package ui
 import (
 	"cmp"
 	"fmt"
-	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
+	gaba "github.com/redria7/gabagool/pkg/gabagool"
 	"nextui-game-manager/models"
 	"nextui-game-manager/state"
 	"nextui-game-manager/utils"

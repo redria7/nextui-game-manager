@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"github.com/UncleJunVIP/gabagool/pkg/gabagool"
+	"github.com/redria7/gabagool/pkg/gabagool"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"nextui-game-manager/models"
 	"qlova.tech/sum"

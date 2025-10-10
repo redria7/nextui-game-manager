@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	_ "github.com/UncleJunVIP/certifiable"
-	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
+	gaba "github.com/redria7/gabagool/pkg/gabagool"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"go.uber.org/zap"
@@ -35,9 +35,10 @@ const (
 )
 
 func init() {
-	gaba.InitSDL(gaba.GabagoolOptions{
+	gaba.InitSDL(gaba.Options{
 		WindowTitle:    "Game Manager",
 		ShowBackground: true,
+		LogFilename:    "game-manager.log",
 	})
 
 	common.SetLogLevel(defaultLogLevel)

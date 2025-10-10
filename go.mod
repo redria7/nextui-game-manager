@@ -4,10 +4,10 @@ go 1.24
 
 require (
 	github.com/UncleJunVIP/certifiable v1.0.0
-	github.com/UncleJunVIP/gabagool v0.0.66
 	github.com/UncleJunVIP/nextui-pak-shared-functions v1.11.1
 	github.com/disintegration/imaging v1.6.2
 	github.com/mattn/go-sqlite3 v1.14.30
+	github.com/redria7/gabagool v0.0.87
 	github.com/spf13/viper v1.20.1
 	github.com/veandco/go-sdl2 v0.4.40
 	go.uber.org/atomic v1.11.0
@@ -23,7 +23,6 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/holoplot/go-evdev v0.0.0-20250804134636-ab1d56a1fe83 // indirect
-	github.com/kettek/apng v0.0.0-20220823221153-ff692776a607 // indirect
 	github.com/patrickhuber/go-types v0.6.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/sagikazarmark/locafero v0.10.0 // indirect

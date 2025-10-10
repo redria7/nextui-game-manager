@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"github.com/UncleJunVIP/gabagool/pkg/gabagool"
+	"github.com/redria7/gabagool/pkg/gabagool"
 	"nextui-game-manager/models"
 	"nextui-game-manager/state"
 	"qlova.tech/sum"
