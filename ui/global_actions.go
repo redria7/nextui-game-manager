@@ -150,7 +150,7 @@ func (gas GlobalActionsScreen) Draw() (value interface{}, exitCode int, e error)
 				return nil, nil
 			})
 
-			res, err := gabagool.DownloadManager(downloads, make(map[string]string))
+			res, err := gabagool.DownloadManager(downloads, make(map[string]string), true)
 			if err != nil {
 				utils.ShowTimedMessage("Failed to download art!", time.Second*2)
 				return nil, 0, nil
