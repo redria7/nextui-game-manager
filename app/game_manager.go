@@ -35,9 +35,10 @@ const (
 )
 
 func init() {
-	gaba.InitSDL(gaba.GabagoolOptions{
+	gaba.InitSDL(gaba.Options{
 		WindowTitle:    "Game Manager",
 		ShowBackground: true,
+		LogFilename: "game-manager",
 	})
 
 	common.SetLogLevel(defaultLogLevel)
